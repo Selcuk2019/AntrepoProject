@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Gümrükler | Antrepo</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js dolduracak -->
+  </header>
+
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js dolduracak -->
+    </nav>
+
+    <div class="content">
+      <div class="page-header">
+        <h1>Gümrükler</h1>
+        <button class="btn-primary" id="newCustomsBtn">
+          <i class="fas fa-plus"></i> Yeni Gümrük Ekle
+        </button>
+      </div>
+
+      <div class="card">
+        <table id="customsTable" class="display">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Gümrük Adı</th>
+              <th>Sınıfı</th>
+              <th>Şehir</th>
+              <th>Bölge Müdürlüğü</th>
+              <th>İşlemler</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- jQuery + DataTables -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+  <!-- template.js (varsayılan script) -->
+  <script src="../js/template.js"></script>
+
+  <!-- customs-list.js artık type="module" -->
+  <script type="module" src="../js/customs-list.js"></script>
+</body>
+</html>

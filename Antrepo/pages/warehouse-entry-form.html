@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Antrepo Giriş Formu</title>
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Antrepo Giriş Formu</h1>
+    <form id="warehouseEntryForm">
+      <div class="form-group">
+        <label for="fileNumber">Dosya No:</label>
+        <input id="fileNumber" type="text" required>
+      </div>
+      <div class="form-group">
+        <label for="company">Firma:</label>
+        <select id="company" required>
+          <!-- Şirket seçenekleri JS ile doldurulacak -->
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="warehouse">Giriş Gümrüğü:</label>
+        <select id="warehouse" required>
+          <!-- Gümrük seçenekleri JS ile doldurulacak -->
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="weight">Brüt KG:</label>
+        <input id="weight" type="number" required>
+      </div>
+      <button type="submit">Kaydet</button>
+    </form>
+  </div>
+  <script type="module" src="../js/warehouse-entry-form.js"></script>
+</body>
+</html>

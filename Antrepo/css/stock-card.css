@@ -1,0 +1,49 @@
+/* stock-card.css */
+/* Stok Kartı sayfası (stock-card.html) için özel stiller */
+
+/* <div class="card stock-karti-container"> şeklinde kullanırsanız: */
+.stock-karti-container.card {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+}
+
+/* Başlık */
+.stock-karti-header {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.5rem;
+}
+
+/* Detay satırları */
+.stock-detaylari p {
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: #333;
+}
+.stock-detaylari p span {
+  font-weight: 600;
+  display: inline-block;
+  width: 150px; /* Hizalama için sabit genişlik */
+}
+
+/* Stok adedi vurgusu */
+.stok-adet {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2C66DD;
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+/* Footer veya buton alanı */
+.stock-karti-footer {
+  text-align: center;
+  margin-top: 2rem;
+}

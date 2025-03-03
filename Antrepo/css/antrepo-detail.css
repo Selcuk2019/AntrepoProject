@@ -1,0 +1,380 @@
+/* antrepo-detail.css */
+/* Solda sekme listesi, sağda içerik */
+.detail-container {
+    display: flex;
+    gap: 1rem;
+    min-height: 600px; /* Örnek */
+  }
+  
+  /* Tabs menüsü (solda) */
+  .tabs-menu {
+    width: 200px;
+    background: #fafafa;
+    border-right: 1px solid #ddd;
+    padding: 1rem;
+  }
+  .tabs-menu ul {
+    list-style: none;
+    padding: 0;
+  }
+  .tabs-menu ul li {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    border-radius: 6px;
+  }
+  .tabs-menu ul li:hover {
+    background: #f0f0f0;
+  }
+  .tabs-menu ul li.active {
+    background: #dce9f9; /* Seçili sekme rengi */
+    border-color: #408dfb; /* Mavi kenar */
+  }
+  
+  /* Tabs içerik */
+  .tabs-content {
+    flex-grow: 1;
+    padding: 1rem;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    position: relative;
+  }
+  
+  /* Her panel */
+  .tab-panel {
+    display: none;
+  }
+  .tab-panel.active {
+    display: block;
+  }
+  
+  /* Warehouse detail form */
+  .warehouse-detail-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .warehouse-detail-form .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .warehouse-detail-form label {
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: #333;
+  }
+  .warehouse-detail-form input,
+  .warehouse-detail-form textarea {
+    padding: 0.75rem;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: #f8f9fc;
+  }
+  .warehouse-detail-form input:focus,
+  .warehouse-detail-form textarea:focus {
+    outline: none;
+    border-color: #408dfb;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(64,141,251,0.1);
+  }
+  
+  /* Stock Movements tablo */
+  #stockMovements table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  #stockMovements table thead th {
+    background: #f7f7f7;
+    border-bottom: 2px solid #ddd;
+    padding: 0.75rem;
+  }
+  #stockMovements table tbody td {
+    border-bottom: 1px solid #ddd;
+    padding: 0.75rem;
+  }
+  #stockMovements table tbody tr:hover {
+    background: #fafafa;
+  }
+  
+  /* Sekme Ana Kabı */
+.detail-container {
+    display: flex;
+    gap: 1rem;
+    min-height: 600px; /* Örnek */
+  }
+  
+  /* Sol Sekme Menüsü */
+  .tabs-menu {
+    width: 200px;
+    background: #fafafa;
+    border-right: 1px solid #ddd;
+    padding: 1rem;
+  }
+  .tabs-menu ul {
+    list-style: none;
+    padding: 0;
+  }
+  .tabs-menu ul li {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    border-radius: 6px;
+  }
+  .tabs-menu ul li:hover {
+    background: #f0f0f0;
+  }
+  .tabs-menu ul li.active {
+    background: #dce9f9; /* Seçili sekme rengi */
+    border-color: #408dfb; /* Mavi kenar */
+  }
+  
+  /* Sağ İçerik Alanı */
+  .tabs-content {
+    flex-grow: 1;
+    padding: 1rem;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    position: relative;
+  }
+  
+  /* Sekme Panelleri */
+  .tab-panel {
+    display: none;
+  }
+  .tab-panel.active {
+    display: block;
+  }
+  
+  /* Kart Görünümü */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  
+  /* Antrepo Detay Formu */
+  .antrepo-detail-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* İki sütun */
+    gap: 1rem;
+  }
+  .antrepo-detail-form .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .antrepo-detail-form label {
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: #333;
+  }
+  .antrepo-detail-form input,
+  .antrepo-detail-form textarea {
+    padding: 0.75rem;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background: #f8f9fc;
+    transition: all 0.3s ease;
+  }
+  .antrepo-detail-form input:focus,
+  .antrepo-detail-form textarea:focus {
+    border-color: #408dfb;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(64,141,251,0.1);
+  }
+  
+  /* Form Actions */
+  .form-actions {
+    grid-column: 1 / -1; /* Tek satırda yayılması için */
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+    border-top: 1px solid #ddd;
+    padding-top: 1rem;
+  }
+  .form-actions .btn-primary {
+    background-color: #408dfb;
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .form-actions .btn-primary:hover {
+    background-color: #2C66DD;
+  }
+  
+  /* ============ INFO CARDS (3 ADET) ============ */
+.info-cards-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .info-card {
+    flex: 1;
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    text-align: center;
+  }
+  .info-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: #666;
+  }
+  .info-card p {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+    color: #2C66DD; /* Mavi */
+  }
+  .info-card small {
+    font-size: 0.75rem;
+    color: #999;
+  }
+  
+  /* ============ TABS LAYOUT ============ */
+  .detail-container {
+    display: flex;
+    gap: 1rem;
+    min-height: 400px; 
+  }
+  .tabs-menu {
+    width: 200px;
+    background: #fafafa;
+    border-right: 1px solid #ddd;
+    padding: 1rem;
+  }
+  .tabs-menu ul {
+    list-style: none;
+    padding: 0;
+  }
+  .tabs-menu ul li {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    background: #fff;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    border-radius: 6px;
+  }
+  .tabs-menu ul li:hover {
+    background: #f0f0f0;
+  }
+  .tabs-menu ul li.active {
+    background: #dce9f9; 
+    border-color: #408dfb; 
+  }
+  .tabs-content {
+    flex-grow: 1;
+    padding: 1rem;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    position: relative;
+  }
+  .tab-panel {
+    display: none;
+  }
+  .tab-panel.active {
+    display: block;
+  }
+  
+  /* ============ CARD STYLE ============ */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  }
+  
+  /* ============ ANTREPO DETAY FORM ============ */
+  .antrepo-detail-card h2 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 0.5rem;
+  }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; 
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+  .form-group label {
+    font-weight: 500;
+    margin-bottom: 0.3rem;
+    color: #333;
+  }
+  .form-group input,
+  .form-group textarea {
+    padding: 0.75rem;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background: #f8f9fc;
+    transition: all 0.3s ease;
+  }
+  .form-group input:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #2C66DD;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(44,102,221,0.1);
+  }
+  
+  /* Form Actions */
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid #ddd;
+    padding-top: 1rem;
+  }
+  .btn-primary {
+    background-color: #408dfb;
+    color: #fff;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .btn-primary:hover {
+    background-color: #2C66DD;
+  }
+  .btn-secondary {
+    background-color: transparent;
+    color: #333;
+    padding: 0.8rem 1.5rem;
+    border: 1.5px solid #ddd;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .btn-secondary:hover {
+    background-color: #ddd;
+  }
+  

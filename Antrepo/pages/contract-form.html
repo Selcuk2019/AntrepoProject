@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sözleşme Ekle / Düzenle</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <!-- Ayrı bir .css dosyası kullanacaksanız <link rel="stylesheet" href="../css/style.css"> -->
+
+  <style>
+    /* ========== BASİT MODAL STİLLERİ ========== */
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none; /* JS ile block/flex yapacağız */
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 1200px;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+    }
+    .modal-actions {
+      margin-top: 1rem;
+      text-align: right;
+    }
+    .modal-actions button {
+      margin-left: 0.5rem;
+    }
+
+    /* ========== FORM VE TABLO ========== */
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+    }
+    .form-group select,
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.5rem;
+      box-sizing: border-box;
+    }
+
+    table.datatable {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+    }
+    table.datatable th,
+    table.datatable td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      text-align: left;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .btn-secondary {
+      background-color: #6c757d;
+      color: #fff;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .btn-danger {
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      padding: 0.4rem 0.8rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .required {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js vb. ile doldurulacak -->
+  </header>
+
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js vb. ile doldurulacak -->
+    </nav>
+
+    <div class="content">
+      <div class="page-header">
+        <h1>Sözleşme Ekle / Düzenle</h1>
+      </div>
+
+      <!-- Sözleşme Formu -->
+      <div class="form-container">
+        <form id="contractForm" class="form-grid">
+          <!-- Sol Sütun: Temel Bilgiler -->
+          <div class="form-section">
+            <h2>Temel Bilgiler</h2>
+            <div class="form-group">
+              <label for="companyName">Şirket Adı <span class="required">*</span></label>
+              <select id="companyName" name="companyName" required>
+                <option value="">Seçiniz...</option>
+                <!-- /api/companies ile doldurulacak -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="sozlesmeKodu">Sözleşme Kodu <span class="required">*</span></label>
+              <input type="text" id="sozlesmeKodu" required />
+            </div>
+            <div class="form-group">
+              <label for="sozlesmeAdi">Sözleşme Adı <span class="required">*</span></label>
+              <input type="text" id="sozlesmeAdi" required />
+            </div>
+            <div class="form-group">
+              <label for="baslangicTarihi">Başlangıç Tarihi</label>
+              <input type="date" id="baslangicTarihi" />
+            </div>
+            <div class="form-group">
+              <label for="bitisTarihi">Bitiş Tarihi</label>
+              <input type="date" id="bitisTarihi" />
+            </div>
+          </div>
+
+          <!-- Sağ Sütun: Global Parametreler -->
+          <div class="form-section">
+            <h2>Global Parametreler</h2>
+            <div class="form-group">
+              <label for="faturaPeriyodu">Fatura Periyodu <span class="required">*</span></label>
+              <select id="faturaPeriyodu" required>
+                <option value="">Seçiniz...</option>
+                <option value="Aylık">Aylık</option>
+                <option value="Çıkış Başı">Çıkış Başı</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="minFatura">Min Fatura</label>
+              <input type="number" step="0.01" id="minFatura" />
+            </div>
+            <div class="form-group">
+              <label for="paraBirimi">Para Birimi <span class="required">*</span></label>
+              <select id="paraBirimi" required>
+                <option value="">Seçiniz...</option>
+                <!-- /api/para-birimleri ile doldurulacak -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="girisGunuKural">Giriş Günü Hesaplama <span class="required">*</span></label>
+              <select id="girisGunuKural" required>
+                <option value="">Seçiniz...</option>
+                <option value="Dahil">Dahil</option>
+                <option value="Hariç">Hariç</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="kismiGunYontemi">Kısmi Gün Hesaplama <span class="required">*</span></label>
+              <select id="kismiGunYontemi" required>
+                <option value="">Seçiniz...</option>
+                <option value="Yuvarla">Yuvarla</option>
+                <option value="Tam">Tam</option>
+              </select>
+            </div>
+            <!-- KDV Oranı alanı KALDIRILDI -->
+            <div class="form-group">
+              <label for="haftaSonuCarpani">Hafta Sonu Çarpanı</label>
+              <input type="number" step="0.1" id="haftaSonuCarpani" value="1.0" />
+            </div>
+            <div class="form-group">
+              <label for="dovizKuru">Döviz Kuru (Opsiyonel)</label>
+              <input type="number" step="0.0001" id="dovizKuru" />
+            </div>
+
+            <!-- Gün Çarpanı Parametreleri -->
+            <div class="form-group" style="margin-top:1rem;">
+              <button type="button" class="btn-secondary" id="openGunCarpanModalBtn">
+                Gün Çarpanı Parametreleri
+              </button>
+            </div>
+
+            <!-- Mesai Saat Ücretleri -->
+            <div class="form-group">
+              <button type="button" class="btn-secondary" id="openMesaiModalBtn">
+                Mesai Saat Ücretlerini Ekle
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Hizmet Kalemleri -->
+      <div class="form-container">
+        <h2>Hizmet Kalemleri</h2>
+        <button type="button" class="btn-primary" id="openHizmetModalBtn">Hizmet Ekle</button>
+        <table class="datatable" id="hizmetListTable">
+          <thead>
+            <tr>
+              <th>Hizmet Adı</th>
+              <th>Hizmet Tipi</th>
+              <th>Birim</th>
+              <th>Temel Ücret</th>
+              <th>Çarpan</th>
+              <th>Min Ücret</th>
+              <th>Mesai Uygulanır mı?</th>
+              <th>Mesai Saatleri</th>
+              <th>Sil</th>
+            </tr>
+          </thead>
+          <tbody id="hizmetListBody">
+            <!-- JS ile eklenecek -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions" style="margin-top:1rem;">
+        <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
+        <button type="submit" class="btn-primary" form="contractForm" id="saveContractBtn">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== GÜN ÇARPANI MODAL ========== -->
+  <div class="modal" id="gunCarpanModal">
+    <div class="modal-content">
+      <h2>Gün Çarpanı Parametreleri</h2>
+      <table class="datatable" id="gunCarpanTable">
+        <thead>
+          <tr>
+            <th>Başlangıç Günü</th>
+            <th>Bitiş Günü</th>
+            <th>Base Fee</th>
+            <th>Kg Başına Ücret</th>
+            <th>Kargo Tipi</th>
+            <th>Para Birimi</th>
+            <th>Sil</th>
+          </tr>
+        </thead>
+        <tbody id="gunCarpanTbody"></tbody>
+      </table>
+      <button type="button" id="addGunCarpanRowBtn" class="btn-secondary" style="margin-top:0.5rem;">+ Ekle</button>
+      <div class="modal-actions">
+        <!-- Kapat butonu değişiklikleri kaydetmeden pencereyi kapatacak -->
+        <button type="button" id="gunCarpanCloseBtn" class="btn-secondary">Kapat</button>
+        <!-- Kaydet butonu eklendi -->
+        <button type="button" id="gunCarpanSaveBtn" class="btn-primary">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== MESAI SAAT ÜCRETLERİ MODAL ========== -->
+  <div class="modal" id="mesaiModal">
+    <div class="modal-content">
+      <h2>Mesai Saat Ücretleri</h2>
+      <p style="margin-bottom:1rem;">Sözleşme Para Birimi: <span id="mesaiModalParaBirimiLabel"></span></p>
+
+      <table class="datatable" id="mesaiSaatTable">
+        <thead>
+          <tr>
+            <th>Mesai Zaman Dilimi</th>
+            <th>Mesai Ücreti/Saat</th>
+            <th>Para Birimi</th>
+          </tr>
+        </thead>
+        <tbody id="mesaiSaatTbody">
+          <!-- JS ile eklenecek satırlar (10 sabit zaman dilimi) -->
+        </tbody>
+      </table>
+
+      <div class="modal-actions">
+        <button type="button" id="mesaiCancelBtn" class="btn-secondary">İptal</button>
+        <button type="button" id="mesaiSaveBtn" class="btn-primary">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== HİZMET EKLE MODAL ========== -->
+  <div class="modal" id="hizmetModal">
+    <div class="modal-content">
+      <h2>Hizmet Ekle</h2>
+      <form id="hizmetForm">
+        <div class="form-group">
+          <label for="modalHizmetAdi">Hizmet Adı</label>
+          <!-- Aşağıdaki input'u datalist veya select haline getirebiliriz.
+               Örnek: datalist approach -->
+          <input type="text" list="hizmetAdiList" id="modalHizmetAdi" />
+          <datalist id="hizmetAdiList">
+            <!-- /api/hizmetler verileriyle doldurulacak -->
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label for="modalHizmetTipi">Hizmet Tipi</label>
+          <input type="text" id="modalHizmetTipi" />
+        </div>
+        <div class="form-group">
+          <label for="modalBirim">Birim</label>
+          <input type="text" id="modalBirim" />
+        </div>
+        <div class="form-group">
+          <label for="modalTemelUcret">Temel Ücret</label>
+          <input type="number" step="0.01" id="modalTemelUcret" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="modalCarpan">Çarpan</label>
+          <input type="number" step="0.001" id="modalCarpan" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="modalMinUcret">Min Ücret</label>
+          <input type="number" step="0.01" id="modalMinUcret" value="0" />
+        </div>
+        <div class="form-group">
+          <label for="modalMesaiUygula">Mesai Uygulanır mı?</label>
+          <select id="modalMesaiUygula">
+            <option value="Hayır">Hayır</option>
+            <option value="Evet">Evet</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="modalMesaiSaatleri">Mesai Saatleri</label>
+          <!-- Bu dropdown, 'Mesai Saat Ücretleri' modalında girilen zaman dilimlerini dolduracak -->
+          <select id="modalMesaiSaatleri">
+            <option value="">Seçiniz</option>
+            <!-- Dinamik doldurulacak -->
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="hizmetCancelBtn" class="btn-secondary">İptal</button>
+          <button type="submit" id="hizmetSaveBtn" class="btn-primary">Kaydet</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="../js/template.js"></script>
+  <script type="module" src="../js/contract-form.js"></script>
+</body>
+</html>

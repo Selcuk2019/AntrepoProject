@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Yeni Antrepo Şirketi Ekle</title>
+  <!-- Ortak CSS (Mevcut style.css) -->
+  <link rel="stylesheet" href="../css/style.css" />
+  
+  <!-- Örnek: Zorunlu alanların kırmızı yıldızını renklendirmek isterseniz -->
+  <style>
+    .required {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar"></header>
+
+  <div class="main-container">
+    <nav class="sidebar"></nav>
+    <div class="content">
+      <div class="new-company-form">
+        <h1>Yeni Antrepo Şirketi Ekle</h1>
+
+        <!-- Temel Bilgiler Bölümü -->
+        <div class="form-section">
+          <h2>Temel Bilgiler</h2>
+          <div class="form-group">
+            <label for="firstName">Yetkili İsim</label>
+            <input type="text" id="firstName" placeholder="First Name" />
+          </div>
+          <div class="form-group">
+            <label for="lastName">Yetkili Soyisim</label>
+            <input type="text" id="lastName" placeholder="Last Name" />
+          </div>
+          <div class="form-group">
+            <label for="companyName">
+              Şirket Adı <span class="required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="companyName" 
+              placeholder="Örn: Antrepo A.Ş." 
+              required 
+            />
+          </div>
+          <div class="form-group">
+            <label for="displayName">
+              Görünen İsim (Display Name) <span class="required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="displayName" 
+              placeholder="Fatura vb. için görünecek isim" 
+              required
+            />
+          </div>
+        </div>
+
+        <!-- İletişim Bilgileri Bölümü -->
+        <div class="form-section">
+          <h2>İletişim Bilgileri</h2>
+          <div class="form-group">
+            <label for="emailAddress">E-posta</label>
+            <input 
+              type="email" 
+              id="emailAddress" 
+              placeholder="example@domain.com"
+            />
+          </div>
+          <div class="form-group">
+            <label for="phoneNumber">
+              Telefon <span class="required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="phoneNumber" 
+              placeholder="(5xx) xxx-xxxx"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Adres Bilgileri Bölümü -->
+        <div class="form-section">
+          <h2>Adres Bilgileri</h2>
+          <div class="form-group">
+            <label for="addressCity">
+              İl <span class="required">*</span>
+            </label>
+            <select id="addressCity" required>
+              <option value="">Seçiniz</option>
+              <!-- JS ile doldurulacak -->
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="addressDistrict">İlçe</label>
+            <input 
+              type="text" 
+              id="addressDistrict" 
+              placeholder="İlçe" 
+            />
+          </div>
+          <div class="form-group">
+            <label for="addressPostalCode">Posta Kodu</label>
+            <input 
+              type="text" 
+              id="addressPostalCode" 
+              placeholder="PK" 
+            />
+          </div>
+          <div class="form-group">
+            <label for="addressDetail">
+              Açık Adres <span class="required">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="addressDetail" 
+              placeholder="Mahalle, cadde, sokak, bina..." 
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Diğer Detaylar Bölümü -->
+        <div class="form-section">
+          <h2>Diğer Detaylar</h2>
+          <div class="form-group">
+            <label for="taxRate">KDV Oranı</label>
+            <select id="taxRate">
+              <option value="">Seçiniz</option>
+              <option value="18">%20</option>
+              <option value="8">%8</option>
+              <option value="1">%1</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="companyID">Vergi No</label>
+            <input 
+              type="text" 
+              id="companyID" 
+              placeholder="Şirket kimlik no vb." 
+            />
+          </div>
+          <div class="form-group">
+            <label for="companyID2">Vergi Dairesi</label>
+            <input 
+              type="text" 
+              id="companyID2" 
+              placeholder="Vergi Dairesi" 
+            />
+          </div>
+          <div class="form-group">
+            <label for="currency">
+              Para Birimi <span class="required">*</span>
+            </label>
+            <select id="currency" required>
+              <option value="">Seçiniz</option>
+              <option value="TRY">TRY - Türk Lirası</option>
+              <option value="USD">USD - United States Dollar</option>
+              <option value="EUR">EUR - Euro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="paymentTerms">Ödeme Şekli</label>
+            <input 
+              type="text" 
+              id="paymentTerms" 
+              placeholder="Örn: %100 peşin" 
+            />
+          </div>
+          <div class="form-group">
+            <label for="documents">Dosya Ekle</label>
+            <input 
+              type="file" 
+              id="documents" 
+              multiple 
+            />
+            <small>Maksimum 10 dosya, 10MB toplam</small>
+          </div>
+        </div>
+
+        <!-- Hizmet Verdiği Gümrükler (Dropdown + Chips) -->
+        <div class="form-section dropdown-wrapper">
+          <h2>Hizmet Verdiği Gümrükler</h2>
+
+          <div class="search-row">
+            <input 
+              type="text" 
+              id="customsSearchInput" 
+              placeholder="Gümrük ara..." 
+            />
+            <button 
+              type="button" 
+              id="refreshCustomsBtn" 
+              class="btn-secondary" 
+              title="Listeyi Yenile"
+            >
+              &#x21bb;
+            </button>
+            <button 
+              type="button" 
+              id="createCustomsBtn" 
+              class="btn-secondary" 
+              style="margin-left:auto;"
+            >
+              Yeni Gümrük Oluştur
+            </button>
+          </div>
+
+          <div 
+            id="searchResults" 
+            class="dropdown-list" 
+            style="display: none;"
+          ></div>
+
+          <label>Seçilen Gümrükler</label>
+          <div id="selectedCustoms" class="chips-container"></div>
+        </div>
+
+        <!-- Kaydet / İptal Butonları -->
+        <div class="form-section form-actions">
+          <button type="button" id="saveCompanyBtn" class="btn-primary">
+            Kaydet
+          </button>
+          <button type="button" id="cancelBtn" class="btn-secondary">
+            İptal
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/template.js"></script>
+  <script type="module" src="../js/new-company-form.js"></script>
+</body>
+</html>

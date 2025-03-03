@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Antrepolar</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <!-- İsteğe bağlı: ürün listesine özel stiller product-list.css gibi eklenebilir -->
+  <link rel="stylesheet" href="../css/product-list.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js ile doldurulacak -->
+  </header>
+  
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js ile doldurulacak -->
+    </nav>
+    
+    <div class="content product-list">
+      <div class="page-header">
+        <h1>Antrepolar</h1>
+        <button id="newAntrepoBtn" class="btn-primary">Yeni Antrepo Ekle</button>
+      </div>
+      
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Kodu</th>
+              <th>Adı</th>
+              <th>Tipi</th>
+              <th>Gümrük</th>
+              <th>Müdürlük</th>
+              <th>Şehir</th>
+              <th>Adres</th>
+              <th>Şirket</th>
+              <th>Kapasite</th>
+              <th>Aktif</th>
+              <th>İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="antrepoTableBody">
+            <!-- antrepo-list.js tarafından doldurulacak -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  
+  <script src="../js/template.js"></script>
+  <script type="module" src="../js/antrepo-list.js"></script>
+</body>
+</html>

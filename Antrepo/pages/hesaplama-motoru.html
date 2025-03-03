@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Hesaplama Motoru</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js ile doldurulacak -->
+  </header>
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js ile doldurulacak -->
+    </nav>
+    
+    <div class="content">
+      <h1>Hesaplama Motoru</h1>
+
+      <div id="summaryInfo" class="card">
+        <p><strong>Beyanname No:</strong> <span id="beyannameNo"></span></p>
+        <p><strong>Giriş Tarihi:</strong> <span id="girisTarihi"></span></p>
+        <p><strong>Ürün Adı:</strong> <span id="urunAdi"></span></p>
+        <p><strong>Ürün Kodu:</strong> <span id="urunKodu"></span></p>
+        <p><strong>Başlangıç Stoku (ton):</strong> <span id="initialStock"></span></p>
+      </div>
+
+      <div class="card">
+        <h2>Günlük Hesaplama Detayları</h2>
+        <table class="datatable">
+          <thead>
+            <tr>
+              <th>Gün</th>
+              <th>Tarih</th>
+              <th>Olay</th>
+              <th>Ardiye (USD)</th>
+              <th>İndi-Bindi (USD)</th>
+              <th>Mesai (USD)</th>
+              <th>Günlük Toplam</th>
+              <th>Kümülatif Toplam</th>
+              <th>Kalan Stok</th>
+            </tr>
+          </thead>
+          <tbody id="dailyTableBody">
+            <!-- JS ile doldurulacak -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <button id="backBtn" class="btn">Geri</button>
+      </div>
+    </div> <!-- /content -->
+  </div> <!-- /main-container -->
+  
+  <script src="../js/template.js"></script>
+  <script type="module" src="../js/hesaplama-motoru.js"></script>
+</body>
+</html>

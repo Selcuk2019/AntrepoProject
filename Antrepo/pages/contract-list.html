@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Sözleşmeler</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- ... -->
+  </header>
+
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- ... -->
+    </nav>
+
+    <div class="content">
+      <div class="page-header">
+        <h1>Sözleşmeler</h1>
+        <button id="newContractBtn" class="btn-primary">Yeni Sözleşme Ekle</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Sözleşme Kodu</th>
+              <th>Sözleşme Adı</th>
+              <th>Başlangıç</th>
+              <th>Bitiş</th>
+              <th>Fatura Periyodu</th>
+              <th>Min Fatura</th>
+              <th>İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="contractTableBody">
+            <!-- contract-list.js ile doldurulacak -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/template.js"></script>
+  <script type="module" src="../js/contract-list.js"></script>
+</body>
+</html>

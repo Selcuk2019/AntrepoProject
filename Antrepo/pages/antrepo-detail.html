@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Antrepo Detay</title>
+  <!-- Ana stil dosyanız -->
+  <link rel="stylesheet" href="../css/style.css">
+  <!-- Antrepo Detay sayfasına özel stil -->
+  <link rel="stylesheet" href="../css/antrepo-detail.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js ile doldurulacak -->
+  </header>
+
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js ile doldurulacak -->
+    </nav>
+
+    <div class="content">
+      <div class="page-header">
+        <h1>Antrepo Detay</h1>
+      </div>
+
+      <!-- Üstte 3 Kartlık Bilgi Satırı -->
+      <div class="info-cards-row">
+        <!-- 1) Stokta -->
+        <div class="info-card">
+          <h3>Stokta</h3>
+          <p id="stockedQty">0 MT</p>
+          <small>(Opsiyonel açıklama)</small>
+        </div>
+        <!-- 2) Kap Adedi (eski Taahhüt Edilen) -->
+        <div class="info-card">
+          <h3>Kap Adedi</h3>
+          <p id="kapAdediQty">0</p>
+          <small>(Opsiyonel açıklama)</small>
+        </div>
+        <!-- 3) Boş Kapasite -->
+        <div class="info-card">
+          <h3>Boş Kapasite</h3>
+          <p id="freeCapacity">0 MT / 1 MT</p>
+          <small>(Opsiyonel açıklama)</small>
+        </div>
+      </div>
+
+      <!-- Sekmeler (Antrepo Detay, Stok Miktarları, Stok Hareketleri) -->
+      <div class="detail-container">
+        <div class="tabs-menu">
+          <ul>
+            <li class="active" data-tab="antrepoDetailTab">Antrepo Detay</li>
+            <li data-tab="stockQuantitiesTab">Stok Miktarları</li>
+            <li data-tab="stockMovementsTab">Stok Hareketleri</li>
+          </ul>
+        </div>
+
+        <div class="tabs-content">
+          <!-- 1) Antrepo Detay Sekmesi -->
+          <div id="antrepoDetailTab" class="tab-panel active">
+            <div class="card antrepo-detail-card">
+              <h2>Antrepo Bilgileri</h2>
+              <form id="antrepoDetailForm">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="antrepoAdi">Antrepo Adı</label>
+                    <input type="text" id="antrepoAdi" placeholder="Antrepo Adı">
+                  </div>
+                  <div class="form-group">
+                    <label for="antrepoKodu">Antrepo Kodu</label>
+                    <input type="text" id="antrepoKodu" placeholder="Antrepo Kodu">
+                  </div>
+                  <div class="form-group">
+                    <label for="sehir">Şehir</label>
+                    <input type="text" id="sehir" placeholder="Şehir">
+                  </div>
+                  <div class="form-group">
+                    <label for="acikAdres">Açık Adres</label>
+                    <textarea id="acikAdres" placeholder="Açık Adres"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="notlar">Notlar</label>
+                    <textarea id="notlar" placeholder="Notlar"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label for="kapasite">Kapasite</label>
+                    <input type="number" id="kapasite" placeholder="Örn: 100">
+                  </div>
+                  <div class="form-group">
+                    <label for="antrepoTipi">Antrepo Tipi</label>
+                    <input type="text" id="antrepoTipi" placeholder="Örn: A Tipi">
+                  </div>
+                  <div class="form-group">
+                    <label for="gumruk">Bulunduğu Gümrük</label>
+                    <input type="text" id="gumruk" placeholder="Örn: Erenköy Gümrüğü">
+                  </div>
+                  <div class="form-group">
+                    <label for="gumrukMudurlugu">Gümrük Müdürlüğü</label>
+                    <input type="text" id="gumrukMudurlugu" placeholder="Örn: İstanbul Gümrük Md.">
+                  </div>
+                  <div class="form-group">
+                    <label for="antrepoSirketi">Antrepo Şirketi</label>
+                    <input type="text" id="antrepoSirketi" placeholder="Örn: ABC Lojistik">
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
+                  <button type="button" class="btn-primary" id="saveAntrepoBtn">Kaydet</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- 2) Stok Miktarları Sekmesi -->
+          <div id="stockQuantitiesTab" class="tab-panel">
+            <div class="card">
+              <h2>Stok Miktarları</h2>
+              <p>Bu sekme ileride doldurulacak.</p>
+            </div>
+          </div>
+
+          <!-- 3) Stok Hareketleri Sekmesi -->
+          <div id="stockMovementsTab" class="tab-panel">
+            <div class="card">
+              <h2>Stok Hareketleri</h2>
+              <p>Bu sekme ileride doldurulacak.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- template.js (normal script) -->
+  <script src="../js/template.js"></script>
+  <!-- antrepo-detail.js (type="module") -->
+  <script type="module" src="../js/antrepo-detail.js"></script>
+</body>
+</html>

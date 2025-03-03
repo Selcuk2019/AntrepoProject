@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Stok Kartı</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/stock-card.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js dolduracak -->
+  </header>
+
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js dolduracak -->
+    </nav>
+
+    <div class="content">
+      <div class="page-header">
+        <h1>Stok Kartı</h1>
+      </div>
+
+      <!-- Kart alanı -->
+      <div class="card stock-karti-container">
+        <div id="stockDetails" class="stock-detaylari">
+          <!-- Ürün detayları stock-card.js tarafından doldurulacak -->
+        </div>
+        <!-- Güncel stok bilgisi -->
+        <div id="currentStockDisplay" class="stok-adet">
+          <!-- Güncel stok (Ton) burada gösterilecek -->
+        </div>
+        <div class="form-actions">
+          <button id="backBtn" class="btn-secondary">Geri Dön</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../js/template.js"></script>
+  <script type="module" src="../js/stock-card.js"></script>
+</body>
+</html>

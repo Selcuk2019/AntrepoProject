@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yeni Gümrük Ekle</title>
+    <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+    <header class="topbar">
+        <!-- Will be filled by template.js -->
+    </header>
+
+    <div class="main-container">
+        <nav class="sidebar">
+            <!-- Will be filled by template.js -->
+        </nav>
+
+        <div class="content">
+            <div class="page-header">
+                <h1>Yeni Gümrük Ekle</h1>
+            </div>
+
+            <div class="form-container">
+                <form id="newCustomsForm">
+                    <div class="form-grid">
+                        <div class="form-section">
+                            <h2>Gümrük Bilgileri</h2>
+                            <div class="form-group">
+                                <label for="gumruk_adi">Gümrük Müdürlüğü</label>
+                                <input type="text" id="gumruk_adi" name="gumruk_adi" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="sinif">Sınıfı</label>
+                                <select id="sinif" name="sinif" required>
+                                    <option value="">Seçiniz</option>
+                                    <option value="A">A</option>
+                                    <option value="B">B</option>
+                                    <option value="C">C</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h2>Konum Bilgileri</h2>
+                            <div class="form-group">
+                                <label for="sehir_ad">Şehir</label>
+                                <select id="sehir_ad" name="sehir_ad" required>
+                                    <option value="">Seçiniz</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="bolge_mudurlugu">Bölge Müdürlüğü</label>
+                                <select id="bolge_mudurlugu" name="bolge_mudurlugu" required>
+                                    <option value="">Seçiniz</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section notes-section">
+                        <h2>Ek Bilgiler</h2>
+                        <div class="form-group">
+                            <label for="notes">Notlar</label>
+                            <textarea id="notes" name="notes" rows="4"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="history.back()">İptal</button>
+                        <button type="submit" class="btn-primary">Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/template.js"></script>
+    <script type="module" src="../js/new-customs.js"></script>
+</body>
+</html>

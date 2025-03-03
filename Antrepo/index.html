@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Antrepo Yönetimi</title>
+  <!-- Plotly CDN -->
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <!-- style.css: Kök dizinde css klasöründe -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Üst Bar (doğrudan kodlanmış) -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="logo">ANTREPO</span>
+    </div>
+    <div class="topbar-right">
+      <input type="text" placeholder="Ara..." class="topbar-search" />
+      <img src="assets/user-icon.png" alt="User Icon" class="topbar-user-icon" />
+    </div>
+  </header>
+
+  <div class="main-container">
+    <!-- Sol Sidebar (doğrudan kodlanmış) -->
+    <nav class="sidebar">
+      <ul>
+        <li><a href="index.html" class="active">Anasayfa</a></li>
+        <li><a href="pages/warehouse-entry-form.html">Antrepo Giriş Formu</a></li>
+        <li><a href="pages/company-list.html">Antrepo Şirket Listesi</a></li>
+        <li><a href="pages/product-list.html">Ürünler</a></li>
+      </ul>
+    </nav>
+
+    <!-- İçerik Alanı -->
+    <div class="content">
+      <h1>Antrepo Yönetimi</h1>
+      <p>Lütfen sol menüden bir seçim yapınız.</p>
+
+      <!-- 6 adet KPI / Dashboard Kartı -->
+      <div class="dashboard-cards">
+        <div class="card">
+          <h2>Total Bonded Product Qty</h2>
+          <span class="card-value">1000 Adet</span>
+        </div>
+        <div class="card">
+          <h2>Total Current Cost</h2>
+          <span class="card-value">₺ 750,000</span>
+        </div>
+        <div class="card">
+          <h2>Cost per Unit</h2>
+          <span class="card-value">₺ 750</span>
+        </div>
+        <div class="card">
+          <h2>Cost Change Over Time</h2>
+          <span class="card-value">+5%</span>
+        </div>
+        <div class="card">
+          <h2>YoY Total Cost</h2>
+          <span class="card-value">₺ 1,200,000</span>
+        </div>
+        <div class="card">
+          <h2>YtD Total Cost</h2>
+          <span class="card-value">₺ 800,000</span>
+        </div>
+      </div>
+
+      <!-- 3 Sütunlu Chart Row -->
+      <div class="charts-row">
+        <div class="chart-col">
+          <h2>Envanter Taşıma Maliyeti</h2>
+          <div class="chart-box" id="chartInventoryCost"></div>
+        </div>
+        <div class="chart-col">
+          <h2>Envanter Devir Oranı</h2>
+          <div class="chart-box" id="chartTurnoverRatio"></div>
+        </div>
+        <div class="chart-col">
+          <h2>Stok-Satış Oranı</h2>
+          <div class="chart-box" id="chartSalesRatio"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+    <!-- Template JS -->
+  <script src="js/template.js"></script>
+  <script>
+        const template = new Template();
+        template.init();
+  </script>
+
+  <!-- Dashboard Charts JS -->
+  <script src="js/dashboard-charts.js"></script>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Sözleşme Formu</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js ile doldurulacak -->
+  </header>
+
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js ile doldurulacak -->
+    </nav>
+
+    <div class="content">
+      <div class="page-header">
+        <h1>Sözleşme Ekle / Düzenle</h1>
+      </div>
+
+      <div class="form-container">
+        <form id="contractForm" class="form-grid">
+          <!-- Sol Sütun: Temel Bilgiler -->
+          <div class="form-section">
+            <h2>Temel Bilgiler</h2>
+            <div class="form-group">
+              <label for="companyName">Şirket Adı</label>
+              <select id="companyName"></select>
+            </div>
+            <div class="form-group">
+              <label for="sozlesmeKodu">Sözleşme Kodu</label>
+              <input type="text" id="sozlesmeKodu">
+            </div>
+            <div class="form-group">
+              <label for="sozlesmeAdi">Sözleşme Adı</label>
+              <input type="text" id="sozlesmeAdi">
+            </div>
+            <div class="form-group">
+              <label for="baslangicTarihi">Başlangıç Tarihi</label>
+              <input type="date" id="baslangicTarihi">
+            </div>
+            <div class="form-group">
+              <label for="bitisTarihi">Bitiş Tarihi</label>
+              <input type="date" id="bitisTarihi">
+            </div>
+            <div class="form-group">
+              <label for="faturaPeriyodu">Fatura Periyodu</label>
+              <select id="faturaPeriyodu">
+                <option value="Aylık">Aylık</option>
+                <option value="Çıkış Başı">Çıkış Başı</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="minFatura">Min Fatura</label>
+              <input type="number" step="0.01" id="minFatura">
+            </div>
+            <div class="form-group">
+              <label for="paraBirimi">Para Birimi</label>
+              <select id="paraBirimi"></select>
+            </div>
+          </div>
+
+          <!-- Sağ Sütun: Global Parametreler -->
+          <div class="form-section">
+            <h2>Global Parametreler</h2>
+            <div class="form-group">
+              <label for="girisGunuKural">Giriş Günü Hesaplama</label>
+              <select id="girisGunuKural">
+                <option value="Dahil">Dahil</option>
+                <option value="Hariç">Hariç</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="kismiGunYontemi">Kısmi Gün Hesaplama</label>
+              <select id="kismiGunYontemi">
+                <option value="Yuvarla">Yuvarla</option>
+                <option value="Tam">Tam</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="haftaSonuCarpani">Hafta Sonu Çarpanı</label>
+              <input type="number" step="0.1" id="haftaSonuCarpani" placeholder="1.0">
+            </div>
+            <div class="form-group">
+              <label for="kdvOrani">KDV Oranı</label>
+              <input type="number" step="0.1" id="kdvOrani" placeholder="20">
+            </div>
+            <div class="form-group">
+              <label for="dovizKuru">Döviz Kuru</label>
+              <input type="number" step="0.0001" id="dovizKuru">
+            </div>
+
+            <!-- Mesai Parametresi -->
+            <div class="form-group">
+              <label for="mesaiUygulaCheck">Mesai Uygulanır mı?</label>
+              <input type="checkbox" id="mesaiUygulaCheck">
+              <button type="button" id="mesaiSetupBtn" style="display:none;">Mesai Saatleri</button>
+            </div>
+
+            <!-- Gün Bazlı Çarpan Parametresi -->
+            <div class="form-group">
+              <label for="gunCarpaniCheck">Gün Bazlı Çarpan?</label>
+              <input type="checkbox" id="gunCarpaniCheck">
+              <button type="button" id="gunCarpaniSetupBtn" style="display:none;">Çarpan Detayları</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Hizmet Kalemleri -->
+      <div class="form-container">
+        <h2>Hizmet Kalemleri</h2>
+        <table id="hizmetTable">
+          <thead>
+            <tr>
+              <th>Hizmet Tipi</th>
+              <th>Birim</th>
+              <th>Temel Ücret</th>
+              <th>Carpan</th>
+              <th>Min Ücret</th>
+              <th>Sil</th>
+            </tr>
+          </thead>
+          <tbody id="hizmetTableBody"></tbody>
+        </table>
+        <button type="button" id="addHizmetBtn" class="btn-secondary">Hizmet Ekle</button>
+      </div>
+
+      <div class="form-actions" style="margin-top:1rem;">
+        <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
+        <button type="submit" class="btn-primary" form="contractForm" id="saveContractBtn">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========== MESAI MODAL =========== -->
+  <div class="modal" id="mesaiModal" style="display:none;">
+    <div class="modal-content">
+      <h3>Mesai Saatleri ve Ücretleri</h3>
+      <p>Örnek zaman dilimleri:</p>
+      <ul>
+        <li>Hafta İçi 08.01 - 16.59</li>
+        <li>Hafta İçi 17.00 - 19.00</li>
+        <li>Hafta Sonu 17.00 - 19.00</li>
+        <!-- ... -->
+      </ul>
+      <!-- Mesai alanları (liste veya tablo) -->
+      <div id="mesaiTimeRows"></div>
+
+      <button type="button" id="mesaiModalSaveBtn">Kaydet</button>
+      <button type="button" id="mesaiModalCancelBtn">İptal</button>
+    </div>
+  </div>
+
+  <!-- =========== GÜN ÇARPANI MODAL =========== -->
+  <!-- Add after mesai checkbox in Global Parameters section -->
+    <div class="form-group">
+    <label>Gün Çarpanı</label>
+    <div class="checkbox-with-button">
+      <input type="checkbox" id="gunCarpaniCheck" name="gunCarpaniCheck">
+      <button type="button" id="gunCarpaniSetupBtn" style="display: none;">Gün Çarpanı Ayarla</button>
+    </div>
+  </div>
+    <div>
+      <button type="button" id="gunCarpaniModalSaveBtn">Kaydet</button>
+      <button type="button" id="gunCarpaniModalCancelBtn">İptal</button>
+    </div>
+  </div>
+
+  <!-- =========== HİZMET EKLE MODAL =========== -->
+  <div class="modal" id="hizmetModal" style="display:none;">
+    <div class="modal-content">
+      <h3>Hizmet Ekle</h3>
+      <div class="form-group">
+        <label>Hizmet Tipi</label>
+        <input type="text" id="modalHizmetTipi">
+      </div>
+      <div class="form-group">
+        <label>Birim</label>
+        <select id="modalBirim"></select>
+      </div>
+      <div class="form-group">
+        <label>Temel Ücret</label>
+        <input type="number" step="0.01" id="modalTemelUcret">
+      </div>
+      <div class="form-group">
+        <label>Carpan</label>
+        <input type="number" step="0.001" id="modalCarpan">
+      </div>
+      <div class="form-group">
+        <label>Min Ücret</label>
+        <input type="number" step="0.01" id="modalMinUcret">
+      </div>
+
+      <button type="button" id="hizmetModalSaveBtn">Kaydet</button>
+      <button type="button" id="hizmetModalCancelBtn">İptal</button>
+    </div>
+  </div>
+
+  <script type="module" src="../js/template.js"></script>
+  <script type="module" src="../js/contract-form.js"></script>
+</body>
+</html>

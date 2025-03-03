@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Antrepo Şirket Listesi | Antrepo</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <!-- Font Awesome (ikonlar için) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header class="topbar">
+        <!-- Eğer template.js ile dolduruyorsanız, boş bırakabilirsiniz -->
+    </header>
+
+    <div class="main-container">
+        <nav class="sidebar">
+            <!-- template.js ile dolduruluyorsa, boş bırakın -->
+        </nav>
+
+        <div class="content">
+            <div class="page-header">
+                <h1>Antrepo Şirket Listesi</h1>
+                <button class="btn-primary" id="newCompanyBtn">
+                    <i class="fas fa-plus"></i> Yeni Şirket Ekle
+                </button>
+            </div>
+
+            <div class="card">
+                <table id="companyTable" class="display">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Şirket Adı</th>
+                            <th>Görünen İsim</th>
+                            <th>Telefon</th>
+                            <th>E-posta</th>
+                            <th>Şehir</th>
+                            <th>Oluşturulma</th>
+                            <th>Güncellenme</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- DataTables ve jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+    <!-- Ortak template.js -->
+    <script src="../js/template.js"></script>
+
+    <script src="../js/template.js"></script>
+    <script type="module" src="../js/company-list.js"></script>
+</body>
+</html>

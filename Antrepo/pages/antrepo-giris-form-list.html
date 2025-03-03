@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Antrepo Giriş Formları</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    /* Örnek: header-actions div’i sayfa başlığının sağ üstüne konumlandırılır */
+    .header-actions {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+    }
+    /* Ek sütun ekleme dropdown’unu stilize edin */
+    .dropdown-menu {
+      position: absolute;
+      top: 40px;
+      right: 20px;
+      background: #fff;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 10px;
+      z-index: 100;
+    }
+    .dropdown-menu label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js ile doldurulacak -->
+  </header>
+
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js ile doldurulacak -->
+    </nav>
+
+    <div class="content" style="position: relative;">
+      <div class="page-header">
+        <h1>Antrepo Giriş Formları</h1>
+        <div class="header-actions">
+          <button id="newEntryBtn" class="btn-primary">Yeni Antrepo Giriş Formu Oluştur</button>
+          <button id="addColumnBtn" class="btn-secondary">Sütun Ekle</button>
+          <div id="columnDropdown" class="dropdown-menu" style="display:none;">
+            <!-- Eklenmesini istediğiniz sütunların listesi (checkbox şeklinde) -->
+            <label><input type="checkbox" value="proforma_tarihi"> Proforma Tarihi</label>
+            <label><input type="checkbox" value="ticari_fatura_tarihi"> Ticari Fatura Tarihi</label>
+            <label><input type="checkbox" value="urun_birim_fiyat"> Ürün Birim Fiyat</label>
+            <label><input type="checkbox" value="para_birimi"> Para Birimi</label>
+            <button id="applyColumnsBtn" class="btn-primary">Ekle</button>
+            <div id="additionalFields"></div>
+
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <table id="entriesTable" class="datatable">
+          <thead>
+            <tr>
+              <th>Beyanname No</th>
+              <th>Beyanname Form Tarihi</th>
+              <th>Antrepo Adı</th>
+              <th>Antrepo Şirketi</th>
+              <th>Gümrük</th>
+              <th>Gönderici Şirket</th>
+              <th>Alıcı Şirket</th>
+              <th>Ürün Tanımı</th>
+              <th>Miktar</th>
+              <th>Kap Adeti</th>
+              <th>Antrepo Giriş Tarihi</th>
+              <th>Proforma No</th>
+              <th>Ticari Fatura No</th>
+              <th>Depolama Süresi</th>
+              <th>İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="entriesTableBody">
+            <!-- API'den çekilen veriler buraya gelecek -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Her sayfada olduğu gibi template.js çağrısını unutmayın! -->
+  <script src="../js/template.js"></script>
+  <!-- JS dosyanızı modül olarak çağırın -->
+  <script type="module" src="../js/antrepo-giris-form-list.js"></script>
+</body>
+</html>

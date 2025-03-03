@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Yeni Birim Ekle / Düzenle</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/unit.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js tarafından doldurulacak -->
+  </header>
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js tarafından doldurulacak -->
+    </nav>
+    <div class="content">
+      <div class="page-header">
+        <h1>Birim Formu</h1>
+      </div>
+      <div class="form-container">
+        <form id="unitForm">
+          <div class="form-group">
+            <label for="birimAdi">Birim Adı <span class="required">*</span></label>
+            <input type="text" id="birimAdi" placeholder="Örneğin: Kilogram" required>
+          </div>
+          <div class="form-group">
+            <label for="kategori">Kategori <span class="required">*</span></label>
+            <select id="kategori" required>
+              <option value="" disabled selected>Seçiniz</option>
+              <option value="Kütle">Kütle</option>
+              <option value="Miktar">Miktar</option>
+              <option value="Zaman">Zaman</option>
+              <option value="Hacim">Hacim</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="sembol">Sembol <span class="required">*</span></label>
+            <input type="text" id="sembol" placeholder="Örneğin: kg" required>
+          </div>
+          <div class="form-group">
+            <label for="kisaKod">Kısa Kod <span class="required">*</span></label>
+            <input type="text" id="kisaKod" placeholder="Örneğin: kg" required>
+          </div>
+          <div class="form-group">
+            <label for="durum">Durum</label>
+            <select id="durum">
+              <option value="Aktif" selected>Aktif</option>
+              <option value="Pasif">Pasif</option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
+            <button type="submit" class="btn-primary" id="saveUnitBtn">Kaydet</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- JS Dosyaları -->
+  <script type="module" src="../js/template.js"></script>
+  <script type="module" src="../js/unit-form.js"></script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Birimler Listesi</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <!-- Birimlere özel CSS dosyasını kullanabilirsiniz -->
+  <link rel="stylesheet" href="../css/unit.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js tarafından doldurulacak -->
+  </header>
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js tarafından doldurulacak -->
+    </nav>
+    <div class="content">
+      <div class="page-header">
+        <h1>Birimler</h1>
+        <button id="newUnitBtn" class="btn-primary">Yeni Birim Ekle</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Birim Adı</th>
+              <th>Kategori</th>
+              <th>Sembol</th>
+              <th>Kısa Kod</th>
+              <th>Durum</th>
+              <th>İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="unitTableBody">
+            <!-- unit-list.js tarafından doldurulacak -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- JS Dosyaları -->
+  <script type="module" src="../js/template.js"></script>
+  <script type="module" src="../js/unit-list.js"></script>
+</body>
+</html>

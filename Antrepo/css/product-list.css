@@ -1,0 +1,45 @@
+/* product-list.css */
+/* Ürünler sayfası (product-list.html) için özel stiller */
+
+/* .content.product-list veya benzeri bir kapsayıcı */
+.content.product-list {
+  /* Gerekirse ekstra padding/margin */
+}
+
+/* Tabloyu .card içine alıyorsanız, oradaki görünüm: */
+.product-list .card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--card-shadow);
+  margin-top: 1rem;
+}
+
+/* Tablo stili */
+.product-list table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1.5rem;
+}
+.product-list table thead th {
+  background: #f7f7f7;
+  padding: 1rem;
+  border-bottom: 2px solid var(--border-color);
+  text-align: left;
+  font-weight: 600;
+}
+.product-list table tbody td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+}
+.product-list table tbody tr:hover {
+  background: #f8f9fc;
+}
+.product-list table a {
+  color: #408dfb; /* veya var(--logo-color) */
+  text-decoration: none;
+  font-weight: 500;
+}
+.product-list table a:hover {
+  text-decoration: underline;
+}

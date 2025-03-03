@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Hizmetler</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <!-- template.js ile doldurulacak -->
+  </header>
+
+  <div class="main-container">
+    <nav class="sidebar">
+      <!-- template.js ile doldurulacak -->
+    </nav>
+
+    <div class="content">
+      <div class="page-header">
+        <h1>Hizmetler</h1>
+        <button id="newServiceBtn" class="btn-primary">Yeni Hizmet Ekle</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Hizmet Adı</th>
+              <th>Hizmet Kodu</th>
+              <th>Hizmet Tipi</th>
+              <th>Birim</th>
+              <th>Para Birimi</th>
+              <th>Temel Ücret</th>
+              <th>Min Ücret</th>
+              <th>Çarpan</th>
+              <th>Durum</th>
+              <th>İşlemler</th>
+            </tr>
+          </thead>
+          <tbody id="serviceTableBody">
+            <!-- hizmet-list.js tarafından doldurulacak -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="../js/template.js"></script>
+  <script type="module" src="../js/hizmet-list.js"></script>
+</body>
+</html>
