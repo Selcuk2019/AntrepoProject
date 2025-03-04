@@ -461,34 +461,35 @@ router.get('/antrepo-giris/:id', async (req, res) => {
   }
 });
 
-router.get('/antrepo-giris/:id/hareketler', async (req, res) => {
+router.get('/antrepo-giris/:girisId/hareketler', async (req, res) => {
   try {
-    const { id } = req.params;
+    const girisId = req.params.girisId;
     const sql = `
       SELECT 
-         id,
-         antrepo_giris_id,
-         islem_tarihi,
-         islem_tipi,
-         miktar,
-         kap_adeti,
-         brut_agirlik,
-         net_agirlik,
-         birim_id,
-         aciklama,
-         created_at,
-         updated_at
-      FROM antrepo_hareketleri
-      WHERE antrepo_giris_id = ?
-      ORDER BY islem_tarihi DESC
+        h.id,
+        h.antrepo_giris_id,
+        h.islem_tarihi,
+        h.islem_tipi,
+        h.miktar,
+        h.kap_adeti,
+        h.brut_agirlik,
+        h.net_agirlik,
+        h.birim_id,
+        h.aciklama,
+        b.birim_adi
+      FROM antrepo_hareketleri h
+      LEFT JOIN birimler b ON h.birim_id = b.id
+      WHERE h.antrepo_giris_id = ?
+      ORDER BY h.islem_tarihi DESC
     `;
-    const [rows] = await db.query(sql, [id]);
+    const [rows] = await db.query(sql, [girisId]);
     res.json(rows);
   } catch (error) {
-    console.error("GET /api/antrepo-giris/:id/hareketler hatası:", error);
+    console.error("GET /api/antrepo-giris/:girisId/hareketler hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // routes/api.js
 
@@ -757,153 +758,232 @@ router.get('/maliyet-analizi', async (req, res) => {
 });
 
 
-// GET /api/hesaplama-motoru/:girisId - Antrepo giriş formu bazlı hesaplama motoru
-router.get('/api/hesaplama-motoru/:girisId', async (req, res) => {
+router.get('/hesaplama-motoru/:girisId', async (req, res) => {
   try {
     const girisId = req.params.girisId;
 
-    // 1) Antrepo giriş verisini çek
+    // 1) Antrepo giriş verisini çekelim
     const sqlGiris = `
       SELECT 
         ag.id, 
         ag.beyanname_no, 
-        ag.beyanname_form_tarihi,
-        ag.miktar AS initialStock, -- Toplam stok (ör. ton cinsinden)
-        ag.kap_adeti,
         ag.antrepo_giris_tarihi,
-        ag.sozlesme_id,
-        u.name AS urun_adi,
-        u.code AS urun_kodu
+        ag.miktar AS initialStock,
+        ag.kap_adeti,
+        ag.urun_kodu,
+        ag.sozlesme_id
       FROM antrepo_giris ag
-      LEFT JOIN urunler u ON ag.urun_kodu = u.code
       WHERE ag.id = ?
     `;
     const [rowsGiris] = await db.query(sqlGiris, [girisId]);
-    if (!rowsGiris || rowsGiris.length === 0) {
+    if (rowsGiris.length === 0) {
       return res.status(404).json({ error: 'Antrepo girişi bulunamadı.' });
     }
-    const girisData = rowsGiris[0];
+    const antrepoGiris = rowsGiris[0];
 
-    // 2) İlgili sözleşmeyi çek (antrepo girişte belirtilen sözleşme_id üzerinden)
-    const sqlSozlesme = `SELECT * FROM sozlesmeler WHERE id = ?`;
-    const [rowsSozlesme] = await db.query(sqlSozlesme, [girisData.sozlesme_id]);
-    if (!rowsSozlesme || rowsSozlesme.length === 0) {
-      return res.status(404).json({ error: 'Sözleşme bulunamadı.' });
+    // 2) İlgili sözleşme bilgilerini çekelim (parametreler dahil)
+    let sozlesme = null;
+    if (antrepoGiris.sozlesme_id) {
+      const sqlSoz = `SELECT * FROM sozlesmeler WHERE id = ?`;
+      const [rowsSoz] = await db.query(sqlSoz, [antrepoGiris.sozlesme_id]);
+      sozlesme = rowsSoz[0] || null;
     }
-    const sozlesme = rowsSozlesme[0];
 
-    // 3) Sözleşmeye bağlı hizmet kalemlerini çek (örneğin, "ardiye" hizmeti)
-    const sqlHizmetler = `SELECT * FROM sozlesme_hizmetler WHERE sozlesme_id = ?`;
-    const [rowsHizmetler] = await db.query(sqlHizmetler, [girisData.sozlesme_id]);
+    // Sözleşme parametreleri
+    const kismiGunYontemi = sozlesme?.kismi_gun_yontemi || 'roundUp'; // veya 'ignore' vs.
+    const girisGunuKural  = sozlesme?.giris_gunu_kural  || 'dahil';
+    const haftaSonuCarpani = parseFloat(sozlesme?.hafta_sonu_carpani || 1.0);
+    const kdvOrani = parseFloat(sozlesme?.kdv_orani || 0); 
+    // Sözleşme para birimi / kur gibi alanları da isterseniz burada çekebilirsiniz.
 
-    // 4) Antrepo girişine ait çıkış hareketlerini çek (sadece "Çıkış" tipi)
-    const sqlCikislar = `
-      SELECT 
-        islem_tarihi, 
-        miktar, 
+    // 3) Giriş-Çıkış hareketlerini alalım
+    const sqlHareket = `
+      SELECT
+        id,
+        islem_tarihi,
         islem_tipi,
-        aciklama
+        miktar,
+        kap_adeti
       FROM antrepo_hareketleri
-      WHERE antrepo_giris_id = ? 
-        AND islem_tipi = 'Çıkış'
-      ORDER BY islem_tarihi
+      WHERE antrepo_giris_id = ?
+      ORDER BY islem_tarihi ASC
     `;
-    const [rowsCikislar] = await db.query(sqlCikislar, [girisId]);
+    const [rowsHareket] = await db.query(sqlHareket, [girisId]);
 
-    // --------------------------------------------------
-    // HESAPLAMA LOJİĞİ
-    // --------------------------------------------------
-    const MAX_DAYS = 30; // Örnek: 30 gün boyunca hesaplama yapılıyor
-    const entryDate = new Date(girisData.antrepo_giris_tarihi);
-    let currentStock = parseFloat(girisData.initialStock) || 0;
-    let cumulativeCost = 0;
-    const dailyBreakdown = [];
+    // 4) Ek hizmetleri alalım (antrepo_giris_hizmetler tablosundan)
+    const sqlEkHizmet = `
+      SELECT
+        id,
+        antrepo_giris_id,
+        hizmet_id,
+        para_birimi_id,
+        adet,
+        temel_ucret,
+        carpan,
+        toplam,
+        aciklama,
+        ek_hizmet_tarihi
+      FROM antrepo_giris_hizmetler
+      WHERE antrepo_giris_id = ?
+      ORDER BY ek_hizmet_tarihi ASC
+    `;
+    const [rowsEkHizmet] = await db.query(sqlEkHizmet, [girisId]);
 
-    // Çıkış hareketlerini gün bazında toplamak için bir harita (diffDays => toplam çıkış miktarı)
-    const cikisMap = {};
-    rowsCikislar.forEach(c => {
-      const diffDays = Math.floor(
-        (new Date(c.islem_tarihi) - entryDate) / (1000 * 60 * 60 * 24)
-      );
-      cikisMap[diffDays] = (cikisMap[diffDays] || 0) + parseFloat(c.miktar || 0);
+    // 5) Şimdi günlük iterasyon yapıp her günün ardiye + ek hizmet maliyetini hesaplayalım
+
+    // a) Tarih aralığı bulma: en erken giriş tarihi, en son çıkış tarihi veya bugüne kadar
+    //    (basit yöntem: startDate = antrepo_giris_tarihi, endDate = en son hareket veya sabit)
+    //    Gelişmiş yöntem: stok sıfırlanınca dur, vs.
+    const startDate = new Date(antrepoGiris.antrepo_giris_tarihi);
+    // End date: en son hareket tarihi bul:
+    let endDate = startDate;
+    if (rowsHareket.length > 0) {
+      const lastMovementDate = rowsHareket[rowsHareket.length - 1].islem_tarihi;
+      endDate = new Date(lastMovementDate);
+    }
+    // Stok sıfırlanana kadar (veya bugüne) yaklaşımı da yapılabilir.
+
+    // b) Kısmı fonksiyon: Belirli bir güne ait "Hafta sonu mu?" check'i
+    function isWeekend(d) {
+      const day = d.getDay(); // 0= Pazar, 6= Cumartesi
+      return (day === 0 || day === 6);
+    }
+
+    // c) Hareketleri gün cinsinden gruplayabiliriz:
+    //    basitçe bir Map -> { 'YYYY-MM-DD': { giris: X, cikis: Y } } ya da benzeri
+    const movementMap = {};
+    rowsHareket.forEach(h => {
+      const isoDate = h.islem_tarihi.toISOString().split('T')[0];
+      if (!movementMap[isoDate]) {
+        movementMap[isoDate] = { giris: 0, cikis: 0 };
+      }
+      if (h.islem_tipi === 'Giriş') {
+        movementMap[isoDate].giris += parseFloat(h.miktar || 0);
+      } else {
+        movementMap[isoDate].cikis += parseFloat(h.miktar || 0);
+      }
     });
 
-    // "Ardiye" hizmeti örneği (sözleşme_hizmetler içinden arıyoruz)
-    const ardiyeHizmet = rowsHizmetler.find(h => h.hizmet_tipi.toLowerCase() === 'ardiye');
+    // d) Ek Hizmetleri de benzer şekilde günlük bazda gruplayalım
+    const ekHizmetMap = {};
+    rowsEkHizmet.forEach(eh => {
+      if (!eh.ek_hizmet_tarihi) return;
+      const isoDate = eh.ek_hizmet_tarihi.toISOString().split('T')[0];
+      if (!ekHizmetMap[isoDate]) {
+        ekHizmetMap[isoDate] = [];
+      }
+      ekHizmetMap[isoDate].push(eh); 
+    });
 
-    // Günlük hesaplamayı başlat
-    for (let day = 0; day <= MAX_DAYS; day++) {
-      if (currentStock <= 0) break;
-      const thisDate = new Date(entryDate);
-      thisDate.setDate(thisDate.getDate() + day);
+    // e) Gün gün iterasyon:
+    //    Kod, "for" döngüsüyle startDate'ten endDate'e gidip her günü hesaplayabilir.
+    //    Stok sıfırlanınca durmak isterseniz, if (stock <= 0) break.
+    const dailyBreakdown = [];
+    let simStock = parseFloat(0);
 
-      // 1) Günlük Ardiye hesaplaması
-      let dailyArdiye = 0;
-      if (ardiyeHizmet) {
-        const temel = parseFloat(ardiyeHizmet.temel_ucret) || 0;
-        const carpan = parseFloat(ardiyeHizmet.carpan) || 0;
-        dailyArdiye = temel + carpan * currentStock;
-        if (ardiyeHizmet.min_ucret) {
-          dailyArdiye = Math.max(dailyArdiye, parseFloat(ardiyeHizmet.min_ucret));
+    // Dikkat: giris_gunu_kural = 'dahil' => ilk günden stok var kabul edilir.
+    //         'hariç' => ilk gün +1 shift gibi senaryolar olabilir.
+
+    // Giriş gününde stoğu initialStock yapsak mı, yoksa ilk 'Giriş' hareketine mi baksak?
+    // Burada basit yöntem: antrepo_giris_tarihi'nde "initialStock" devreye girer:
+    simStock = parseFloat(antrepoGiris.initialStock || 0);
+
+    // Tarih döngüsü
+    let currentDate = new Date(startDate);
+
+    // Kümülatif
+    let cumulative = 0;
+
+    while (currentDate <= endDate || simStock > 0) {
+      const isoDate = currentDate.toISOString().split('T')[0];
+
+      // Giriş-Çıkış
+      const dayMovement = movementMap[isoDate] || { giris: 0, cikis: 0 };
+
+      // "giris_gunu_kural" = 'hariç' ise, ilk gün ardiye = 0 gibi senaryolar eklenebilir.
+      // "kismi_gun_yontemi" = 'roundUp' => o gün çıkış olsa bile tam gün hesaplanır vs.
+      // Bu basit örnekte:
+      //  a) Giriş varsa sabah stoğa ekle
+      if (dayMovement.giris > 0) {
+        if (isoDate === antrepoGiris.antrepo_giris_tarihi && girisGunuKural === 'hariç') {
+          // Giriş günü hariçse, ardiye hesaplamasına bugünden saymamak isteyebilirsiniz
+          // Ama yine stoğa ekliyoruz ki bir sonraki günden itibaren ardiye oluşsun
         }
+        simStock += dayMovement.giris;
       }
 
-      // 2) Eğer gün için çıkış hareketi varsa hesaplama
-      let cikisMiktar = 0;
-      let indiBindi = 0;
-      let mesaiUcreti = 0;
-      if (cikisMap[day]) {
-        cikisMiktar = cikisMap[day];
-        // Örnek indiBindi oranı: 2 USD/ton
-        indiBindi = 2 * cikisMiktar;
-
-        // Örnek mesai hesaplaması: Hafta sonu ise mesai ücreti ekle (örnek 200 USD)
-        const dayOfWeek = thisDate.getDay(); // 0: Pazar, 6: Cumartesi
-        if (dayOfWeek === 0 || dayOfWeek === 6) {
-          mesaiUcreti = 200;
+      // b) Ardiye hesapla (sadece stok > 0 ise)
+      let dayArdiye = 0;
+      if (simStock > 0) {
+        let rawArdiye = 10 * simStock; // Örnek sabit ardiye formülü
+        // min ücret kontrolü
+        if (rawArdiye < 50) rawArdiye = 50; // minArdiye
+        // hafta sonu çarpanı
+        if (isWeekend(currentDate)) {
+          rawArdiye = rawArdiye * haftaSonuCarpani;
         }
-
-        // Stok düşürülür
-        currentStock -= cikisMiktar;
-        if (currentStock < 0) currentStock = 0;
+        dayArdiye = rawArdiye;
       }
 
-      // 3) Günlük toplam maliyet
-      const dailyTotal = dailyArdiye + indiBindi + mesaiUcreti;
-      cumulativeCost += dailyTotal;
+      // c) Ek Hizmet
+      let dayEkHizmetTotal = 0;
+      if (ekHizmetMap[isoDate]) {
+        ekHizmetMap[isoDate].forEach(eh => {
+          // tablo alanlarını kullanarak bir hesap yapabilirsiniz
+          // sabit 'toplam' kolonu varsa direkt eh.toplam'ı da alabilirsiniz
+          dayEkHizmetTotal += parseFloat(eh.toplam || 0);
+        });
+      }
 
-      // 4) Günlük detayları diziye ekle
+      // d) Günlük Toplam = ardiye + ek hizmet
+      let dayTotal = dayArdiye + dayEkHizmetTotal;
+
+      // e) stoktan çıkış
+      if (dayMovement.cikis > 0) {
+        // kismi_gun_yontemi = 'roundUp' => sabah tam gün ardiye aldık, sonra çıkış
+        simStock -= dayMovement.cikis;
+        if (simStock < 0) simStock = 0;
+      }
+
+      // Kümülatif
+      cumulative += dayTotal;
+
       dailyBreakdown.push({
-        dayIndex: day,
-        date: thisDate.toISOString().substring(0,10),
-        event: (cikisMiktar > 0) ? `Çıkış (${cikisMiktar} ton)` : 'Ardiye',
-        stockAfter: currentStock,
-        ardiye: dailyArdiye,
-        indiBindi: indiBindi,
-        mesai: mesaiUcreti,
-        dailyTotal: dailyTotal,
-        cumulativeTotal: cumulativeCost
+        date: isoDate,
+        dayArdiye: parseFloat(dayArdiye.toFixed(2)),
+        dayEkHizmet: parseFloat(dayEkHizmetTotal.toFixed(2)),
+        dayTotal: parseFloat(dayTotal.toFixed(2)),
+        cumulative: parseFloat(cumulative.toFixed(2)),
+        stockAfter: parseFloat(simStock.toFixed(2))
       });
+
+      // bir sonraki güne geç
+      currentDate.setDate(currentDate.getDate() + 1);
+
+      // stok sıfırlanınca isterseniz durabilirsiniz
+      if (simStock <= 0 && currentDate > endDate) {
+        break;
+      }
     }
 
-    // Sonuç verisini hazırla
-    const result = {
-      antrepoGiris: {
-        id: girisData.id,
-        beyanname_no: girisData.beyanname_no,
-        giris_tarihi: girisData.antrepo_giris_tarihi,
-        initialStock: girisData.initialStock,
-        urun_adi: girisData.urun_adi,
-        urun_kodu: girisData.urun_kodu
-      },
-      sozlesme: sozlesme,
-      dailyBreakdown,
-      finalCumulativeCost: cumulativeCost
-    };
+    // KDV dahil/dahil değil
+    const totalMaliyetKdvHaric = cumulative;
+    const kdvTutar = (totalMaliyetKdvHaric * (kdvOrani / 100));
+    const totalMaliyetKdvDahil = totalMaliyetKdvHaric + kdvTutar;
 
-    res.json(result);
+    // 6) Cevap
+    // Ekranda göstermek için antrepoGiris vb. verileri de geri dönüyoruz
+    res.json({
+      antrepoGiris,
+      sozlesme,
+      dailyBreakdown,
+      totalWithoutKdv: parseFloat(totalMaliyetKdvHaric.toFixed(2)),
+      kdvTutar: parseFloat(kdvTutar.toFixed(2)),
+      totalWithKdv: parseFloat(totalMaliyetKdvDahil.toFixed(2)),
+    });
+
   } catch (err) {
-    console.error("Hesaplama motoru hata:", err);
+    console.error("Hesaplama motoru hatası:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1240,51 +1320,16 @@ router.post('/sozlesmeler', async (req, res) => {
 });
 
 // routes/api.js (içinde) - POST /api/antrepo-giris
+// routes/api.js (örnek)
+// Antrepo giriş POST route
 router.post('/antrepo-giris', async (req, res) => {
   try {
-    const {
-      beyanname_form_tarihi,
-      beyanname_no,
-      antrepo_sirket_adi,
-      sozlesme_id,
-      gumruk,
-      antrepo_id,
-      antrepo_kodu,
-      adres,
-      sehir,
+    const payload = req.body;
 
-      // Ürün & Miktar
-      urun_tanimi,
-      urun_kodu,
-      paket_boyutu,
-      paketleme_tipi,
-      miktar,
-      kap_adeti,
-      brut_agirlik,
-      net_agirlik,
-      antrepo_giris_tarihi,
-
-      // Fatura & Depolama
-      gonderici_sirket,
-      alici_sirket,
-      proforma_no,
-      proforma_tarihi,
-      ticari_fatura_no,
-      ticari_fatura_tarihi,
-      depolama_suresi,
-      fatura_meblagi,
-      urun_birim_fiyat,
-      para_birimi,
-      fatura_aciklama
-    } = req.body;
-
-    if (!beyanname_form_tarihi || !antrepo_giris_tarihi) {
-      return res.status(400).json({ error: "Tarih alanları zorunludur." });
-    }
-
-    // Veritabanına kaydetmek istediğiniz tablo kolonlarıyla eşleştirin:
+    // Burada tablo alanları ile payload eşleşmesi yapalım
+    // Soru işareti sayısı -> param sayısı
     const sql = `
-      INSERT INTO antrepo_giris (
+      INSERT INTO antrepo_giris(
         beyanname_form_tarihi,
         beyanname_no,
         antrepo_sirket_adi,
@@ -1313,54 +1358,55 @@ router.post('/antrepo-giris', async (req, res) => {
         fatura_meblagi,
         urun_birim_fiyat,
         para_birimi,
-        fatura_aciklama,
-        created_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        fatura_aciklama
+      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     `;
-    const values = [
-      beyanname_form_tarihi || null,
-      beyanname_no || null,
-      antrepo_sirket_adi || null,
-      sozlesme_id || null,
-      gumruk || null,
-      antrepo_id || null,
-      antrepo_kodu || null,
-      adres || null,
-      sehir || null,
-      urun_tanimi || null,
-      urun_kodu || null,
-      paket_boyutu || null,
-      paketleme_tipi || null,
-      miktar || null,
-      kap_adeti || null,
-      brut_agirlik || null,
-      net_agirlik || null,
-      antrepo_giris_tarihi || null,
-      gonderici_sirket || null,
-      alici_sirket || null,
-      proforma_no || null,
-      proforma_tarihi || null,
-      ticari_fatura_no || null,
-      ticari_fatura_tarihi || null,
-      depolama_suresi || null,
-      fatura_meblagi || null,
-      urun_birim_fiyat || null,
-      para_birimi || null,
-      fatura_aciklama || null
+
+    const params = [
+      payload.beyanname_form_tarihi || null,
+      payload.beyanname_no || null,
+      payload.antrepo_sirket_adi || null,
+      payload.sozlesme_id || null,
+      payload.gumruk || null,
+      payload.antrepo_id || null, // tablo tipiniz int/bigint uyumlu olmalı
+      payload.antrepo_kodu || null,
+      payload.adres || null,
+      payload.sehir || null,
+      payload.urun_tanimi || null,
+      payload.urun_kodu || null,
+      payload.paket_boyutu || null,
+      payload.paketleme_tipi || null,
+      payload.miktar || null,
+      payload.kap_adeti || null,
+      payload.brut_agirlik || null,
+      payload.net_agirlik || null,
+      payload.antrepo_giris_tarihi || null,
+      payload.gonderici_sirket || null,
+      payload.alici_sirket || null,
+      payload.proforma_no || null,
+      payload.proforma_tarihi || null,
+      payload.ticari_fatura_no || null,
+      payload.ticari_fatura_tarihi || null,
+      payload.depolama_suresi || null,
+      payload.fatura_meblagi || null,
+      payload.urun_birim_fiyat || null,
+      payload.para_birimi || null,
+      payload.fatura_aciklama || null
     ];
 
-    const [result] = await db.query(sql, [
-      beyanname_form_tarihi,  // "YYYY-MM-DD"
-      antrepo_giris_tarihi
-     
-    ]);
-    res.json({ success: true, insertedId: result.insertId });
+    const [result] = await db.query(sql, params);
+
+    res.json({
+      success: true,
+      insertedId: result.insertId,
+      message: 'Antrepo giriş kaydı başarıyla eklendi.'
+    });
   } catch (error) {
     console.error("POST /api/antrepo-giris hatası:", error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: "Sunucu hatası: " + error.message });
   }
 });
+
 
 
 // POST /api/customs - Yeni gümrük ekleme
@@ -1391,22 +1437,12 @@ router.post('/customs', async (req, res) => {
   }
 });
 
-router.post('/antrepo-giris/:id/hareketler', async (req, res) => {
+router.post('/antrepo-giris/:girisId/hareketler', async (req, res) => {
   try {
-    const { id } = req.params;
-    const {
-      islem_tarihi,
-      islem_tipi,
-      miktar,
-      kap_adeti,
-      brut_agirlik,
-      net_agirlik,
-      birim_id,
-      aciklama
-    } = req.body;
-    
+    const girisId = req.params.girisId;
+    const body = req.body;
     const sql = `
-      INSERT INTO antrepo_hareketleri (
+      INSERT INTO antrepo_hareketleri(
         antrepo_giris_id,
         islem_tarihi,
         islem_tipi,
@@ -1415,25 +1451,29 @@ router.post('/antrepo-giris/:id/hareketler', async (req, res) => {
         brut_agirlik,
         net_agirlik,
         birim_id,
-        aciklama,
-        created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        aciklama
+      ) VALUES(?,?,?,?,?,?,?,?,?)
     `;
-    const values = [
-      id,
-      islem_tarihi,
-      islem_tipi,
-      miktar,
-      kap_adeti,
-      brut_agirlik,
-      net_agirlik,
-      birim_id,
-      aciklama
+    const params = [
+      girisId,
+      body.islem_tarihi,
+      body.islem_tipi,
+      body.miktar,
+      body.kap_adeti,
+      body.brut_agirlik,
+      body.net_agirlik,
+      body.birim_id,
+      body.aciklama
     ];
-    const [result] = await db.query(sql, values);
-    res.json({ success: true, insertedId: result.insertId });
+    const [result] = await db.query(sql, params);
+
+    res.json({
+      success: true,
+      insertedId: result.insertId,
+      message: 'Hareket kaydı başarıyla eklendi.'
+    });
   } catch (error) {
-    console.error("POST /api/antrepo-giris/:id/hareketler hatası:", error);
+    console.error("POST /api/antrepo-giris/:girisId/hareketler hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1927,16 +1967,16 @@ router.put('/api/contracts/:id', async (req, res) => {
 
 router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => {
   try {
-    const { hareketId } = req.params;
-    const sql = 'DELETE FROM antrepo_hareketleri WHERE id = ?';
-    const [result] = await db.query(sql, [hareketId]);
-    if (result.affectedRows > 0) {
-      res.json({ success: true });
-    } else {
-      res.status(404).json({ error: 'Hareket bulunamadı.' });
+    const girisId = req.params.girisId;
+    const hareketId = req.params.hareketId;
+    const sql = `DELETE FROM antrepo_hareketleri WHERE id = ? AND antrepo_giris_id = ?`;
+    const [result] = await db.query(sql, [hareketId, girisId]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Hareket bulunamadı.' });
     }
+    res.json({ success: true, message: 'Hareket kaydı silindi.' });
   } catch (error) {
-    console.error("DELETE /api/antrepo-giris/hareketler/:hareketId hatası:", error);
+    console.error("DELETE /:girisId/hareketler/:hareketId hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });

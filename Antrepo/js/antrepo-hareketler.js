@@ -1,15 +1,21 @@
-// File: ../js/antrepo-hareketler.js
-
+/************************************************************
+ * File: antrepo-hareketler.js
+ * İŞLEV:
+ *  - Belirli bir antrepo_giris kaydına ait giriş/çıkış hareketlerini listelemek
+ *  - Yeni Giriş hareketi eklemek (modalNewEntry)
+ *  - Yeni Çıkış hareketi eklemek (modalNewExit)
+ *  - Hareketi silmek
+ ************************************************************/
 import { baseUrl } from './config.js';
 
 document.addEventListener("DOMContentLoaded", () => {
   // URL'den ?id= parametresini alalım (hangi antrepo_giris kaydı?)
   const urlParams = new URLSearchParams(window.location.search);
   const girisId = urlParams.get("id");
-  
+
   // Hareketlerin listeleneceği tablo gövdesi
   const hareketTableBody = document.getElementById("giriscikisTableBody");
-  
+
   // Butonlar
   const newEntryBtn = document.getElementById("newEntryBtn");
   const newExitBtn = document.getElementById("newExitBtn");
@@ -24,9 +30,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const newExitForm = document.getElementById("newExitForm");
   const exitCancelBtn = document.getElementById("exitCancelBtn");
 
-  // 1) Hareketleri Listele
+  /************************************************************
+   * 1) Hareketleri Listele
+   ************************************************************/
   async function fetchHareketler() {
     try {
+      if (!girisId) {
+        console.warn("URL parametresinde 'id' bulunamadı!");
+        return;
+      }
       const resp = await fetch(`${baseUrl}/api/antrepo-giris/${girisId}/hareketler`);
       if (!resp.ok) throw new Error(`Hareket listesi hatası: ${resp.status}`);
       const data = await resp.json();
@@ -36,36 +48,47 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 2) Hareketleri Tabloya Yazdır
+  /************************************************************
+   * 2) Hareketleri Tabloya Yazdır
+   ************************************************************/
   function renderHareketler(list) {
     hareketTableBody.innerHTML = "";
     list.forEach(item => {
       const tr = document.createElement("tr");
 
+      // Tarih
       const tdTarih = document.createElement("td");
       tdTarih.textContent = item.islem_tarihi ? item.islem_tarihi.substring(0, 10) : "";
 
+      // İşlem tipi (Giriş/Çıkış)
       const tdTip = document.createElement("td");
       tdTip.textContent = item.islem_tipi;
 
+      // Miktar
       const tdMiktar = document.createElement("td");
       tdMiktar.textContent = item.miktar;
 
+      // Kap Adedi
       const tdKapAdeti = document.createElement("td");
       tdKapAdeti.textContent = item.kap_adeti || "-";
 
+      // Brüt Ağırlık
       const tdBrutAgirlik = document.createElement("td");
       tdBrutAgirlik.textContent = item.brut_agirlik || "-";
 
+      // Net Ağırlık
       const tdNetAgirlik = document.createElement("td");
       tdNetAgirlik.textContent = item.net_agirlik || "-";
 
+      // Birim
       const tdBirim = document.createElement("td");
       tdBirim.textContent = item.birim_adi || item.birim_id || "-";
 
+      // Açıklama
       const tdAciklama = document.createElement("td");
       tdAciklama.textContent = item.aciklama || "";
 
+      // İşlemler (silmek vs.)
       const tdActions = document.createElement("td");
       const deleteBtn = document.createElement("button");
       deleteBtn.textContent = "Sil";
@@ -85,12 +108,24 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       tdActions.appendChild(deleteBtn);
 
-      tr.append(tdTarih, tdTip, tdMiktar, tdKapAdeti, tdBrutAgirlik, tdNetAgirlik, tdBirim, tdAciklama, tdActions);
+      tr.append(
+        tdTarih,
+        tdTip,
+        tdMiktar,
+        tdKapAdeti,
+        tdBrutAgirlik,
+        tdNetAgirlik,
+        tdBirim,
+        tdAciklama,
+        tdActions
+      );
       hareketTableBody.appendChild(tr);
     });
   }
 
-  // 3) Yeni Giriş Ekle – Modal Açma
+  /************************************************************
+   * 3) Yeni Giriş Ekle – Modal Açma
+   ************************************************************/
   if (newEntryBtn) {
     newEntryBtn.addEventListener("click", () => {
       if (newEntryForm) {
@@ -102,7 +137,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 4) Yeni Giriş Modal İptal Butonu
+  /************************************************************
+   * 4) Yeni Giriş Modal İptal Butonu
+   ************************************************************/
   if (entryCancelBtn) {
     entryCancelBtn.addEventListener("click", () => {
       if (newEntryModal) {
@@ -114,13 +151,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 5) Yeni Giriş Modal Formu Submit İşlemi
-  if (newEntryForm) {
+  /************************************************************
+   * 5) Yeni Giriş Modal Formu Submit İşlemi
+   ************************************************************/
+  /*if (newEntryForm) {
     newEntryForm.addEventListener("submit", async (e) => {
       console.log("Giriş formu submit edildi");
       e.preventDefault(); // Form submit'i engelle
       e.stopPropagation(); // Event bubbling'i engelle
-      
+
       // Modal formundan değerleri alalım
       const entryTarih = document.getElementById("modalAntrepoGirisTarihi")?.value;
       const entryMiktar = document.getElementById("modalMiktar")?.value;
@@ -144,6 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // Gönderilecek JSON body
       const bodyData = {
         islem_tarihi: entryTarih,
         islem_tipi: "Giriş",
@@ -166,7 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!resp.ok) throw new Error(`Hata: ${resp.status}`);
         const result = await resp.json();
         console.log("Sunucu yanıtı:", result);
-        
+
         if (result.success) {
           alert("Giriş kaydı eklendi!");
           if (newEntryModal) {
@@ -184,9 +224,11 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Giriş ekleme hatası: " + error.message);
       }
     });
-  }
+  }*/
 
-  // 6) Yeni Çıkış Ekle – Modal Açma
+  /************************************************************
+   * 6) Yeni Çıkış Ekle – Modal Açma
+   ************************************************************/
   if (newExitBtn) {
     newExitBtn.addEventListener("click", () => {
       console.log("Çıkış modalı açılıyor");
@@ -199,7 +241,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 7) Yeni Çıkış Modal İptal Butonu
+  /************************************************************
+   * 7) Yeni Çıkış Modal İptal Butonu
+   ************************************************************/
   if (exitCancelBtn) {
     exitCancelBtn.addEventListener("click", () => {
       console.log("Çıkış modalı kapatılıyor");
@@ -212,20 +256,21 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // 8) Yeni Çıkış Modal Formu Submit İşlemi
+  /************************************************************
+   * 8) Yeni Çıkış Modal Formu Submit İşlemi
+   ************************************************************/
   if (newExitForm) {
     newExitForm.addEventListener("submit", async (e) => {
       console.log("Çıkış formu submit edildi");
       e.preventDefault(); // Form submit'i engelle
       e.stopPropagation(); // Event bubbling'i engelle
-      
-      // Modal formundaki temel çıkış alanları:
+
       const exitTarih = document.getElementById("modalExitTarih")?.value;
       const exitMiktar = document.getElementById("modalExitMiktar")?.value;
       const exitKapAdeti = document.getElementById("modalExitKapAdeti")?.value;
       const exitBrutAgirlik = document.getElementById("modalExitBrutAgirlik")?.value;
       const exitNetAgirlik = document.getElementById("modalExitNetAgirlik")?.value;
-      
+
       console.log("Form değerleri:", {
         exitTarih,
         exitMiktar,
@@ -239,8 +284,8 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Lütfen tarih ve miktar alanlarını doldurun!");
         return;
       }
-      
-      // Ek bilgiler (zorunlu alanlar)
+
+      // Ek alanlar
       const satProformaNo = document.getElementById("modalSatProformaNo")?.value;
       const satFaturaNo = document.getElementById("modalSatFaturaNo")?.value;
       const musteri = document.getElementById("modalMusteri")?.value;
@@ -248,22 +293,24 @@ document.addEventListener("DOMContentLoaded", () => {
       const nakliyeFirma = document.getElementById("modalNakliyeFirma")?.value;
       const aracPlaka = document.getElementById("modalAracPlaka")?.value;
       const teslimSekli = document.getElementById("modalTeslimSekli")?.value;
-      
-      // Opsiyonel: Mesai bilgileri
+
       const exitMesai = document.getElementById("modalExitMesai")?.value;
       const exitIsWeekend = document.getElementById("modalExitIsWeekend")?.value;
-      
-      // Ek bilgileri şık formatta birleştirelim:
-      const ekBilgi = 
+
+      // Açıklama birleştirme
+      const ekBilgi =
         `Satış Proforma No: ${satProformaNo || '-'}\n` +
         `Satış Fatura No: ${satFaturaNo || '-'}\n` +
         `Müşteri: ${musteri || '-'}\n` +
         `Teslim Yeri: ${teslimYeri || '-'}\n` +
         `Nakliye Firması: ${nakliyeFirma || '-'}\n` +
-        `Araç Plakası/Sırt Numarası: ${aracPlaka || '-'}\n` +
+        `Araç Plaka: ${aracPlaka || '-'}\n` +
         `Teslim Şekli: ${teslimSekli || '-'}`;
-        
-      const mesaiBilgi = exitMesai ? `\nMesai Süresi: ${exitMesai} dakika, Hafta Sonu: ${exitIsWeekend === "true" ? "Evet" : "Hayır"}` : "";
+
+      const mesaiBilgi = exitMesai
+        ? `\nMesai Süresi: ${exitMesai} dk, Hafta Sonu: ${exitIsWeekend === "true" ? "Evet" : "Hayır"}`
+        : "";
+
       const finalAciklama = ekBilgi + mesaiBilgi;
 
       const bodyData = {
@@ -288,7 +335,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!resp.ok) throw new Error(`Hata: ${resp.status}`);
         const result = await resp.json();
         console.log("Sunucu yanıtı:", result);
-        
+
         if (result.success) {
           alert("Çıkış kaydı eklendi!");
           if (newExitModal) {
@@ -308,6 +355,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Sayfa açıldığında hareketleri getir
+  // Sayfa yüklenince tabloyu dolduralım
   fetchHareketler();
 });

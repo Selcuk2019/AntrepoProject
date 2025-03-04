@@ -377,22 +377,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
   
-  /************************************************************
-   * 5) Datalist / Dropdown Doldurma Fonksiyonları (Tekrar)
-   ************************************************************/
-  // (Yukarıdaki fonksiyonlar yeterli; tekrarı kaldırabilirsiniz.)
-  
-  // Hepsini paralel çekiyoruz:
-  await Promise.all([
-    fetchSozlesmeler(),
-    fetchSirketler(),
-    fetchAntrepolar(),
-    fetchUrunler(),
-    fetchParaBirimleri(),
-    fetchAllHizmetler(),
-    fetchBirimler()
-  ]);
-  
   // Şimdi doldur:
   updateSozlesmeDatalist(allSozlesmeler);
   fillSirketDatalist();
@@ -533,7 +517,7 @@ document.addEventListener("DOMContentLoaded", async () => {
    ************************************************************/
   if (ekHizmetlerBtn) {
     ekHizmetlerBtn.addEventListener("click", () => {
-      populateModalHizmetParaBirimi();  // Para birimi dropdown'u doldur
+      populateModalHizmetParaBirimi();
       populateModalHizmetSelect(allHizmetler);
       clearEkHizmetModalFields();
       ekHizmetModal.style.display = "block";
@@ -960,67 +944,67 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   
   /************************************************************
-   * 11) Yeni Giriş Modal Formu Submit İşlemi
-   ************************************************************/
-  const newEntryForm = document.getElementById("newEntryForm");
-  const entryCancelBtn = document.getElementById("entryCancelBtn");
-  if (newEntryForm) {
-    newEntryForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-  
-      const entryTarih = document.getElementById("modalAntrepoGirisTarihi")?.value;
-      const entryMiktar = document.getElementById("modalMiktar")?.value;
-      const entryKapAdeti = document.getElementById("modalKapAdeti")?.value;
-      const entryBrut = document.getElementById("modalBrutAgirlik")?.value;
-      const entryNet = document.getElementById("modalNetAgirlik")?.value;
-      const entryAciklama = document.getElementById("modalAciklama")?.value;
-  
-      if (!entryTarih || !entryMiktar) {
-        alert("Lütfen tarih ve miktar alanlarını doldurun!");
-        return;
+ * Yeni Giriş Modal Formu (Tek event listener)
+ ************************************************************/
+const newEntryForm = document.getElementById("newEntryForm");
+const entryCancelBtn = document.getElementById("entryCancelBtn");
+
+if (newEntryForm) {
+  newEntryForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const entryTarih = document.getElementById("modalAntrepoGirisTarihi")?.value;
+    const entryMiktar = document.getElementById("modalMiktar")?.value;
+    // ... (diğer alanlar)
+
+    // Zorunlu alan kontrolü
+    if (!entryTarih || !entryMiktar) {
+      alert("Lütfen tarih ve miktar alanlarını doldurun!");
+      return;
+    }
+
+    const hareketPayload = {
+      islem_tarihi: entryTarih,
+      islem_tipi: "Giriş",
+      miktar: parseFloat(entryMiktar) || 0,
+      // ...
+      aciklama: "Yeni Giriş" // veya form alanından
+    };
+
+    try {
+      const resp = await fetch(`${baseUrl}/api/antrepo-giris/${activeGirisId}/hareketler`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hareketPayload)
+      });
+      if (!resp.ok) throw new Error(`Hata: ${resp.status}`);
+      const result = await resp.json();
+      if (result.success) {
+        alert("Yeni giriş eklendi!");
+        document.getElementById("newEntryModal").style.display = "none";
+        newEntryForm.reset();
+
+        // tabloyu güncellemek isterseniz:
+        // fetchHareketler(); // (Tek bir dosyada tanımlarsanız)
+      } else {
+        alert("Yeni giriş eklenemedi: " + JSON.stringify(result));
       }
-  
-      const hareketPayload = {
-        islem_tarihi: entryTarih,
-        islem_tipi: "Giriş",
-        miktar: parseFloat(entryMiktar) || 0,
-        kap_adeti: parseInt(entryKapAdeti) || 0,
-        brut_agirlik: parseFloat(entryBrut) || 0,
-        net_agirlik: parseFloat(entryNet) || 0,
-        birim_id: 1,
-        aciklama: entryAciklama || ""
-      };
-  
-      try {
-        const resp = await fetch(`${baseUrl}/api/antrepo-giris/${activeGirisId}/hareketler`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(hareketPayload)
-        });
-        if (!resp.ok) throw new Error(`Hata: ${resp.status}`);
-        const result = await resp.json();
-        if (result.success) {
-          alert("Yeni giriş hareketi eklendi!");
-          document.getElementById("newEntryModal").style.display = "none";
-          newEntryForm.reset();
-          // Tabloyu güncelle
-          fetchHareketler();
-        } else {
-          alert("Yeni giriş hareketi eklenemedi: " + JSON.stringify(result));
-        }
-      } catch (error) {
-        console.error("Yeni giriş hareketi eklenirken hata:", error);
-        alert("Hata: " + error.message);
-      }
-    });
-  }
-  if (entryCancelBtn) {
-    entryCancelBtn.addEventListener("click", () => {
-      document.getElementById("newEntryModal").style.display = "none";
-      newEntryForm.reset();
-    });
-  }
+    } catch (error) {
+      console.error("Yeni giriş eklenirken hata:", error);
+      alert("Hata: " + error.message);
+    }
+  });
+}
+
+// Modal kapatma
+if (entryCancelBtn) {
+  entryCancelBtn.addEventListener("click", () => {
+    document.getElementById("newEntryModal").style.display = "none";
+    newEntryForm.reset();
+  });
+}
+
   
   /************************************************************
    * 12) Yeni Çıkış Modal Formu Submit İşlemi
@@ -1089,7 +1073,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           alert("Yeni çıkış hareketi eklendi!");
           document.getElementById("newExitModal").style.display = "none";
           newExitForm.reset();
-          fetchHareketler();
+          //fetchHareketler(); // YORUMA ALINDI
         } else {
           alert("Yeni çıkış hareketi eklenemedi: " + JSON.stringify(result));
         }
@@ -1107,5 +1091,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   
   // Sayfa açıldığında hareketleri getir
-  fetchHareketler();
+  //fetchHareketler();
 });
