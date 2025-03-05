@@ -151,6 +151,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  
+
   /************************************************************
    * 5) Yeni Giriş Modal Formu Submit İşlemi
    ************************************************************/
@@ -259,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
   /************************************************************
    * 8) Yeni Çıkış Modal Formu Submit İşlemi
    ************************************************************/
-  if (newExitForm) {
+  /* if (newExitForm) {
     newExitForm.addEventListener("submit", async (e) => {
       console.log("Çıkış formu submit edildi");
       e.preventDefault(); // Form submit'i engelle
@@ -355,6 +357,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+
+
   // Sayfa yüklenince tabloyu dolduralım
-  fetchHareketler();
+  fetchHareketler(); */
 });

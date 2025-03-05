@@ -502,17 +502,17 @@ router.get('/antrepo-giris/:girisId/hareketler', async (req, res) => {
     const girisId = req.params.girisId;
     const sql = `
       SELECT 
-        h.id,
-        h.antrepo_giris_id,
-        h.islem_tarihi,
-        h.islem_tipi,
-        h.miktar,
-        h.kap_adeti,
-        h.brut_agirlik,
-        h.net_agirlik,
-        h.birim_id,
-        h.aciklama,
-        b.birim_adi
+      h.id,
+      h.antrepo_giris_id,
+      h.islem_tarihi,
+      h.islem_tipi,
+      h.miktar,
+      h.kap_adeti,
+      h.brut_agirlik,
+      h.net_agirlik,
+      h.birim_id,
+      b.birim_adi,
+      h.aciklama
       FROM antrepo_hareketleri h
       LEFT JOIN birimler b ON h.birim_id = b.id
       WHERE h.antrepo_giris_id = ?
@@ -525,6 +525,7 @@ router.get('/antrepo-giris/:girisId/hareketler', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 
 // routes/api.js
@@ -794,6 +795,7 @@ router.get('/maliyet-analizi', async (req, res) => {
 });
 
 
+// API Endpoint: /api/hesaplama-motoru/:girisId
 router.get('/hesaplama-motoru/:girisId', async (req, res) => {
   try {
     const girisId = req.params.girisId;
@@ -817,7 +819,7 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
     }
     const antrepoGiris = rowsGiris[0];
 
-    // 2) İlgili sözleşme bilgilerini çekelim (parametreler dahil)
+    // 2) İlgili sözleşme bilgilerini çekelim
     let sozlesme = null;
     if (antrepoGiris.sozlesme_id) {
       const sqlSoz = `SELECT * FROM sozlesmeler WHERE id = ?`;
@@ -825,11 +827,17 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
       sozlesme = rowsSoz[0] || null;
     }
 
-    // Sözleşme parametreleri
-    const kismiGunYontemi = sozlesme?.kismi_gun_yontemi || 'roundUp'; // örneğin 'roundUp'
-    const girisGunuKural  = sozlesme?.giris_gunu_kural  || 'dahil';
+    // Örnek sözleşme parametreleri; gerçek değerler sözleşmeden çekilecek
+    // Giriş Günü Hesaplama: "dahil" veya "hariç"
+    const girisGunuKural = sozlesme?.giris_gunu_kural || "dahil";
+    // Kısmi Gün Yöntemi: "roundUp" vs. "halfDay" gibi seçenekler (örnek: roundUp)
+    const kismiGunYontemi = sozlesme?.kismi_gun_yontemi || "roundUp";
+    // Hafta sonu çarpanı: örneğin 1.5
     const haftaSonuCarpani = parseFloat(sozlesme?.hafta_sonu_carpani || 1.0);
-    const kdvOrani = parseFloat(sozlesme?.kdv_orani || 0);
+    // Günlük ardiye oranı: sözleşmeden alınan değer, örneğin 0.5 USD/kg
+    const gunlukArdiyeOrani = parseFloat(sozlesme?.gunluk_ardiye_orani || 0.5);
+    // Minimum ardiye ücreti: örneğin 50 USD
+    const minArdiye = parseFloat(sozlesme?.min_ardiye || 50);
 
     // 3) Giriş-Çıkış hareketlerini alalım
     const sqlHareket = `
@@ -864,14 +872,14 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
     `;
     const [rowsEkHizmet] = await db.query(sqlEkHizmet, [girisId]);
 
-    // 5) Günlük hesaplama için tarih aralığını belirleyelim
+    // 5) Tarih aralığını belirleyelim:
     const startDate = new Date(antrepoGiris.antrepo_giris_tarihi);
     let endDate = startDate;
     if (rowsHareket.length > 0) {
       const lastMovementDate = rowsHareket[rowsHareket.length - 1].islem_tarihi;
       endDate = new Date(lastMovementDate);
     }
-    // Eğer endDate gelecekteyse; örneğin bugünün tarihiyle sınırlandırabilirsiniz:
+    // Eğer endDate bugünden büyükse, bugünü sınır alalım.
     const today = new Date();
     if (endDate > today) {
       endDate = today;
@@ -886,7 +894,7 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
       }
       if (h.islem_tipi === 'Giriş') {
         movementMap[isoDate].giris += parseFloat(h.miktar || 0);
-      } else {
+      } else if (h.islem_tipi === 'Çıkış') {
         movementMap[isoDate].cikis += parseFloat(h.miktar || 0);
       }
     });
@@ -902,44 +910,47 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
       ekHizmetMap[isoDate].push(eh);
     });
 
-    // 8) Günlük hesaplama döngüsü (sonsuz döngüye girmemesi için maxDays ile sınırlandırıyoruz)
+    // 8) Günlük hesaplama döngüsü: maxDays ile sınırlandırıyoruz
     const maxDays = 60;
-    let d = 0;
+    let dayCounter = 0;
     let cumulativeCost = 0;
     const dailyBreakdown = [];
+    // Başlangıç stoğu: yeni giriş formunda girilen değer (örneğin, 1000 kg)
     let simStock = parseFloat(antrepoGiris.initialStock || 0);
     let currentDate = new Date(startDate);
 
-    // Yardımcı: hafta sonu kontrolü
+    // Yardımcı: Hafta sonu kontrolü
     function isWeekend(date) {
-      const day = date.getDay(); // 0 = Pazar, 6 = Cumartesi
+      const day = date.getDay(); // 0: Pazar, 6: Cumartesi
       return (day === 0 || day === 6);
     }
 
-    while (d < maxDays && currentDate <= endDate && simStock > 0) {
+    while (dayCounter < maxDays && currentDate <= endDate && simStock > 0) {
       const isoDate = currentDate.toISOString().split('T')[0];
-      
-      // Günlük hareketleri al
       const dayMovement = movementMap[isoDate] || { giris: 0, cikis: 0 };
 
-      // Girişleri uygula
-      if (dayMovement.giris > 0) {
-        // Eğer giriş günü kuralı 'hariç' ise, bu gün için ardiye hesaplaması yapılmayabilir
-        simStock += dayMovement.giris;
-      }
-
-      // Ardiye hesaplama
+      // Eğer gün, antrepo giriş formundaki ilk gün ise ve "giriş günü kuralı" 'dahil' ise
+      // o gün stok zaten mevcut; aksi halde, "hariç" ise, ardiye hesaplanmaz.
       let dayArdiye = 0;
+      // Günlük ardiye hesaplaması:
       if (simStock > 0) {
-        let rawArdiye = 10 * simStock; // Örnek sabit ardiye formülü: 10 USD/ton
-        if (rawArdiye < 50) rawArdiye = 50; // min ücret kontrolü
-        if (isWeekend(currentDate)) {
-          rawArdiye *= haftaSonuCarpani;
+        let calculatedArdiye = gunlukArdiyeOrani * simStock;
+        if (calculatedArdiye < minArdiye) {
+          calculatedArdiye = minArdiye;
         }
-        dayArdiye = rawArdiye;
+        // Eğer gün hafta sonuysa, çarpanı uygula
+        if (isWeekend(currentDate)) {
+          calculatedArdiye *= haftaSonuCarpani;
+        }
+        // Eğer "giriş günü kuralı" 'hariç' ise, ilk gün ardiye hesaplanmaz (örnek olarak)
+        if (dayCounter === 0 && girisGunuKural.toLowerCase() === "hariç") {
+          dayArdiye = 0;
+        } else {
+          dayArdiye = calculatedArdiye;
+        }
       }
 
-      // Ek hizmet hesaplama
+      // Ek hizmet hesaplaması: o gün için tüm ek hizmetlerin toplamı
       let dayEkHizmetTotal = 0;
       if (ekHizmetMap[isoDate]) {
         ekHizmetMap[isoDate].forEach(eh => {
@@ -947,14 +958,21 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
         });
       }
 
-      // Günlük toplam hesaplama
+      // Günlük toplam = Ardiye + Ek hizmet
       const dayTotal = dayArdiye + dayEkHizmetTotal;
       cumulativeCost += dayTotal;
 
+      // Günlük stok güncellemesi: gün içindeki çıkışlar stoğu azaltır
+      simStock += dayMovement.giris; // O gün eklenen girişler
+      if (dayMovement.cikis > 0) {
+        simStock -= dayMovement.cikis;
+        if (simStock < 0) simStock = 0;
+      }
+
       dailyBreakdown.push({
-        dayIndex: d + 1,
+        dayIndex: dayCounter + 1,
         date: isoDate,
-        event: (dayMovement.cikis > 0) ? `Çıkış (${dayMovement.cikis} ton)` : 'Ardiye',
+        event: dayMovement.cikis > 0 ? `Çıkış (${dayMovement.cikis} kg)` : (dayCounter === 0 ? "Giriş" : "Ardiye"),
         dayArdiye: parseFloat(dayArdiye.toFixed(2)),
         dayEkHizmet: parseFloat(dayEkHizmetTotal.toFixed(2)),
         dayTotal: parseFloat(dayTotal.toFixed(2)),
@@ -962,24 +980,19 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
         stockAfter: parseFloat(simStock.toFixed(2))
       });
 
-      // Çıkışları uygula: gün içinde varsa stok düşürülsün
-      if (dayMovement.cikis > 0) {
-        simStock -= dayMovement.cikis;
-        if (simStock < 0) simStock = 0;
-      }
-
       // Bir sonraki güne geç
       currentDate.setDate(currentDate.getDate() + 1);
-      d++;
+      dayCounter++;
     }
 
-    // Toplam maliyet hesaplaması (dummy: sadece cumulativeCost)
+    // Toplam maliyet hesaplaması: kümülatif toplam (örneğin, stok 0 olduğu gün sonu)
     const totalCost = cumulativeCost;
     let unitCost = 0;
-    if (antrepoGiris.initialStock > 0) {
+    if (parseFloat(antrepoGiris.initialStock) > 0) {
       unitCost = totalCost / parseFloat(antrepoGiris.initialStock);
     }
 
+    // Sonuçları JSON olarak döndür
     res.json({
       antrepoGiris,
       sozlesme,
@@ -1442,46 +1455,41 @@ router.post('/customs', async (req, res) => {
   }
 });
 
+// /api/antrepo-giris/:id/hareketler (POST)
 router.post('/antrepo-giris/:girisId/hareketler', async (req, res) => {
   try {
     const girisId = req.params.girisId;
-    const body = req.body;
+    const { islem_tarihi, islem_tipi, miktar, kap_adeti, brut_agirlik, net_agirlik, birim_id, aciklama } = req.body;
+    
+    // Basit zorunlu alan kontrolü
+    if (!islem_tarihi || !miktar) {
+      return res.status(400).json({ error: "Zorunlu alanlar eksik" });
+    }
+    
     const sql = `
-      INSERT INTO antrepo_hareketleri(
-        antrepo_giris_id,
-        islem_tarihi,
-        islem_tipi,
-        miktar,
-        kap_adeti,
-        brut_agirlik,
-        net_agirlik,
-        birim_id,
-        aciklama
-      ) VALUES(?,?,?,?,?,?,?,?,?)
+      INSERT INTO antrepo_hareketleri
+      (antrepo_giris_id, islem_tarihi, islem_tipi, miktar, kap_adeti, brut_agirlik, net_agirlik, birim_id, aciklama)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    const params = [
-      girisId,
-      body.islem_tarihi,
-      body.islem_tipi,
-      body.miktar,
-      body.kap_adeti,
-      body.brut_agirlik,
-      body.net_agirlik,
-      body.birim_id,
-      body.aciklama
-    ];
-    const [result] = await db.query(sql, params);
-
-    res.json({
-      success: true,
-      insertedId: result.insertId,
-      message: 'Hareket kaydı başarıyla eklendi.'
-    });
+    const [result] = await db.query(sql, [
+      girisId, 
+      islem_tarihi, 
+      islem_tipi, 
+      miktar, 
+      kap_adeti || 0, 
+      brut_agirlik || 0, 
+      net_agirlik || 0, 
+      birim_id || 1, 
+      aciklama || ""
+    ]);
+    res.json({ success: true, insertedId: result.insertId });
   } catch (error) {
     console.error("POST /api/antrepo-giris/:girisId/hareketler hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 router.post('/api/sozlesme_hizmetler', async (req, res) => {
   const { sozlesme_id, hizmet_tipi, oran, birim, min_ucret, temel_ucret, carpan, ek_hesaplama_kosullari } = req.body;
