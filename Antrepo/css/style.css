@@ -1866,3 +1866,26 @@ table th, table td {
   border: 1px solid #ddd;
 }
 
+/* ...existing code... */
+
+/* Error Message Styles */
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 10px;
+  margin: 10px 0;
+  border-radius: 4px;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { 
+      opacity: 0; 
+      transform: translateY(-10px); 
+  }
+  to { 
+      opacity: 1; 
+      transform: translateY(0); 
+  }
+}

@@ -287,21 +287,57 @@ router.get('/sozlesmeler', async (req, res) => {
 });
 
 
-// GET /api/sozlesmeler/:id - Belirli sözleşmeyi getir
-// Belirli Sözleşmeyi Getiren Endpoint
+// routes/api.js
 router.get('/sozlesmeler/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await db.query('SELECT * FROM sozlesmeler WHERE id = ?', [id]);
-    if (rows.length > 0) {
-      res.json(rows[0]);
-    } else {
-      res.status(404).json({ error: 'Sözleşme bulunamadı.' });
+    // 1) Sözleşme ana kaydını al
+    const [contractRows] = await db.query('SELECT * FROM sozlesmeler WHERE id = ?', [id]);
+    if (contractRows.length === 0) {
+      return res.status(404).json({ error: 'Sözleşme bulunamadı.' });
     }
+    const contract = contractRows[0];
+
+    // 2) sozlesme_hizmetleri tablosundan bu sözleşmeye ait hizmetleri al
+    const [hizmetRows] = await db.query(`
+      SELECT 
+        id,
+        sozlesme_id,
+        hizmet_tipi,
+        oran,
+        birim,
+        min_ucret,
+        temel_ucret,
+        carpan,
+        ek_hesaplama_kosullari
+      FROM sozlesme_hizmetler
+      WHERE sozlesme_id = ?
+    `, [id]);
+    contract.hizmetler = hizmetRows;
+
+    // 3) gun_carpan_parametreleri tablosundan bu sözleşmeye ait gün çarpanı parametrelerini al
+    const [gunCarpanRows] = await db.query(`
+      SELECT 
+        start_day AS startDay,
+        end_day AS endDay,
+        base_fee AS baseFee,
+        per_kg_rate AS perKgRate,
+        cargo_type AS cargoType,
+        para_birimi AS paraBirimi
+      FROM gun_carpan_parametreleri
+      WHERE sozlesme_id = ?
+    `, [id]);
+    contract.gun_carpan_parametreleri = gunCarpanRows;
+
+    // Eğer başka parametreler (ör. mesai saat ücretleri) da varsa, onlar da eklenebilir
+
+    res.json(contract);
   } catch (error) {
+    console.error("GET /sozlesmeler/:id hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // GET /api/sozlesmeler/:id/hizmetler - Belirli sözleşmenin hizmet kalemlerini getir
 router.get('/api/sozlesmeler/:id/hizmetler', async (req, res) => {
@@ -790,11 +826,10 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
     }
 
     // Sözleşme parametreleri
-    const kismiGunYontemi = sozlesme?.kismi_gun_yontemi || 'roundUp'; // veya 'ignore' vs.
+    const kismiGunYontemi = sozlesme?.kismi_gun_yontemi || 'roundUp'; // örneğin 'roundUp'
     const girisGunuKural  = sozlesme?.giris_gunu_kural  || 'dahil';
     const haftaSonuCarpani = parseFloat(sozlesme?.hafta_sonu_carpani || 1.0);
-    const kdvOrani = parseFloat(sozlesme?.kdv_orani || 0); 
-    // Sözleşme para birimi / kur gibi alanları da isterseniz burada çekebilirsiniz.
+    const kdvOrani = parseFloat(sozlesme?.kdv_orani || 0);
 
     // 3) Giriş-Çıkış hareketlerini alalım
     const sqlHareket = `
@@ -829,31 +864,23 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
     `;
     const [rowsEkHizmet] = await db.query(sqlEkHizmet, [girisId]);
 
-    // 5) Şimdi günlük iterasyon yapıp her günün ardiye + ek hizmet maliyetini hesaplayalım
-
-    // a) Tarih aralığı bulma: en erken giriş tarihi, en son çıkış tarihi veya bugüne kadar
-    //    (basit yöntem: startDate = antrepo_giris_tarihi, endDate = en son hareket veya sabit)
-    //    Gelişmiş yöntem: stok sıfırlanınca dur, vs.
+    // 5) Günlük hesaplama için tarih aralığını belirleyelim
     const startDate = new Date(antrepoGiris.antrepo_giris_tarihi);
-    // End date: en son hareket tarihi bul:
     let endDate = startDate;
     if (rowsHareket.length > 0) {
       const lastMovementDate = rowsHareket[rowsHareket.length - 1].islem_tarihi;
       endDate = new Date(lastMovementDate);
     }
-    // Stok sıfırlanana kadar (veya bugüne) yaklaşımı da yapılabilir.
-
-    // b) Kısmı fonksiyon: Belirli bir güne ait "Hafta sonu mu?" check'i
-    function isWeekend(d) {
-      const day = d.getDay(); // 0= Pazar, 6= Cumartesi
-      return (day === 0 || day === 6);
+    // Eğer endDate gelecekteyse; örneğin bugünün tarihiyle sınırlandırabilirsiniz:
+    const today = new Date();
+    if (endDate > today) {
+      endDate = today;
     }
 
-    // c) Hareketleri gün cinsinden gruplayabiliriz:
-    //    basitçe bir Map -> { 'YYYY-MM-DD': { giris: X, cikis: Y } } ya da benzeri
+    // 6) Hareketleri gün bazında gruplama
     const movementMap = {};
     rowsHareket.forEach(h => {
-      const isoDate = h.islem_tarihi.toISOString().split('T')[0];
+      const isoDate = new Date(h.islem_tarihi).toISOString().split('T')[0];
       if (!movementMap[isoDate]) {
         movementMap[isoDate] = { giris: 0, cikis: 0 };
       }
@@ -864,130 +891,108 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
       }
     });
 
-    // d) Ek Hizmetleri de benzer şekilde günlük bazda gruplayalım
+    // 7) Ek hizmetleri gün bazında gruplama
     const ekHizmetMap = {};
     rowsEkHizmet.forEach(eh => {
       if (!eh.ek_hizmet_tarihi) return;
-      const isoDate = eh.ek_hizmet_tarihi.toISOString().split('T')[0];
+      const isoDate = new Date(eh.ek_hizmet_tarihi).toISOString().split('T')[0];
       if (!ekHizmetMap[isoDate]) {
         ekHizmetMap[isoDate] = [];
       }
-      ekHizmetMap[isoDate].push(eh); 
+      ekHizmetMap[isoDate].push(eh);
     });
 
-    // e) Gün gün iterasyon:
-    //    Kod, "for" döngüsüyle startDate'ten endDate'e gidip her günü hesaplayabilir.
-    //    Stok sıfırlanınca durmak isterseniz, if (stock <= 0) break.
+    // 8) Günlük hesaplama döngüsü (sonsuz döngüye girmemesi için maxDays ile sınırlandırıyoruz)
+    const maxDays = 60;
+    let d = 0;
+    let cumulativeCost = 0;
     const dailyBreakdown = [];
-    let simStock = parseFloat(0);
-
-    // Dikkat: giris_gunu_kural = 'dahil' => ilk günden stok var kabul edilir.
-    //         'hariç' => ilk gün +1 shift gibi senaryolar olabilir.
-
-    // Giriş gününde stoğu initialStock yapsak mı, yoksa ilk 'Giriş' hareketine mi baksak?
-    // Burada basit yöntem: antrepo_giris_tarihi'nde "initialStock" devreye girer:
-    simStock = parseFloat(antrepoGiris.initialStock || 0);
-
-    // Tarih döngüsü
+    let simStock = parseFloat(antrepoGiris.initialStock || 0);
     let currentDate = new Date(startDate);
 
-    // Kümülatif
-    let cumulative = 0;
+    // Yardımcı: hafta sonu kontrolü
+    function isWeekend(date) {
+      const day = date.getDay(); // 0 = Pazar, 6 = Cumartesi
+      return (day === 0 || day === 6);
+    }
 
-    while (currentDate <= endDate || simStock > 0) {
+    while (d < maxDays && currentDate <= endDate && simStock > 0) {
       const isoDate = currentDate.toISOString().split('T')[0];
-
-      // Giriş-Çıkış
+      
+      // Günlük hareketleri al
       const dayMovement = movementMap[isoDate] || { giris: 0, cikis: 0 };
 
-      // "giris_gunu_kural" = 'hariç' ise, ilk gün ardiye = 0 gibi senaryolar eklenebilir.
-      // "kismi_gun_yontemi" = 'roundUp' => o gün çıkış olsa bile tam gün hesaplanır vs.
-      // Bu basit örnekte:
-      //  a) Giriş varsa sabah stoğa ekle
+      // Girişleri uygula
       if (dayMovement.giris > 0) {
-        if (isoDate === antrepoGiris.antrepo_giris_tarihi && girisGunuKural === 'hariç') {
-          // Giriş günü hariçse, ardiye hesaplamasına bugünden saymamak isteyebilirsiniz
-          // Ama yine stoğa ekliyoruz ki bir sonraki günden itibaren ardiye oluşsun
-        }
+        // Eğer giriş günü kuralı 'hariç' ise, bu gün için ardiye hesaplaması yapılmayabilir
         simStock += dayMovement.giris;
       }
 
-      // b) Ardiye hesapla (sadece stok > 0 ise)
+      // Ardiye hesaplama
       let dayArdiye = 0;
       if (simStock > 0) {
-        let rawArdiye = 10 * simStock; // Örnek sabit ardiye formülü
-        // min ücret kontrolü
-        if (rawArdiye < 50) rawArdiye = 50; // minArdiye
-        // hafta sonu çarpanı
+        let rawArdiye = 10 * simStock; // Örnek sabit ardiye formülü: 10 USD/ton
+        if (rawArdiye < 50) rawArdiye = 50; // min ücret kontrolü
         if (isWeekend(currentDate)) {
-          rawArdiye = rawArdiye * haftaSonuCarpani;
+          rawArdiye *= haftaSonuCarpani;
         }
         dayArdiye = rawArdiye;
       }
 
-      // c) Ek Hizmet
+      // Ek hizmet hesaplama
       let dayEkHizmetTotal = 0;
       if (ekHizmetMap[isoDate]) {
         ekHizmetMap[isoDate].forEach(eh => {
-          // tablo alanlarını kullanarak bir hesap yapabilirsiniz
-          // sabit 'toplam' kolonu varsa direkt eh.toplam'ı da alabilirsiniz
           dayEkHizmetTotal += parseFloat(eh.toplam || 0);
         });
       }
 
-      // d) Günlük Toplam = ardiye + ek hizmet
-      let dayTotal = dayArdiye + dayEkHizmetTotal;
+      // Günlük toplam hesaplama
+      const dayTotal = dayArdiye + dayEkHizmetTotal;
+      cumulativeCost += dayTotal;
 
-      // e) stoktan çıkış
+      dailyBreakdown.push({
+        dayIndex: d + 1,
+        date: isoDate,
+        event: (dayMovement.cikis > 0) ? `Çıkış (${dayMovement.cikis} ton)` : 'Ardiye',
+        dayArdiye: parseFloat(dayArdiye.toFixed(2)),
+        dayEkHizmet: parseFloat(dayEkHizmetTotal.toFixed(2)),
+        dayTotal: parseFloat(dayTotal.toFixed(2)),
+        cumulative: parseFloat(cumulativeCost.toFixed(2)),
+        stockAfter: parseFloat(simStock.toFixed(2))
+      });
+
+      // Çıkışları uygula: gün içinde varsa stok düşürülsün
       if (dayMovement.cikis > 0) {
-        // kismi_gun_yontemi = 'roundUp' => sabah tam gün ardiye aldık, sonra çıkış
         simStock -= dayMovement.cikis;
         if (simStock < 0) simStock = 0;
       }
 
-      // Kümülatif
-      cumulative += dayTotal;
-
-      dailyBreakdown.push({
-        date: isoDate,
-        dayArdiye: parseFloat(dayArdiye.toFixed(2)),
-        dayEkHizmet: parseFloat(dayEkHizmetTotal.toFixed(2)),
-        dayTotal: parseFloat(dayTotal.toFixed(2)),
-        cumulative: parseFloat(cumulative.toFixed(2)),
-        stockAfter: parseFloat(simStock.toFixed(2))
-      });
-
-      // bir sonraki güne geç
+      // Bir sonraki güne geç
       currentDate.setDate(currentDate.getDate() + 1);
-
-      // stok sıfırlanınca isterseniz durabilirsiniz
-      if (simStock <= 0 && currentDate > endDate) {
-        break;
-      }
+      d++;
     }
 
-    // KDV dahil/dahil değil
-    const totalMaliyetKdvHaric = cumulative;
-    const kdvTutar = (totalMaliyetKdvHaric * (kdvOrani / 100));
-    const totalMaliyetKdvDahil = totalMaliyetKdvHaric + kdvTutar;
+    // Toplam maliyet hesaplaması (dummy: sadece cumulativeCost)
+    const totalCost = cumulativeCost;
+    let unitCost = 0;
+    if (antrepoGiris.initialStock > 0) {
+      unitCost = totalCost / parseFloat(antrepoGiris.initialStock);
+    }
 
-    // 6) Cevap
-    // Ekranda göstermek için antrepoGiris vb. verileri de geri dönüyoruz
     res.json({
       antrepoGiris,
       sozlesme,
       dailyBreakdown,
-      totalWithoutKdv: parseFloat(totalMaliyetKdvHaric.toFixed(2)),
-      kdvTutar: parseFloat(kdvTutar.toFixed(2)),
-      totalWithKdv: parseFloat(totalMaliyetKdvDahil.toFixed(2)),
+      totalCost: parseFloat(totalCost.toFixed(2)),
+      unitCostImpact: parseFloat(unitCost.toFixed(2))
     });
 
-  } catch (err) {
-    console.error("Hesaplama motoru hatası:", err);
-    res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error("Hesaplama motoru hatası:", error);
+    res.status(500).json({ error: error.message });
   }
 });
-
 
 // Örnek: routes/api.js
 
@@ -1761,8 +1766,10 @@ router.put('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => 
 // ============== 2) SÖZLEŞME GÜNCELLEME (PUT) ==============
 router.put('/sozlesmeler/:id', async (req, res) => {
   const { id } = req.params;
-  const { sozlesme, hizmetler } = req.body;
+  // Payload'da sözleşme, hizmetler ve gun_carpan_parametreleri ayrı gönderiliyor.
+  const { sozlesme, hizmetler, gun_carpan_parametreleri, ek_hizmet_parametreleri } = req.body;
 
+  // Temel kontroller
   if (!sozlesme || !sozlesme.sozlesme_adi) {
     return res.status(400).json({ error: "Sözleşme adı zorunludur." });
   }
@@ -1774,13 +1781,7 @@ router.put('/sozlesmeler/:id', async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const ekHizmetJSON = sozlesme.ek_hizmet_parametreleri
-      ? JSON.stringify(sozlesme.ek_hizmet_parametreleri)
-      : null;
-    const gunCarpanJSON = sozlesme.gun_carpan_parametreleri
-      ? JSON.stringify(sozlesme.gun_carpan_parametreleri)
-      : null;
-
+    // 1) Sözleşme ana kaydını güncelle (gun_carpan_parametreleri ve ek_hizmet_parametreleri JSON sütunu kullanmıyoruz)
     const sqlSozlesme = `
       UPDATE sozlesmeler
       SET
@@ -1797,8 +1798,6 @@ router.put('/sozlesmeler/:id', async (req, res) => {
         hafta_sonu_carpani = ?,
         kdv_orani = ?,
         doviz_kuru = ?,
-        ek_hizmet_parametreleri = ?,
-        gun_carpan_parametreleri = ?,
         guncellenme_tarihi = NOW()
       WHERE id = ?
     `;
@@ -1816,17 +1815,15 @@ router.put('/sozlesmeler/:id', async (req, res) => {
       sozlesme.hafta_sonu_carpani || 1,
       sozlesme.kdv_orani || 20,
       sozlesme.doviz_kuru || null,
-      ekHizmetJSON,
-      gunCarpanJSON,
       id
     ];
-
     const [resultSozlesme] = await conn.query(sqlSozlesme, valsSoz);
     if (resultSozlesme.affectedRows === 0) {
       throw new Error("Sözleşme bulunamadı.");
     }
 
-    // Hizmet kalemleri -> önce sil, sonra yeniden ekle
+    // 2) Hizmet kalemlerini güncelle
+    // Önce eski hizmet kayıtlarını sil
     await conn.query('DELETE FROM sozlesme_hizmetler WHERE sozlesme_id = ?', [id]);
     if (Array.isArray(hizmetler) && hizmetler.length > 0) {
       for (const h of hizmetler) {
@@ -1847,6 +1844,40 @@ router.put('/sozlesmeler/:id', async (req, res) => {
       }
     }
 
+    // 3) Gün Çarpanı Parametreleri işlemleri:
+    // Öncelikle, gun_carpan_parametreleri tablosunda bu sözleşmeye ait mevcut kayıtları silin
+    await conn.query('DELETE FROM gun_carpan_parametreleri WHERE sozlesme_id = ?', [id]);
+    if (Array.isArray(gun_carpan_parametreleri) && gun_carpan_parametreleri.length > 0) {
+      for (const gc of gun_carpan_parametreleri) {
+        const sqlGunCarpan = `
+          INSERT INTO gun_carpan_parametreleri 
+            (sozlesme_id, start_day, end_day, base_fee, per_kg_rate, cargo_type, para_birimi, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+        `;
+        const valsGunCarpan = [
+          id,
+          gc.startDay,
+          gc.endDay || null,
+          gc.baseFee,
+          gc.perKgRate,
+          gc.cargoType || "Genel Kargo",
+          gc.paraBirimi || "USD"
+        ];
+        await conn.query(sqlGunCarpan, valsGunCarpan);
+      }
+    } else {
+      // Eğer gun_carpan_parametreleri boş ise, isteğe bağlı olarak hata dönebilirsiniz:
+      // return res.status(400).json({ error: "Gün Çarpanı Parametreleri doldurulmalıdır!" });
+    }
+
+    // 4) Ek Hizmet Parametreleri:
+    // Eğer ek hizmet parametreleri için ayrı bir tablo yoksa, bu alanı JSON olarak saklayabilirsiniz.
+    // Aksi halde, benzer şekilde DELETE-INSERT yapabilirsiniz. Bu örnekte JSON olarak saklıyoruz.
+    const ekHizmetJSON = ek_hizmet_parametreleri
+      ? JSON.stringify(ek_hizmet_parametreleri)
+      : null;
+    await conn.query('UPDATE sozlesmeler SET ek_hizmet_parametreleri = ? WHERE id = ?', [ekHizmetJSON, id]);
+
     await conn.commit();
     conn.release();
     res.json({ success: true });
@@ -1856,6 +1887,7 @@ router.put('/sozlesmeler/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // ============== 3) HİZMET EKLEME (POST) ==============
 router.post('/hizmetler', async (req, res) => {
@@ -2087,20 +2119,35 @@ router.delete('/para-birimleri/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/sozlesmeler/:id
 router.delete('/sozlesmeler/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [result] = await db.query('DELETE FROM sozlesmeler WHERE id = ?', [id]);
+    const conn = await db.getConnection();
+    await conn.beginTransaction();
+
+    // 1) Gun çarpanı parametrelerini sil
+    await conn.query('DELETE FROM gun_carpan_parametreleri WHERE sozlesme_id = ?', [id]);
+
+    // 2) Sözleşme hizmet kalemlerini sil (sozlesme_hizmetler tablosu)
+    await conn.query('DELETE FROM sozlesme_hizmetler WHERE sozlesme_id = ?', [id]);
+
+    // 3) Ana sözleşme kaydını sil
+    const [result] = await conn.query('DELETE FROM sozlesmeler WHERE id = ?', [id]);
+
     if (result.affectedRows > 0) {
+      await conn.commit();
+      conn.release();
       res.json({ success: true });
     } else {
+      await conn.rollback();
+      conn.release();
       res.status(404).json({ error: 'Sözleşme bulunamadı.' });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => {
   try {

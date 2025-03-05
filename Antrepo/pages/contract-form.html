@@ -189,15 +189,28 @@
             </div>
 
             <!-- Gün Çarpanı Parametreleri -->
-            <div class="form-group" style="margin-top:1rem;">
-              <button type="button" class="btn-secondary" id="openGunCarpanModalBtn">
-                Gün Çarpanı Parametreleri
+            <div style="margin-bottom: 1rem;">
+              <p style="color: red;">
+                *Gün Çarpan Parametrelerinin doldurulması zorunludur.
+              </p>
+            
+              <!-- Birinci buton -->
+              <button
+                type="button"
+                id="openGunCarpanModalBtn"
+                class="btn btn-primary"
+                style="display: block; width: 100%; margin-bottom: 0.5rem;"
+              >
+                Gün Çarpanı Parametreleri Ekle
               </button>
-            </div>
-
-            <!-- Mesai Saat Ücretleri -->
-            <div class="form-group">
-              <button type="button" class="btn-secondary" id="openMesaiModalBtn">
+            
+              <!-- İkinci buton (Aynı sınıf, aynı stil) -->
+              <button
+                type="button"
+                id="openMesaiModalBtn"
+                class="btn btn-primary"
+                style="display: block; width: 100%;"
+              >
                 Mesai Saat Ücretlerini Ekle
               </button>
             </div>
@@ -238,9 +251,16 @@
   </div>
 
   <!-- ========== GÜN ÇARPANI MODAL ========== -->
-  <div class="modal" id="gunCarpanModal">
+  <div class="modal" id="gunCarpanModal" style="display: none;">
     <div class="modal-content">
+      <!-- Kapatma ikonu veya butonu isterseniz:
+      <span class="close" id="gunCarpanCloseBtn">&times;</span> -->
+  
       <h2>Gün Çarpanı Parametreleri</h2>
+      <p style="color: red; font-weight: bold;">
+        *Bu alanın doldurulması zorunludur.
+      </p>
+  
       <table class="datatable" id="gunCarpanTable">
         <thead>
           <tr>
@@ -255,15 +275,19 @@
         </thead>
         <tbody id="gunCarpanTbody"></tbody>
       </table>
-      <button type="button" id="addGunCarpanRowBtn" class="btn-secondary" style="margin-top:0.5rem;">+ Ekle</button>
-      <div class="modal-actions">
-        <!-- Kapat butonu değişiklikleri kaydetmeden pencereyi kapatacak -->
+  
+      <button type="button" id="addGunCarpanRowBtn" class="btn-secondary" style="margin-top: 0.5rem;">
+        + Ekle
+      </button>
+  
+      <!-- Modal’ın alt tarafındaki aksiyon butonları -->
+      <div class="modal-actions" style="margin-top: 1rem;">
         <button type="button" id="gunCarpanCloseBtn" class="btn-secondary">Kapat</button>
-        <!-- Kaydet butonu eklendi -->
         <button type="button" id="gunCarpanSaveBtn" class="btn-primary">Kaydet</button>
       </div>
     </div>
   </div>
+  
 
   <!-- ========== MESAI SAAT ÜCRETLERİ MODAL ========== -->
   <div class="modal" id="mesaiModal">

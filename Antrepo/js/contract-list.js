@@ -1,5 +1,4 @@
-import { baseUrl } from './config.js'; 
-// const baseUrl = 'http://localhost:3002';
+import { baseUrl } from './config.js';
 
 document.addEventListener("DOMContentLoaded", async function() {
   const contractTableBody = document.getElementById("contractTableBody");
@@ -13,96 +12,112 @@ document.addEventListener("DOMContentLoaded", async function() {
       renderContracts(contracts);
     } catch (error) {
       console.error("Sözleşmeler çekilirken hata:", error);
+      showError("Sözleşmeler yüklenirken hata oluştu");
     }
   }
 
   function renderContracts(contracts) {
     contractTableBody.innerHTML = "";
     contracts.forEach(contract => {
-      const tr = document.createElement("tr");
-
-      // ID
-      const tdId = document.createElement("td");
-      tdId.textContent = contract.id || "";
-      tr.appendChild(tdId);
-
-      // Sözleşme Kodu
-      const tdKod = document.createElement("td");
-      tdKod.textContent = contract.sozlesme_kodu || "";
-      tr.appendChild(tdKod);
-
-      // Sözleşme Adı
-      const tdName = document.createElement("td");
-      tdName.textContent = contract.sozlesme_adi || "";
-      tr.appendChild(tdName);
-
-      // Başlangıç Tarihi (substring ile saat atıyoruz)
-      const rawStart = contract.baslangic_tarihi;
-      const startDateOnly = rawStart ? rawStart.substring(0, 10) : "-";
-      const tdStart = document.createElement("td");
-      tdStart.textContent = startDateOnly;
-      tr.appendChild(tdStart);
-
-      // Bitiş Tarihi
-      const rawEnd = contract.bitis_tarihi;
-      const endDateOnly = rawEnd ? rawEnd.substring(0, 10) : "-";
-      const tdEnd = document.createElement("td");
-      tdEnd.textContent = endDateOnly;
-      tr.appendChild(tdEnd);
-
-      // Fatura Periyodu
-      const tdFreq = document.createElement("td");
-      tdFreq.textContent = contract.fatura_periyodu || "-";
-      tr.appendChild(tdFreq);
-
-      // Min Fatura
-      const tdMin = document.createElement("td");
-      tdMin.textContent = contract.min_fatura || "0";
-      tr.appendChild(tdMin);
-
-      // İşlemler
-      const tdActions = document.createElement("td");
-
-      // Düzenle butonu
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "Düzenle";
-      editBtn.classList.add("btn-secondary");
-      editBtn.addEventListener("click", function() {
-        window.location.href = "contract-form.html?id=" + contract.id;
-      });
-      tdActions.appendChild(editBtn);
-
-      // Sil butonu (örnek)
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "Sil";
-      deleteBtn.classList.add("btn-secondary");
-      deleteBtn.addEventListener("click", async function() {
-        if (confirm("Bu sözleşmeyi silmek istediğinize emin misiniz?")) {
-          try {
-            // UYARI: /api/sozlesmeler/:id rotasını kullandığınızdan emin olun
-            const delResp = await fetch(`${baseUrl}/api/sozlesmeler/${contract.id}`, {
-              method: "DELETE"
-            });
-            if (!delResp.ok) throw new Error(`Silme hatası: ${delResp.status}`);
-            fetchContracts(); 
-          } catch (error) {
-            console.error("Silme sırasında hata:", error);
-          }
-        }
-      });
-      tdActions.appendChild(deleteBtn);
-
-      tr.appendChild(tdActions);
-
+      const tr = createContractRow(contract);
       contractTableBody.appendChild(tr);
     });
   }
 
-  // Listeyi çek
-  fetchContracts();
+  function createContractRow(contract) {
+    const tr = document.createElement("tr");
+    
+    // Basic fields
+    const fields = [
+      { key: 'id', format: val => val || "" },
+      { key: 'sozlesme_kodu', format: val => val || "" },
+      { key: 'sozlesme_adi', format: val => val || "" },
+      { key: 'baslangic_tarihi', format: val => val ? val.substring(0, 10) : "-" },
+      { key: 'bitis_tarihi', format: val => val ? val.substring(0, 10) : "-" },
+      { key: 'fatura_periyodu', format: val => val || "-" },
+      { key: 'min_fatura', format: val => val || "0" }
+    ];
 
-  // "Yeni Sözleşme Ekle" butonu
-  newContractBtn.addEventListener("click", function() {
+    // Create cells for basic fields
+    fields.forEach(field => {
+      const td = document.createElement("td");
+      td.textContent = field.format(contract[field.key]);
+      tr.appendChild(td);
+    });
+
+    // Actions cell
+    // Actions cell
+const tdActions = document.createElement("td");
+tdActions.className = "action-buttons";
+
+  // Edit button
+  const editBtn = document.createElement("button");
+  editBtn.innerHTML = '<i class="fas fa-edit"></i> Düzenle';
+  editBtn.className = "btn btn-primary btn-sm me-2";
+  editBtn.addEventListener("click", async () => {
+    try {
+      const response = await fetch(`${baseUrl}/api/sozlesmeler/${contract.id}`);
+      if (!response.ok) throw new Error('Sözleşme bulunamadı');
+      window.location.href = `contract-form.html?id=${contract.id}`;
+    } catch (error) {
+      console.error('Sözleşme yükleme hatası:', error);
+      showError('Sözleşme açılırken hata oluştu');
+    }
+  });
+  tdActions.appendChild(editBtn);
+
+  // Delete button (aynı görünüme getirildi)
+  const deleteBtn = document.createElement("button");
+  deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Sil';
+  deleteBtn.className = "btn btn-primary btn-sm me-2";  // Artık aynı stil
+  deleteBtn.addEventListener("click", async () => {
+    if (confirm("Bu sözleşmeyi silmek istediğinize emin misiniz?")) {
+      try {
+        const response = await fetch(`${baseUrl}/api/sozlesmeler/${contract.id}`);
+        if (!response.ok) throw new Error('Sözleşme bulunamadı');
+        
+        const delResp = await fetch(`${baseUrl}/api/sozlesmeler/${contract.id}`, {
+          method: "DELETE"
+        });
+        if (!delResp.ok) throw new Error(`Silme hatası: ${delResp.status}`);
+        
+        await fetchContracts();
+        showSuccess("Sözleşme başarıyla silindi");
+      } catch (error) {
+        console.error('Sözleşme silme hatası:', error);
+        showError('Sözleşme silinirken hata oluştu');
+      }
+    }
+  });
+  tdActions.appendChild(deleteBtn);
+
+  tr.appendChild(tdActions);
+
+    return tr;
+  }
+
+  // Initialize
+  await fetchContracts();
+
+  // New contract button
+  newContractBtn.addEventListener("click", () => {
     window.location.href = "contract-form.html";
   });
 });
+
+// Utility functions for notifications
+function showError(message) {
+  const errorDiv = document.createElement("div");
+  errorDiv.className = "error-message";
+  errorDiv.textContent = message;
+  document.querySelector(".content")?.prepend(errorDiv);
+  setTimeout(() => errorDiv.remove(), 5000);
+}
+
+function showSuccess(message) {
+  const successDiv = document.createElement("div");
+  successDiv.className = "success-message";
+  successDiv.textContent = message;
+  document.querySelector(".content")?.prepend(successDiv);
+  setTimeout(() => successDiv.remove(), 5000);
+}

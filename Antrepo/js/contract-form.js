@@ -1,83 +1,92 @@
-// File: contract-form.js
-
+/*******************************************************
+ * File: contract-form.js (Düzeltilmiş Tek Versiyon)
+ * Amaç: Sözleşme oluşturma ve düzenleme (edit mode) 
+ *       + Hizmet Ekle Modal + Mesai Saatleri 
+ *******************************************************/
 import { baseUrl } from './config.js';
 
 document.addEventListener("DOMContentLoaded", async function () {
-
   /* ========== 0) SAYFA KAPANIS UYARISI ========== */
-  let formDegisik = false; // Formda değişiklik var mı?
-  // beforeunload event: sayfadan ayrılma/kapatma
+  let formDegisik = false;
   window.addEventListener("beforeunload", function(e) {
     if (formDegisik) {
-      // Türkçe uyarı mesajı
       const mesaj = "Form verileri kaydedilmedi. Sayfadan ayrılırsanız tüm değişiklikler kaybolacak. Devam etmek istiyor musunuz?";
-      e.preventDefault(); // Modern tarayıcılarda bu yeterli olmayabilir
-      e.returnValue = mesaj; // Eski tarayıcılar bu şekilde mesaj gösterir
-      return mesaj; // Bazıları da return değerine bakar
+      e.preventDefault();
+      e.returnValue = mesaj;
+      return mesaj;
     }
-    // formDegisik = false ise, uyarı göstermeden ayrılır
   });
 
   /* ========== 1) FORM ELEMANLARI ========== */
-  const contractForm = document.getElementById("contractForm");
-  const cancelBtn = document.getElementById("cancelBtn");
-  const saveContractBtn = document.getElementById("saveContractBtn");
+  const contractForm         = document.getElementById("contractForm");
+  const cancelBtn            = document.getElementById("cancelBtn");
+  const saveContractBtn      = document.getElementById("saveContractBtn");
 
-  // Global Parametre Elemanları
-  const faturaPeriyodu = document.getElementById("faturaPeriyodu");
-  const girisGunuKural = document.getElementById("girisGunuKural");
-  const kismiGunYontemi = document.getElementById("kismiGunYontemi");
-  const paraBirimiSelect = document.getElementById("paraBirimi");
-  const haftaSonuCarpani = document.getElementById("haftaSonuCarpani");
-  const dovizKuru = document.getElementById("dovizKuru");
+  // Temel Sözleşme Alanları
+  const companyName          = document.getElementById("companyName");
+  const sozlesmeKodu         = document.getElementById("sozlesmeKodu");
+  const sozlesmeAdi          = document.getElementById("sozlesmeAdi");
+  const baslangicTarihi      = document.getElementById("baslangicTarihi");
+  const bitisTarihi          = document.getElementById("bitisTarihi");
+  const faturaPeriyodu       = document.getElementById("faturaPeriyodu");
+  const minFatura            = document.getElementById("minFatura");
+  const paraBirimiSelect     = document.getElementById("paraBirimi");
+  const girisGunuKural       = document.getElementById("girisGunuKural");
+  const kismiGunYontemi      = document.getElementById("kismiGunYontemi");
+  const haftaSonuCarpani     = document.getElementById("haftaSonuCarpani");
+  const dovizKuru            = document.getElementById("dovizKuru");
 
-  // Hizmetler & Modal
-  const openHizmetModalBtn = document.getElementById("openHizmetModalBtn");
-  const hizmetModal = document.getElementById("hizmetModal");
-  const hizmetCancelBtn = document.getElementById("hizmetCancelBtn");
-  const hizmetForm = document.getElementById("hizmetForm");
-  const hizmetListBody = document.getElementById("hizmetListBody");
-  const modalHizmetAdi = document.getElementById("modalHizmetAdi");
-  const modalHizmetTipi = document.getElementById("modalHizmetTipi");
-  const modalBirim = document.getElementById("modalBirim");
-  const modalTemelUcret = document.getElementById("modalTemelUcret");
-  const modalCarpan = document.getElementById("modalCarpan");
-  const modalMinUcret = document.getElementById("modalMinUcret");
-  const modalMesaiUygula = document.getElementById("modalMesaiUygula");
-  const modalMesaiSaatleri = document.getElementById("modalMesaiSaatleri");
-  const hizmetAdiList = document.getElementById("hizmetAdiList"); // datalist
+  // Hizmet Ekle Modal Elemanları
+  const openHizmetModalBtn   = document.getElementById("openHizmetModalBtn");
+  const hizmetModal          = document.getElementById("hizmetModal");
+  const hizmetCancelBtn      = document.getElementById("hizmetCancelBtn");
+  const hizmetForm           = document.getElementById("hizmetForm");
+  const hizmetListBody       = document.getElementById("hizmetListBody");
+
+  const modalHizmetAdi       = document.getElementById("modalHizmetAdi");
+  const modalHizmetTipi      = document.getElementById("modalHizmetTipi");
+  const modalBirim           = document.getElementById("modalBirim");
+  const modalTemelUcret      = document.getElementById("modalTemelUcret");
+  const modalCarpan          = document.getElementById("modalCarpan");
+  const modalMinUcret        = document.getElementById("modalMinUcret");
+  const modalMesaiUygula     = document.getElementById("modalMesaiUygula");
+  const modalMesaiSaatleri   = document.getElementById("modalMesaiSaatleri");
+  const hizmetAdiList        = document.getElementById("hizmetAdiList");
+
+  // Mesai Saat Uygulama Değişim
+  modalMesaiUygula.addEventListener("change", handleMesaiUygulaChange);
+  function handleMesaiUygulaChange() {
+    if (modalMesaiUygula.value === "Hayır") {
+      modalMesaiSaatleri.disabled = true;
+      modalMesaiSaatleri.value = "";
+    } else {
+      modalMesaiSaatleri.disabled = false;
+    }
+  }
 
   // Gün Çarpanı Modal
   const openGunCarpanModalBtn = document.getElementById("openGunCarpanModalBtn");
-  const gunCarpanModal = document.getElementById("gunCarpanModal");
-  const gunCarpanCloseBtn = document.getElementById("gunCarpanCloseBtn");
-  const gunCarpanSaveBtn = document.getElementById("gunCarpanSaveBtn");
-  const addGunCarpanRowBtn = document.getElementById("addGunCarpanRowBtn");
-  const gunCarpanTbody = document.getElementById("gunCarpanTbody");
+  const gunCarpanModal        = document.getElementById("gunCarpanModal");
+  const gunCarpanCloseBtn     = document.getElementById("gunCarpanCloseBtn");
+  const gunCarpanSaveBtn      = document.getElementById("gunCarpanSaveBtn");
+  const addGunCarpanRowBtn    = document.getElementById("addGunCarpanRowBtn");
+  const gunCarpanTbody        = document.getElementById("gunCarpanTbody");
 
   // Mesai Saat Ücretleri Modal
-  const openMesaiModalBtn = document.getElementById("openMesaiModalBtn");
-  const mesaiModal = document.getElementById("mesaiModal");
+  const openMesaiModalBtn     = document.getElementById("openMesaiModalBtn");
+  const mesaiModal            = document.getElementById("mesaiModal");
   const mesaiModalParaBirimiLabel = document.getElementById("mesaiModalParaBirimiLabel");
-  const mesaiSaatTbody = document.getElementById("mesaiSaatTbody");
-  const mesaiCancelBtn = document.getElementById("mesaiCancelBtn");
-  const mesaiSaveBtn = document.getElementById("mesaiSaveBtn");
-
-  // Diğer Alanlar (Temel Bilgiler)
-  const companyName = document.getElementById("companyName");
-  const sozlesmeKodu = document.getElementById("sozlesmeKodu");
-  const sozlesmeAdi = document.getElementById("sozlesmeAdi");
-  const baslangicTarihi = document.getElementById("baslangicTarihi");
-  const bitisTarihi = document.getElementById("bitisTarihi");
-  const minFatura = document.getElementById("minFatura");
+  const mesaiSaatTbody        = document.getElementById("mesaiSaatTbody");
+  const mesaiCancelBtn        = document.getElementById("mesaiCancelBtn");
+  const mesaiSaveBtn          = document.getElementById("mesaiSaveBtn");
 
   /* ========== 2) GLOBAL DİZİLER ========== */
-  let hizmetlerData = [];           // Hizmet Ekle modalından gelen veriler
-  let gunCarpanParametreleri = [];  // Gün Çarpanı verileri
-  let mesaiSaatUcretleriParam = []; // Mesai saat ücretleri parametreleri
-  let allHizmetler = [];            // /api/hizmetler'den gelen veriler
+  let hizmetlerData           = [];
+  let gunCarpanParametreleri  = [];
+  let mesaiSaatUcretleriParam = [];
+  let allHizmetler            = [];
 
-  // Mesai Zaman Dilimleri (sabit 10 adet)
+  // Örnek sabit mesai zaman dilimleri (sabit dizi kullanılacak)
   const mesaiZamanDilimiList = [
     "Hafta İçi 08.01 - 16.59",
     "Hafta İçi 17.00 - 19.00",
@@ -92,31 +101,25 @@ document.addEventListener("DOMContentLoaded", async function () {
     "Dini bayram ve resmi tatiller"
   ];
 
-  /* ========== 3) SAYFA KAPANMA UYARISI İÇİN FORM DEĞİŞİKLİK TAKİBİ ========== */
+  /* ========== 3) SAYFA KAPANMA UYARISI ========== */
   function setFormDegisik() {
     formDegisik = true;
   }
-  // Tüm input, select, textarea vb. alanlara change/input event'i ekle
   const formInputs = contractForm.querySelectorAll("input, select, textarea");
   formInputs.forEach(input => {
     input.addEventListener("change", setFormDegisik);
     input.addEventListener("input", setFormDegisik);
   });
-
-  // Form kaydedildiğinde formDegisik=false yapalım
   contractForm.addEventListener("submit", () => {
     formDegisik = false;
   });
-
-  // Hizmet Ekle modalı formunda da benzer
   const hizmetModalInputs = hizmetForm.querySelectorAll("input, select, textarea");
   hizmetModalInputs.forEach(input => {
     input.addEventListener("change", setFormDegisik);
     input.addEventListener("input", setFormDegisik);
   });
 
-  // ========== 4) API'DEN VERİLERİ ÇEKME FONKSİYONLARI ==========
-
+  /* ========== 4) API'DEN VERİLERİ ÇEKME FONKSİYONLARI ========== */
   async function populateCompanies() {
     try {
       const resp = await fetch(`${baseUrl}/api/companies`);
@@ -156,15 +159,15 @@ document.addEventListener("DOMContentLoaded", async function () {
       const resp = await fetch(`${baseUrl}/api/hizmetler`);
       if (!resp.ok) throw new Error(`Hizmetler hata: ${resp.status}`);
       allHizmetler = await resp.json();
-      // Datalist (modalHizmetAdi) doldur
+      // Hizmet Adı listesi (datalist)
       hizmetAdiList.innerHTML = "";
       allHizmetler.forEach(h => {
         const opt = document.createElement("option");
-        opt.value = h.hizmet_adi; // Hizmet Adı
+        opt.value = h.hizmet_adi;
         hizmetAdiList.appendChild(opt);
       });
     } catch (error) {
-      console.error("Hizmetler yüklenemedi:", error);
+      console.error("Hizmetler çekilemedi:", error);
     }
   }
 
@@ -180,74 +183,83 @@ document.addEventListener("DOMContentLoaded", async function () {
     saveHizmetModal();
   });
 
-  // "Hizmet Adı" seçildiğinde, allHizmetler içinde bulup diğer alanları doldur
+  // Hizmet Adı seçilince, allHizmetler içinden bulup alanları doldur
   modalHizmetAdi.addEventListener("change", () => {
     const val = modalHizmetAdi.value.trim();
     if (!val) return;
     const found = allHizmetler.find(x => x.hizmet_adi.toLowerCase() === val.toLowerCase());
     if (found) {
-      // Hizmet Tipi, Birim, Temel Ücret, Çarpan, Min Ücret
-      modalHizmetTipi.value = found.hizmet_tipi || "";
-      modalBirim.value = found.birim_adi || ""; // tablo yapınıza göre
-      modalTemelUcret.value = found.temel_ucret || 0;
-      modalCarpan.value = found.carpan || 0;
-      modalMinUcret.value = found.min_ucret || 0;
+      modalHizmetTipi.value  = found.hizmet_tipi || "";
+      modalBirim.value       = found.birim_adi || "";
+      modalTemelUcret.value  = found.temel_ucret || 0;
+      modalCarpan.value      = found.carpan || 0;
+      modalMinUcret.value    = found.min_ucret || 0;
     }
   });
 
+  // Tek bir openHizmetModal fonksiyonu; rowData varsa düzenleme, yoksa yeni ekleme
   function openHizmetModal(rowData = null) {
     if (rowData) {
-      // düzenleme
-      modalHizmetAdi.value = rowData.hizmet_adi;
-      modalHizmetTipi.value = rowData.hizmet_tipi;
-      modalBirim.value = rowData.birim;
-      modalTemelUcret.value = rowData.temel_ucret;
-      modalCarpan.value = rowData.carpan;
-      modalMinUcret.value = rowData.min_ucret;
-      modalMesaiUygula.value = rowData.mesai_uygula;
-      modalMesaiSaatleri.value = rowData.mesai_saatleri;
+      // Düzenleme
+      modalHizmetAdi.value    = rowData.hizmet_adi;
+      modalHizmetTipi.value   = rowData.hizmet_tipi;
+      modalBirim.value        = rowData.birim;
+      modalTemelUcret.value   = rowData.temel_ucret;
+      modalCarpan.value       = rowData.carpan;
+      modalMinUcret.value     = rowData.min_ucret;
+      modalMesaiUygula.value  = rowData.mesai_uygula;
+      modalMesaiSaatleri.value= rowData.mesai_saatleri;
     } else {
-      // yeni ekleme
-      modalHizmetAdi.value = "";
-      modalHizmetTipi.value = "";
-      modalBirim.value = "";
-      modalTemelUcret.value = "0";
-      modalCarpan.value = "0";
-      modalMinUcret.value = "0";
-      modalMesaiUygula.value = "Hayır";
-      modalMesaiSaatleri.value = "";
+      // Yeni ekleme
+      modalHizmetAdi.value    = "";
+      modalHizmetTipi.value   = "";
+      modalBirim.value        = "";
+      modalTemelUcret.value   = "0";
+      modalCarpan.value       = "0";
+      modalMinUcret.value     = "0";
+      modalMesaiUygula.value  = "Hayır";
+      modalMesaiSaatleri.value= "";
     }
+    // Dropdown doldur ve mesai uygulama durumunu kontrol et
     fillMesaiSaatleriDropdown();
+    handleMesaiUygulaChange();
+    // Modal'ı göster
     hizmetModal.style.display = "flex";
   }
 
+  // Tekil fillMesaiSaatleriDropdown fonksiyonu: burada sabit dizi kullanılıyor
   function fillMesaiSaatleriDropdown() {
     modalMesaiSaatleri.innerHTML = `<option value="">Seçiniz</option>`;
-    mesaiSaatUcretleriParam.forEach(item => {
+    mesaiZamanDilimiList.forEach(zaman => {
       const opt = document.createElement("option");
-      opt.value = item.zamanDilimi;
-      opt.textContent = item.zamanDilimi;
+      opt.value = zaman;
+      opt.textContent = zaman;
       modalMesaiSaatleri.appendChild(opt);
     });
   }
 
+  // Hizmet Modalı kaydet
   function saveHizmetModal() {
+    let mesaiSaat = modalMesaiSaatleri.value.trim();
+    if (modalMesaiUygula.value === "Hayır") {
+      mesaiSaat = "";
+    }
     const rowData = {
-      hizmet_adi: modalHizmetAdi.value.trim(),
-      hizmet_tipi: modalHizmetTipi.value.trim(),
-      birim: modalBirim.value.trim(),
-      temel_ucret: parseFloat(modalTemelUcret.value) || 0,
-      carpan: parseFloat(modalCarpan.value) || 0,
-      min_ucret: parseFloat(modalMinUcret.value) || 0,
+      hizmet_adi:   modalHizmetAdi.value.trim(),
+      hizmet_tipi:  modalHizmetTipi.value.trim(),
+      birim:        modalBirim.value.trim(),
+      temel_ucret:  parseFloat(modalTemelUcret.value) || 0,
+      carpan:       parseFloat(modalCarpan.value) || 0,
+      min_ucret:    parseFloat(modalMinUcret.value) || 0,
       mesai_uygula: modalMesaiUygula.value,
-      mesai_saatleri: modalMesaiSaatleri.value
+      mesai_saatleri: mesaiSaat
     };
-    // Yeni ekleme
     hizmetlerData.push(rowData);
     refreshHizmetList();
     hizmetModal.style.display = "none";
   }
 
+  // Hizmet Tablosunu Yenile
   function refreshHizmetList() {
     hizmetListBody.innerHTML = "";
     hizmetlerData.forEach((h, idx) => {
@@ -290,7 +302,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       btnSil.textContent = "Sil";
       btnSil.className = "btn-danger";
       btnSil.addEventListener("click", () => {
-        hizmetlerData.splice(idx,1);
+        hizmetlerData.splice(idx, 1);
         refreshHizmetList();
       });
       tdSil.appendChild(btnSil);
@@ -305,19 +317,34 @@ document.addEventListener("DOMContentLoaded", async function () {
     gunCarpanModal.style.display = "flex";
     refreshGunCarpanTable();
   });
+  // ...
   gunCarpanCloseBtn.addEventListener("click", () => {
-    // Değişiklikleri kaydetmeden kapat
     gunCarpanModal.style.display = "none";
   });
+
+  // Gün Çarpanı Modal Kaydetme Fonksiyonu (Örnek)
   gunCarpanSaveBtn.addEventListener("click", () => {
-    // Değişiklikleri onaylayıp kaydet
-    // Sadece pencereyi kapatıyor ama formDegisik = true kalıyor
+    // Öncelikle tüm satırları kontrol edelim
+    for (let i = 0; i < gunCarpanParametreleri.length; i++) {
+      const row = gunCarpanParametreleri[i];
+      if (!row.startDay || row.startDay.toString().trim() === "") {
+        alert("Gün Çarpanı Parametreleri: Başlangıç günü zorunludur (satır " + (i + 1) + ").");
+        return; // Hata varsa kaydetmeyi durdur
+      }
+      if (row.baseFee === "" || row.baseFee === null || isNaN(row.baseFee)) {
+        alert("Gün Çarpanı Parametreleri: Temel Ücret (Base Fee) zorunludur (satır " + (i + 1) + ").");
+        return; // Hata varsa kaydetmeyi durdur
+      }
+    }
+    
+    // Tüm zorunlu alanlar doluysa modalı kapatalım
     gunCarpanModal.style.display = "none";
   });
+
   addGunCarpanRowBtn.addEventListener("click", () => {
     gunCarpanParametreleri.push({
       startDay: "",
-      endDay: "", // Boş kalırsa sonsuz
+      endDay: "",
       baseFee: "",
       perKgRate: "",
       cargoType: "Genel Kargo",
@@ -325,6 +352,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
     refreshGunCarpanTable();
   });
+  // ...
+
 
   function refreshGunCarpanTable() {
     gunCarpanTbody.innerHTML = "";
@@ -344,7 +373,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       tdStart.appendChild(inputStart);
       tr.appendChild(tdStart);
 
-      // Bitiş Günü (boş kalırsa sonsuz)
+      // Bitiş Günü
       const tdEnd = document.createElement("td");
       const inputEnd = document.createElement("input");
       inputEnd.type = "number";
@@ -417,7 +446,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       delBtn.textContent = "Sil";
       delBtn.className = "btn-danger";
       delBtn.addEventListener("click", () => {
-        gunCarpanParametreleri.splice(idx,1);
+        gunCarpanParametreleri.splice(idx, 1);
         refreshGunCarpanTable();
       });
       tdSil.appendChild(delBtn);
@@ -442,8 +471,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   function refreshMesaiSaatTable() {
     mesaiSaatTbody.innerHTML = "";
-    // İlk açılışta eğer mesaiSaatUcretleriParam boşsa dolduralım
     if (mesaiSaatUcretleriParam.length === 0) {
+      // Eğer mesai ücretleri daha önce belirlenmediyse sabit diziden dolduruyoruz
       mesaiZamanDilimiList.forEach(zaman => {
         mesaiSaatUcretleriParam.push({
           zamanDilimi: zaman,
@@ -494,17 +523,22 @@ document.addEventListener("DOMContentLoaded", async function () {
   contractForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // Zorunlu alan kontrolleri (HTML5 required'lar var ama manuel de bakabiliriz)
+    // a) Zorunlu alan kontrolleri
     if (!faturaPeriyodu.value || !girisGunuKural.value || !kismiGunYontemi.value || !paraBirimiSelect.value) {
-      alert("Lütfen zorunlu alanları (Fatura Periyodu, Giriş Günü Hesaplama, Kısmi Gün Hesaplama, Para Birimi) doldurun!");
+      alert("Lütfen zorunlu alanları (Fatura Periyodu, Giriş Günü, Kısmi Gün, Para Birimi) doldurun!");
+      return;
+    }
+    // b) Gün Çarpanı Parametreleri zorunlu
+    if (gunCarpanParametreleri.length === 0) {
+      alert("Gün Çarpanı Parametreleri doldurulmalıdır!");
       return;
     }
 
-    // Sözleşme verileri
+    // c) Sözleşme verileri
     const sozlesmeData = {
       sozlesme_sirket_id: companyName.value || null,
       sozlesme_kodu: sozlesmeKodu.value,
-      sozlesme_adi: sozlesmeAdi.value,
+      sozlesme_adi:  sozlesmeAdi.value,
       baslangic_tarihi: baslangicTarihi.value || null,
       bitis_tarihi: bitisTarihi.value || null,
       fatura_periyodu: faturaPeriyodu.value,
@@ -522,41 +556,124 @@ document.addEventListener("DOMContentLoaded", async function () {
       ek_hizmet_parametreleri: {
         mesaiSaatUcretleri: mesaiSaatUcretleriParam
       },
-      // Bitiş Günü boş ise "sonsuz" mantığını sunucu tarafında da handle edebilirsiniz.
       gun_carpan_parametreleri: gunCarpanParametreleri
     };
 
     try {
-      // Kaydetme isteği
-      const resp = await fetch(`${baseUrl}/api/sozlesmeler`, {
-        method: "POST",
+      const url = editId ? `${baseUrl}/api/sozlesmeler/${editId}` : `${baseUrl}/api/sozlesmeler`;
+      const method = editId ? "PUT" : "POST";
+      const resp = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
       if (!resp.ok) throw new Error(`Sunucu hatası: ${resp.status}`);
       const result = await resp.json();
       if (result.success) {
-        alert("Sözleşme kaydı başarılı!");
-        // Kaydetme başarılı olduğundan formDegisik = false
+        alert(editId ? "Sözleşme başarıyla güncellendi!" : "Sözleşme kaydı başarılı!");
         formDegisik = false;
         window.location.href = "contract-list.html";
       } else {
         alert("Kayıt hatası: " + JSON.stringify(result));
       }
     } catch (error) {
-      console.error("Sözleşme kaydı sırasında hata:", error);
+      console.error("Sözleşme kaydı/güncelleme sırasında hata:", error);
       alert("Hata: " + error.message);
     }
   });
 
   cancelBtn.addEventListener("click", () => {
-    // formDegisik = false => eğer iptal ile çıkış yapmak isterseniz
-    // ama genelde iptal de uyarı versin isterseniz setFormDegisik'i kapatmayın
     history.back();
   });
 
+  /* ========== 9) YARDIMCI FONKSİYON: Mevcut Sözleşme Verilerini Yükle (Düzenleme) ========== */
+  async function loadContractData(contractId) {
+    try {
+      const resp = await fetch(`${baseUrl}/api/sozlesmeler/${contractId}`);
+      if (!resp.ok) {
+        throw new Error(`Sözleşme verisi alınamadı: ${resp.status}`);
+      }
+      const contract = await resp.json();
+      fillForm(contract);
+    } catch (err) {
+      console.error("Sözleşme verisi yüklenirken hata:", err);
+      alert("Sözleşme verisi yüklenemedi: " + err.message);
+    }
+  }
+
+  function fillForm(contract) {
+    // Temel alanlar
+    companyName.value      = contract.sozlesme_sirket_id || "";
+    sozlesmeKodu.value     = contract.sozlesme_kodu || "";
+    sozlesmeAdi.value      = contract.sozlesme_adi || "";
+    if (contract.baslangic_tarihi) {
+      baslangicTarihi.value = contract.baslangic_tarihi.substring(0,10);
+    }
+    if (contract.bitis_tarihi) {
+      bitisTarihi.value     = contract.bitis_tarihi.substring(0,10);
+    }
+    faturaPeriyodu.value   = contract.fatura_periyodu || "";
+    minFatura.value        = contract.min_fatura || 0;
+    paraBirimiSelect.value = contract.para_birimi || "";
+    girisGunuKural.value   = contract.giris_gunu_kural || "";
+    kismiGunYontemi.value  = contract.kismi_gun_yontemi || "";
+    haftaSonuCarpani.value = contract.hafta_sonu_carpani || 1;
+    dovizKuru.value        = contract.doviz_kuru || "";
+
+    // Gün Çarpanı Parametreleri
+    if (contract.gun_carpan_parametreleri && Array.isArray(contract.gun_carpan_parametreleri)) {
+      gunCarpanParametreleri = contract.gun_carpan_parametreleri.map(gc => ({
+        startDay:   gc.startDay || "",
+        endDay:     gc.endDay || "",
+        baseFee:    gc.baseFee || 0,
+        perKgRate:  gc.perKgRate || 0,
+        cargoType:  gc.cargoType || "Genel Kargo",
+        paraBirimi: gc.paraBirimi || paraBirimiSelect.value || ""
+      }));
+    } else {
+      gunCarpanParametreleri = [];
+    }
+    refreshGunCarpanTable();
+    
+    // Hizmetler
+    if (contract.hizmetler && Array.isArray(contract.hizmetler)) {
+      hizmetlerData = contract.hizmetler.map(h => ({
+        hizmet_adi:   h.hizmet_adi || "",
+        hizmet_tipi:  h.hizmet_tipi || "",
+        birim:        h.birim || "",
+        temel_ucret:  parseFloat(h.temel_ucret) || 0,
+        carpan:       parseFloat(h.carpan) || 0,
+        min_ucret:    parseFloat(h.min_ucret) || 0,
+        mesai_uygula: h.mesai_uygula || "Hayır",
+        mesai_saatleri: h.mesai_saatleri || ""
+      }));
+    } else {
+      hizmetlerData = [];
+    }
+    refreshHizmetList();
+
+    // Mesai Saat Ücretleri
+    if (contract.ek_hizmet_parametreleri && contract.ek_hizmet_parametreleri.mesaiSaatUcretleri) {
+      mesaiSaatUcretleriParam = contract.ek_hizmet_parametreleri.mesaiSaatUcretleri.map(item => ({
+        zamanDilimi: item.zamanDilimi || "",
+        ucretSaat:   parseFloat(item.ucretSaat) || 0,
+        paraBirimi:  item.paraBirimi || paraBirimiSelect.value || ""
+      }));
+    } else {
+      mesaiSaatUcretleriParam = [];
+    }
+    // Eğer mesai modal otomatik açılıyorsa refreshMesaiSaatTable(); çağrılabilir.
+  }
+
   /* ========== SAYFA YÜKLENİRKEN ========== */
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get("id");
+
   await populateCompanies();
   await populateParaBirimleri();
   await populateHizmetler();
+
+  if (editId) {
+    await loadContractData(editId);
+  }
 });
