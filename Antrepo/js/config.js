@@ -1,2 +1,2 @@
 // config.js
-export const baseUrl = 'http://localhost:58218';
+export const baseUrl = 'http://localhost:51205';
