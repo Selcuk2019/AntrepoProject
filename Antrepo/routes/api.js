@@ -720,6 +720,7 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
         beyanname_no, 
         antrepo_giris_tarihi,
         miktar AS initialStock,
+        urunAdi,
         kap_adeti,
         urun_kodu,
         sozlesme_id
