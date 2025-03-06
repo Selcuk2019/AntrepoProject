@@ -1,67 +1,46 @@
 import { baseUrl } from './config.js';
 
 document.addEventListener("DOMContentLoaded", async function() {
-  const productTableBody = document.getElementById("productTableBody");
-  const newProductBtn = document.getElementById("newProductBtn");
-
-  // API'den ürünleri çekme fonksiyonu
-  async function loadProductsFromAPI() {
-    try {
-      const resp = await fetch(`${baseUrl}/api/urunler`);
-      if (!resp.ok) throw new Error(`Ürünler çekilemedi: ${resp.status}`);
-      const products = await resp.json();
-      renderProducts(products);
-    } catch (error) {
-      console.error("Ürün listesi hata:", error);
-      alert("Ürün listesi yüklenirken hata: " + error.message);
+  const table = $('#productTable').DataTable({
+    ajax: {
+      url: `${baseUrl}/api/urunler`,
+      dataSrc: ''
+    },
+    columns: [
+      { data: 'id' },
+      { 
+        data: 'name',
+        render: function(data, type, row) {
+          return `<a href="stock-card.html?id=${row.id}">${data}</a>`;
+        }
+      },
+      { data: 'code' },
+      { data: 'paket_hacmi', render: data => `${data || 0} kg` },
+      { data: 'paketleme_tipi_name' },
+      { 
+        data: null,
+        render: function(data, type, row) {
+          return `
+            <div class="action-buttons">
+              <button class="modern-btn-icon modern-btn-edit" onclick="window.location.href='product-form.html?id=${row.id}'">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="modern-btn-icon modern-btn-view" onclick="window.location.href='stock-card.html?id=${row.id}'">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+          `;
+        }
+      }
+    ],
+    responsive: true,
+    language: {
+      url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
     }
-  }
+  });
 
-  // Ürün listesini tabloya basan fonksiyon
-  function renderProducts(products) {
-    productTableBody.innerHTML = "";
-    products.forEach(product => {
-      const tr = document.createElement("tr");
-
-      // ID sütunu
-      const tdId = document.createElement("td");
-      tdId.textContent = product.id || "";
-
-      // Ürün Adı sütunu
-      const tdName = document.createElement("td");
-      const nameLink = document.createElement("a");
-      nameLink.textContent = product.name || "(No Name)";
-      nameLink.href = `stock-card.html?id=${product.id}`;
-      tdName.appendChild(nameLink);
-
-      // Ürün Kodu sütunu
-      const tdCode = document.createElement("td");
-      tdCode.textContent = product.code || "";
-
-      // İşlemler sütunu (örnek: Düzenle butonu)
-      const tdActions = document.createElement("td");
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "Düzenle";
-      editBtn.classList.add("btn-secondary");
-      editBtn.addEventListener("click", function() {
-        window.location.href = `stock-card.html?id=${product.id}`;
-      });
-      tdActions.appendChild(editBtn);
-
-      // Satırları ekle
-      tr.appendChild(tdId);
-      tr.appendChild(tdName);
-      tr.appendChild(tdCode);
-      tr.appendChild(tdActions);
-      productTableBody.appendChild(tr);
-    });
-  }
-
-  // Sayfa açılır açılır ürünleri yükle
-  await loadProductsFromAPI();
-
-  // Yeni Ürün Ekle butonuna tıklayınca ürün ekleme formuna yönlendir
-  newProductBtn.addEventListener("click", () => {
+  // Yeni Ürün Ekle butonu
+  document.getElementById("newProductBtn").addEventListener("click", () => {
     window.location.href = "product-form.html";
   });
 });

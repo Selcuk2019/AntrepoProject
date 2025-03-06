@@ -1,33 +1,56 @@
 // File: product-form.js
 import { baseUrl } from './config.js';
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const productForm = document.getElementById("productForm");
   const packagingTypeSelect = document.getElementById("packagingType");
+  const params = new URLSearchParams(window.location.search);
+  const productId = params.get("id");
 
-  // 1) Paketleme tiplerini API'den yükle
-  async function loadPackagingTypes() {
+  // Sayfa başlığını güncelle
+  document.querySelector('.page-header h1').textContent = productId ? 'Ürün Düzenle' : 'Yeni Ürün Ekle';
+
+  // Paketleme tiplerini yükle ve dönen promise'i sakla
+  const loadPackagingTypes = async () => {
     try {
       const resp = await fetch(`${baseUrl}/api/packaging-types`);
       if (!resp.ok) throw new Error(`Paketleme tipleri hata: ${resp.status}`);
       const data = await resp.json();
 
-      packagingTypeSelect.innerHTML = "";
-      const defaultOpt = document.createElement("option");
-      defaultOpt.value = "";
-      defaultOpt.textContent = "Seçiniz";
-      defaultOpt.disabled = true;
-      defaultOpt.selected = true;
-      packagingTypeSelect.appendChild(defaultOpt);
-
-      data.forEach(t => {
-        const opt = document.createElement("option");
-        opt.value = t.id; // DB'deki paketleme_tipi_id
-        opt.textContent = t.name;
-        packagingTypeSelect.appendChild(opt);
-      });
+      packagingTypeSelect.innerHTML = `
+        <option value="" disabled>Seçiniz</option>
+        ${data.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+      `;
+      return true;
     } catch (error) {
       console.error("Paketleme tipleri yüklenirken hata:", error);
+      return false;
+    }
+  };
+
+  // Önce paketleme tiplerini yükle
+  await loadPackagingTypes();
+
+  // Sonra, eğer düzenleme modundaysa ürün bilgilerini getir
+  if (productId) {
+    try {
+      const resp = await fetch(`${baseUrl}/api/urunler/${productId}`);
+      if (!resp.ok) throw new Error('Ürün bilgileri alınamadı');
+      const product = await resp.json();
+
+      // Form alanlarını doldur
+      document.getElementById("name").value = product.name || '';
+      document.getElementById("code").value = product.code || '';
+      document.getElementById("bagSize").value = product.paket_hacmi || '';
+      document.getElementById("description").value = product.description || '';
+      
+      // Paketleme tipini seç
+      if (product.paketleme_tipi_id) {
+        packagingTypeSelect.value = product.paketleme_tipi_id;
+      }
+    } catch (error) {
+      console.error("Ürün yükleme hatası:", error);
+      alert("Ürün bilgileri yüklenirken hata oluştu!");
     }
   }
 
@@ -58,45 +81,26 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     try {
-      const resp = await fetch(`${baseUrl}/api/urunler`, {
-        method: "POST",
+      const url = productId 
+        ? `${baseUrl}/api/urunler/${productId}`
+        : `${baseUrl}/api/urunler`;
+
+      const method = productId ? "PUT" : "POST";
+
+      const resp = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      if (!resp.ok) throw new Error(`Ürün ekleme hatası: ${resp.status}`);
-      const result = await resp.json();
 
-      if (result.success) {
-        alert("Ürün başarıyla eklendi!");
+      if (!resp.ok) throw new Error('İşlem başarısız');
 
-        // (A) API'den dönen insertedId değerini al
-        const newId = result.insertedId;
+      alert(productId ? "Ürün güncellendi!" : "Ürün eklendi!");
+      window.location.href = "product-list.html";
 
-        // (B) localStorage'da products dizisini güncelle
-        let products = JSON.parse(localStorage.getItem("products")) || [];
-        products.push({
-          id: newId,                   // Artık veritabanı ID'si
-          name: name,
-          code: code,
-          paket_hacmi: bagSize,
-          paketleme_tipi_id: packagingTypeId,
-          description: description,
-          // Stok vs. alanları eklemek isterseniz buraya
-        });
-        localStorage.setItem("products", JSON.stringify(products));
-
-        // (C) Liste sayfasına yönlendir
-        window.location.href = "product-list.html";
-      } else {
-        // API bir hata mesajı döndürdüyse
-        alert("Hata: " + (result.error || "Bilinmeyen hata"));
-      }
     } catch (error) {
-      console.error("Ürün ekleme sırasında hata:", error);
-      alert("Kayıt sırasında hata: " + error.message);
+      console.error("Hata:", error);
+      alert("İşlem sırasında bir hata oluştu!");
     }
   });
-
-  // 3) Sayfa yüklenince paketleme tiplerini getir
-  loadPackagingTypes();
 });

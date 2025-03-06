@@ -2,7 +2,6 @@
 import { baseUrl } from './config.js';
 
 document.addEventListener("DOMContentLoaded", async function() {
-  // URL'den ?id=xxx parametresini al (Ürün ID)
   const params = new URLSearchParams(window.location.search);
   const productId = params.get("id");
 
@@ -11,55 +10,85 @@ document.addEventListener("DOMContentLoaded", async function() {
   const backBtn = document.getElementById("backBtn");
 
   if (!productId) {
-    stockDetailsDiv.innerHTML = "<p>Ürün ID bulunamadı (URL parametresi eksik).</p>";
+    stockDetailsDiv.innerHTML = `
+      <div class="error-state">
+        <i class="fas fa-exclamation-circle"></i>
+        <p>Ürün ID bulunamadı (URL parametresi eksik).</p>
+      </div>`;
     return;
   }
 
   try {
-    // Ürün detaylarını API'den çek
     const productResp = await fetch(`${baseUrl}/api/urunler/${productId}`);
-    if (!productResp.ok) {
-      if (productResp.status === 404) {
-        throw new Error("Ürün bulunamadı (404).");
-      } else {
-        throw new Error(`Sunucu hatası: ${productResp.status}`);
-      }
-    }
+    if (!productResp.ok) throw new Error(productResp.status === 404 ? "Ürün bulunamadı." : "Sunucu hatası");
     const product = await productResp.json();
 
-    // Ürün bilgilerini oluştur ve DOM'a yaz
+    // Ana kart içeriğini oluştur
     stockDetailsDiv.innerHTML = `
-      <div class="stock-karti-header">Ürün Bilgileri</div>
-      <p><span>Ürün ID:</span> ${product.id}</p>
-      <p><span>Ürün Adı:</span> ${product.name}</p>
-      <p><span>Ürün Kodu:</span> ${product.code}</p>
-      <p><span>Paket Hacmi (kg):</span> ${product.paket_hacmi || 0}</p>
-      <p><span>Paketleme Tipi:</span> ${product.paketleme_tipi_name || "Belirtilmedi"}</p>
-      <p><span>Açıklama:</span> ${product.description || ""}</p>
-      <hr>
+      <div class="stock-card">
+        <div class="stock-header">
+          <h2>${product.name}</h2>
+          <div class="code">Ürün Kodu: ${product.code}</div>
+        </div>
+
+        <div class="stock-amount">
+          <div class="amount">0 Ton</div>
+          <div class="label">Mevcut Stok</div>
+        </div>
+
+        <div class="stock-details">
+          <div class="detail-row">
+            <div class="detail-label">Ürün ID</div>
+            <div class="detail-value">${product.id}</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">Paket Hacmi</div>
+            <div class="detail-value">${product.paket_hacmi || 0} kg</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">Paketleme Tipi</div>
+            <div class="detail-value">${product.paketleme_tipi_name || "Belirtilmedi"}</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">Son Güncelleme</div>
+            <div class="detail-value">${new Date().toLocaleDateString('tr-TR')}</div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-label">Açıklama</div>
+            <div class="detail-value">${product.description || "Belirtilmedi"}</div>
+          </div>
+        </div>
+
+        <div class="stock-footer">
+          <button class="btn-back" onclick="window.location.href='product-list.html'">
+            <i class="fas fa-arrow-left"></i>
+            <span>Geri Dön</span>
+          </button>
+        </div>
+      </div>
     `;
 
-    // Güncel stok bilgisini çekmek için varsayımsal endpoint
-    // Bu endpoint, ilgili ürünün tüm antrepo giriş/çıkış hareketlerinin hesaplanmasıyla güncel stok (ton) bilgisini döndürmelidir.
+    // Stok miktarını güncelle
     const stockResp = await fetch(`${baseUrl}/api/stock-card/${productId}`);
-    let currentStock = 0;
     if (stockResp.ok) {
       const stockData = await stockResp.json();
-      currentStock = stockData.currentStock;
-    } else {
-      console.warn("Güncel stok bilgisi alınamadı, default 0 kullanılıyor.");
+      document.querySelector('.stock-amount .amount').textContent = `${stockData.currentStock} Ton`;
     }
-    
-    // Güncel stok bilgisini şık şekilde göster
-    stockDisplayDiv.innerHTML = `<p><span>Mevcut Stok (Ton):</span> ${currentStock}</p>`;
 
   } catch (error) {
-    console.error("Stok kartı yükleme hatası:", error);
-    stockDetailsDiv.innerHTML = `<p>Ürün bulunamadı. Hata: ${error.message}</p>`;
+    console.error("Hata:", error);
+    stockDetailsDiv.innerHTML = `
+      <div class="stock-card">
+        <div class="stock-header">
+          <h2>Hata</h2>
+          <div class="code">${error.message}</div>
+        </div>
+        <div class="stock-footer">
+          <button class="btn-back" onclick="window.location.href='product-list.html'">
+            <i class="fas fa-arrow-left"></i>
+            <span>Geri Dön</span>
+          </button>
+        </div>
+      </div>`;
   }
-
-  // "Geri" butonuna tıklanınca product-list.html'e yönlendir
-  backBtn.addEventListener("click", () => {
-    window.location.href = "product-list.html";
-  });
 });
