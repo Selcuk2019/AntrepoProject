@@ -1,8 +1,10 @@
-// File: hesaplama-motoru.js
+// hesaplama-motoru.js
+// Bu dosya, hesaplama motoru sayfasında (hesaplama-motoru.html) kullanılan JS kodudur.
+// /api/hesaplama-motoru/:girisId endpoint'ine istek atarak gelen verileri tabloya doldurur.
+
 import { baseUrl } from './config.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
-  // HTML Elemanlarını toplayalım
   const urlParams = new URLSearchParams(window.location.search);
   const girisId = urlParams.get("entryId");
 
@@ -39,24 +41,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function populateResults(result) {
-    // Beklenen alanlar: { antrepoGiris, sozlesme, dailyBreakdown, totalCost, unitCostImpact }
-    const { antrepoGiris, sozlesme, dailyBreakdown = [], totalCost = 0 } = result;
+    const { antrepoGiris, dailyBreakdown = [], totalCost = 0, paraBirimi } = result;
 
-    // Üst taraftaki özet
     beyannameNoSpan.textContent = antrepoGiris?.beyanname_no || "-";
-    girisTarihiSpan.textContent = antrepoGiris?.antrepo_giris_tarihi || "-";
+    girisTarihiSpan.textContent = antrepoGiris?.antrepo_giris_tarihi
+      ? new Date(antrepoGiris.antrepo_giris_tarihi).toISOString().split('T')[0]
+      : "-";
     urunAdiSpan.textContent = antrepoGiris?.urun_tanimi || "-";
     urunKoduSpan.textContent = antrepoGiris?.urun_kodu || "-";
     initialStockSpan.textContent = antrepoGiris?.initialStock || "0";
 
-    // Tabloyu temizle
     dailyTableBody.innerHTML = "";
-
-    // Para birimi (eğer sözleşmede varsa)
-    const paraBirimi = sozlesme?.para_birimi || ""; // "USD", "TRY" vb.
-
-    // dailyBreakdown: [{ dayIndex, date, dayArdiye, dayEkHizmet, dayTotal, cumulative, stockAfter }, ...]
-    dailyBreakdown.forEach((row, index) => {
+    dailyBreakdown.forEach((row) => {
       const tr = document.createElement("tr");
 
       const tdGun = document.createElement("td");
@@ -81,13 +77,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       tdStock.textContent = row.stockAfter.toFixed(2);
 
       tr.append(
-        tdGun, tdTarih, tdArdiye, tdEkHizmet,
-        tdDailyTotal, tdCumulative, tdStock
+        tdGun,
+        tdTarih,
+        tdArdiye,
+        tdEkHizmet,
+        tdDailyTotal,
+        tdCumulative,
+        tdStock
       );
       dailyTableBody.appendChild(tr);
     });
 
-    // Toplam Maliyet
     totalMaliyetSpan.textContent = `${parseFloat(totalCost).toFixed(2)} ${paraBirimi}`;
   }
 

@@ -171,10 +171,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       tr.appendChild(tdNet);
   
       // 7) Birim
-      // Eğer SELECT sorgusunda LEFT JOIN birimler b ON h.birim_id = b.id
-      // ve b.birim_adi AS birim_adi dönüyorsa:
       const tdBirim = document.createElement("td");
-      tdBirim.textContent = item.birim_adi || ""; 
+      tdBirim.textContent = item.birim_adi || "";
       tr.appendChild(tdBirim);
   
       // 8) Açıklama
@@ -183,11 +181,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       tr.appendChild(tdAciklama);
   
       // 9) İşlemler (örneğin Sil butonu)
-      // ...
+      const tdIslemler = document.createElement("td");
+      const silBtn = document.createElement("button");
+      silBtn.textContent = "Sil";
+      silBtn.classList.add("btn-secondary");
+      silBtn.addEventListener("click", () => {
+        deleteEkHizmet(item.id);
+      });
+      tdIslemler.appendChild(silBtn);
+      tr.appendChild(tdIslemler);
+  
       hareketTableBody.appendChild(tr);
     });
   }
-  
 
   /************************************************************
    * 2) Mode Ayarı: URL Parametrelerinden Okuma (view / edit)
@@ -861,9 +867,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       ekHizmetler:           ekHizmetlerData
     };
   
+    // POST / PUT kararını verip URL'yi oluşturuyoruz:
+    let method = "POST";
+    let finalUrl = `${baseUrl}/api/antrepo-giris`;
+    if (editId) {
+      method = "PUT";
+      finalUrl = `${baseUrl}/api/antrepo-giris/${editId}`;
+    }
+  
     try {
-      const resp = await fetch(url, {
-        method: editId ? "PUT" : "POST",
+      const resp = await fetch(finalUrl, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
@@ -1045,7 +1059,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const entryNetAgirlik = parseFloat(document.getElementById("modalNetAgirlik")?.value) || 0;
       const entryKapAdeti = parseInt(document.getElementById("modalKapAdeti")?.value) || 0;
       const entryAciklama = document.getElementById("modalAciklama")?.value || "Yeni Giriş";
-      // Toplamı, örneğin brüt + net olarak hesaplayalım (isterseniz farklı bir hesaplama yapılabilir)
+      // Toplamı, örneğin brüt + net olarak hesaplayalım
       const toplam = (entryBrutAgirlik + entryNetAgirlik).toFixed(2);
   
       const hareketPayload = {
@@ -1158,15 +1172,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           alert("Yeni çıkış hareketi eklendi!");
           document.getElementById("newExitModal").style.display = "none";
           newExitForm.reset();
-          fetchHareketler(); // YORUMA ALINDI
-          
+          fetchHareketler();
         } else {
           alert("Yeni çıkış hareketi eklenemedi: " + JSON.stringify(result));
         }
       } catch (error) {
         console.error("Yeni çıkış hareketi eklenirken hata:", error);
         alert("Hata: " + error.message);
-      }f
+      }
     });
   }
   if (exitCancelBtn) {
@@ -1177,5 +1190,5 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   
   // Sayfa açıldığında hareketleri getir
-    fetchHareketler();
+  fetchHareketler();
 });
