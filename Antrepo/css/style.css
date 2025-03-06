@@ -1889,3 +1889,352 @@ table th, table td {
       transform: translateY(0); 
   }
 }
+
+/* Modern Company List Styles */
+.modern-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+}
+
+.header-title h1 {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #1a1f36;
+    margin: 0;
+}
+
+.header-title .subtitle {
+    color: #697386;
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.modern-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.modern-btn-primary {
+    background: linear-gradient(135deg, #408dfb 0%, #2C66DD 100%);
+    color: white;
+}
+
+.modern-btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(44, 102, 221, 0.15);
+}
+
+.modern-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    margin-bottom: 2rem;
+}
+
+.modern-card-body {
+    padding: 1.5rem;
+}
+
+/* Modern Table Styles */
+.modern-table {
+    width: 100% !important;
+    border-collapse: separate !important;
+    border-spacing: 0 0.5rem !important;
+    margin-top: 1rem !important;
+}
+
+.modern-table thead th {
+    background: #f8fafc !important;
+    padding: 1rem !important;
+    font-weight: 600 !important;
+    color: #1a1f36 !important;
+    border: none !important;
+    font-size: 0.9rem !important;
+}
+
+.modern-table tbody td {
+    padding: 1rem !important;
+    border: none !important;
+    background: white !important;
+    vertical-align: middle !important;
+}
+
+.modern-table tbody tr {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.modern-table tbody tr:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Modern Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.modern-btn-icon {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modern-btn-edit {
+    background: #eef2ff;
+    color: #408dfb;
+}
+
+.modern-btn-delete {
+    background: #fef2f2;
+    color: #ef4444;
+}
+
+.modern-btn-edit:hover {
+    background: #408dfb;
+    color: white;
+}
+
+.modern-btn-delete:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Modern Search Box */
+.dataTables_filter {
+    margin-bottom: 1.5rem !important;
+}
+
+.dataTables_filter label {
+    font-weight: 500 !important;
+    color: #1a1f36 !important;
+}
+
+.dataTables_filter input {
+    border: 2px solid #e5e7eb !important;
+    border-radius: 8px !important;
+    padding: 0.5rem 1rem !important;
+    font-size: 0.95rem !important;
+    width: 250px !important;
+    margin-left: 0.5rem !important;
+    transition: all 0.2s ease !important;
+}
+
+.dataTables_filter input:focus {
+    border-color: #408dfb !important;
+    box-shadow: 0 0 0 3px rgba(64, 141, 251, 0.1) !important;
+    outline: none !important;
+}
+
+/* ...existing code... */
+
+/* Modern Pagination Styles */
+.dataTables_paginate {
+    margin-top: 1.5rem !important;
+    padding-top: 1rem !important;
+    border-top: 1px solid #e5e7eb !important;
+}
+
+.dataTables_paginate .paginate_button {
+    padding: 0.5rem 0.75rem !important;
+    margin: 0 0.25rem !important;
+    border-radius: 6px !important;
+    border: none !important;
+    color: #1a1f36 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+.dataTables_paginate .paginate_button:hover:not(.disabled) {
+    background: #eef2ff !important;
+    color: #408dfb !important;
+    border: none !important;
+}
+
+.dataTables_paginate .paginate_button.current {
+    background: #408dfb !important;
+    color: white !important;
+    border: none !important;
+}
+
+.dataTables_paginate .paginate_button.disabled {
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
+}
+
+.dataTables_info {
+    color: #6b7280 !important;
+    font-size: 0.9rem !important;
+    margin-top: 1rem !important;
+}
+
+/* ...existing code... */
+
+/* Modern Pagination Styles - Updated */
+.dataTables_wrapper .dataTables_paginate {
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 0.5rem 1rem !important;
+    margin: 0 2px !important;
+    border-radius: 6px !important;
+    border: 1px solid #e5e7eb !important;
+    background: white !important;
+    color: #374151 !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 36px !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #f3f4f6 !important;
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: var(--primary-color) !important;
+    color: white !important;
+    border-color: var(--primary-color) !important;
+    font-weight: 600 !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+/* Sayfa bilgisi stili */
+.dataTables_wrapper .dataTables_info {
+    color: #6b7280 !important;
+    font-size: 0.9rem !important;
+    padding-top: 1rem !important;
+}
+
+/* Kayıt gösterme seçeneği stili */
+.dataTables_wrapper .dataTables_length select {
+    padding: 0.375rem 1.5rem 0.375rem 0.75rem !important;
+    font-size: 0.9rem !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 6px !important;
+    background-color: white !important;
+    cursor: pointer !important;
+    margin: 0 0.5rem !important;
+}
+
+/* Arama kutusu stili */
+.dataTables_wrapper .dataTables_filter input {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 6px !important;
+    margin-left: 0.5rem !important;
+    width: 250px !important;
+}
+
+.dataTables_wrapper .dataTables_filter input:focus {
+    outline: none !important;
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 3px rgba(64, 141, 251, 0.1) !important;
+}
+
+/* ...existing code... */
+
+/* Modern Search & Action Container */
+.search-action-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-left: auto;
+}
+
+/* Search Box Style */
+.search-box {
+    position: relative;
+    min-width: 300px;
+}
+
+.search-box .search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+}
+
+.modern-search {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    background: white;
+}
+
+.modern-search:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(64, 141, 251, 0.1);
+}
+
+.modern-search::placeholder {
+    color: #94a3b8;
+}
+
+/* Button Style (zaten mevcut olan stilinizi güncelleyin) */
+.modern-btn-primary {
+    background: linear-gradient(135deg, #408dfb 0%, #2C66DD 100%);
+    color: white;
+    white-space: nowrap; /* Buton metninin alt satıra geçmesini engeller */
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .search-action-container {
+        flex-direction: column;
+        width: 100%;
+        gap: 1rem;
+    }
+
+    .search-box {
+        width: 100%;
+        min-width: auto;
+    }
+
+    .modern-btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ...existing code... */

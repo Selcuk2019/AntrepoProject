@@ -11,6 +11,47 @@ document.addEventListener("DOMContentLoaded", async function() {
   let allCustoms = [];
   let selectedCustomIds = [];
 
+  // NEW: Check for edit mode based on URL parameter
+  const params = new URLSearchParams(window.location.search);
+  const companyId = params.get('id');
+
+  if (companyId) {
+    // Change page title and heading for edit mode
+    document.title = 'Antrepo Şirketini Düzenle';
+    const header = document.querySelector('.new-company-form h1');
+    if (header) header.textContent = 'Antrepo Şirketini Düzenle';
+
+    // Load existing company data from the API and prefill the form
+    (async function loadCompanyData() {
+      try {
+        const resp = await fetch(`/api/companies/${companyId}`);
+        if (!resp.ok) throw new Error('Şirket bilgileri alınamadı');
+        const data = await resp.json();
+        // Prefill form fields (adjust input IDs as needed)
+        document.getElementById("firstName").value = data.firstName || '';
+        document.getElementById("lastName").value = data.lastName || '';
+        document.getElementById("companyName").value = data.companyName || '';
+        document.getElementById("displayName").value = data.displayName || '';
+        document.getElementById("emailAddress").value = data.emailAddress || '';
+        document.getElementById("phoneNumber").value = data.phoneNumber || '';
+        document.getElementById("addressCity").value = data.address?.city_id || '';
+        document.getElementById("addressDistrict").value = data.address?.district || '';
+        document.getElementById("addressPostalCode").value = data.address?.postalCode || '';
+        document.getElementById("addressDetail").value = data.address?.detail || '';
+        document.getElementById("taxRate").value = data.taxRate || '';
+        document.getElementById("companyID").value = data.taxNumber || '';
+        document.getElementById("companyID2").value = data.taxOffice || '';
+        document.getElementById("currency").value = data.currency || '';
+        document.getElementById("paymentTerms").value = data.paymentTerms || '';
+        // If needed, prefill selected customs – assume data.customs is an array of IDs
+        // ...customs prefill logic...
+      } catch (err) {
+        console.error('Edit form yüklenirken hata:', err);
+        alert('Şirket bilgileri yüklenemedi.');
+      }
+    })();
+  }
+
   // Şehir dropdown doldurma
   async function loadCities() {
     try {

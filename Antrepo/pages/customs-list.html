@@ -4,8 +4,13 @@
   <meta charset="UTF-8">
   <title>Gümrükler | Antrepo</title>
   <link rel="stylesheet" href="../css/style.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Modern DataTables CSS -->
+  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
   <header class="topbar">
@@ -18,38 +23,48 @@
     </nav>
 
     <div class="content">
-      <div class="page-header">
-        <h1>Gümrükler</h1>
-        <button class="btn-primary" id="newCustomsBtn">
-          <i class="fas fa-plus"></i> Yeni Gümrük Ekle
-        </button>
+      <div class="modern-page-header">
+        <div class="header-title">
+          <h1>Gümrükler</h1>
+          <p class="subtitle">Tüm gümrük kayıtlarını görüntüleyin ve yönetin</p>
+        </div>
+        <div class="search-action-container">
+          <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="search" class="modern-search" placeholder="Gümrük ara...">
+          </div>
+          <button class="modern-btn modern-btn-primary" id="newCustomsBtn">
+            <i class="fas fa-plus"></i>
+            <span>Yeni Gümrük Ekle</span>
+          </button>
+        </div>
       </div>
 
-      <div class="card">
-        <table id="customsTable" class="display">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Gümrük Adı</th>
-              <th>Sınıfı</th>
-              <th>Şehir</th>
-              <th>Bölge Müdürlüğü</th>
-              <th>İşlemler</th>
-            </tr>
-          </thead>
-        </table>
+      <div class="modern-card">
+        <div class="modern-card-body">
+          <table id="customsTable" class="modern-table display responsive nowrap" style="width:100%">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Gümrük Adı</th>
+                <th>Sınıfı</th>
+                <th>Şehir</th>
+                <th>Bölge Müdürlüğü</th>
+                <th>İşlemler</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- jQuery + DataTables -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-
-  <!-- template.js (varsayılan script) -->
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
   <script src="../js/template.js"></script>
-
-  <!-- customs-list.js artık type="module" -->
   <script type="module" src="../js/customs-list.js"></script>
 </body>
 </html>

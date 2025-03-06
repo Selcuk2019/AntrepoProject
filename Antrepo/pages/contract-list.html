@@ -1,49 +1,73 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Sözleşmeler</title>
-  <link rel="stylesheet" href="../css/style.css">
+    <meta charset="UTF-8">
+    <title>Sözleşmeler | Antrepo</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <header class="topbar">
-    <!-- ... -->
-  </header>
+    <header class="topbar">
+        <!-- template.js ile doldurulacak -->
+    </header>
 
-  <div class="main-container">
-    <nav class="sidebar">
-      <!-- ... -->
-    </nav>
+    <div class="main-container">
+        <nav class="sidebar">
+            <!-- template.js ile doldurulacak -->
+        </nav>
 
-    <div class="content">
-      <div class="page-header">
-        <h1>Sözleşmeler</h1>
-        <button id="newContractBtn" class="btn-primary">Yeni Sözleşme Ekle</button>
-      </div>
+        <div class="content">
+            <div class="modern-page-header">
+                <div class="header-title">
+                    <h1>Sözleşmeler</h1>
+                    <p class="subtitle">Tüm sözleşmeleri görüntüleyin ve yönetin</p>
+                </div>
+                <div class="search-action-container">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="search" class="modern-search" placeholder="Sözleşme ara...">
+                    </div>
+                    <button id="newContractBtn" class="modern-btn modern-btn-primary">
+                        <i class="fas fa-plus"></i>
+                        <span>Yeni Sözleşme</span>
+                    </button>
+                </div>
+            </div>
 
-      <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Sözleşme Kodu</th>
-              <th>Sözleşme Adı</th>
-              <th>Başlangıç</th>
-              <th>Bitiş</th>
-              <th>Fatura Periyodu</th>
-              <th>Min Fatura</th>
-              <th>İşlemler</th>
-            </tr>
-          </thead>
-          <tbody id="contractTableBody">
-            <!-- contract-list.js ile doldurulacak -->
-          </tbody>
-        </table>
-      </div>
+            <div class="modern-card">
+                <div class="modern-card-body">
+                    <table id="contractTable" class="modern-table display responsive nowrap" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Sözleşme Kodu</th>
+                                <th>Sözleşme Adı</th>
+                                <th>Başlangıç</th>
+                                <th>Bitiş</th>
+                                <th>Fatura Periyodu</th>
+                                <th>Min. Fatura</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- DataTables ile doldurulacak -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <script src="../js/template.js"></script>
-  <script type="module" src="../js/contract-list.js"></script>
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="../js/template.js"></script>
+    <script type="module" src="../js/contract-list.js"></script>
 </body>
 </html>

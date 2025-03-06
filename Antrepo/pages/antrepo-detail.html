@@ -63,44 +63,36 @@
               <form id="antrepoDetailForm">
                 <div class="form-grid">
                   <div class="form-group">
-                    <label for="antrepoAdi">Antrepo Adı</label>
-                    <input type="text" id="antrepoAdi" placeholder="Antrepo Adı">
+                    <label for="antrepoKodu">Antrepo Kodu <span class="required">*</span></label>
+                    <input type="text" id="antrepoKodu" required>
                   </div>
                   <div class="form-group">
-                    <label for="antrepoKodu">Antrepo Kodu</label>
-                    <input type="text" id="antrepoKodu" placeholder="Antrepo Kodu">
+                    <label for="antrepoAdi">Antrepo Adı <span class="required">*</span></label>
+                    <input type="text" id="antrepoAdi" required>
                   </div>
                   <div class="form-group">
-                    <label for="sehir">Şehir</label>
-                    <input type="text" id="sehir" placeholder="Şehir">
+                    <label for="antrepoTipi">Antrepo Tipi <span class="required">*</span></label>
+                    <select id="antrepoTipi" required></select>
                   </div>
                   <div class="form-group">
-                    <label for="acikAdres">Açık Adres</label>
-                    <textarea id="acikAdres" placeholder="Açık Adres"></textarea>
+                    <label for="gumruk">Bulunduğu Gümrük <span class="required">*</span></label>
+                    <select id="gumruk" required></select>
                   </div>
                   <div class="form-group">
-                    <label for="notlar">Notlar</label>
-                    <textarea id="notlar" placeholder="Notlar"></textarea>
+                    <label for="gumrukMudurlugu">İlgili Gümrük Müdürlüğü <span class="required">*</span></label>
+                    <select id="gumrukMudurlugu" required></select>
                   </div>
                   <div class="form-group">
-                    <label for="kapasite">Kapasite</label>
-                    <input type="number" id="kapasite" placeholder="Örn: 100">
+                    <label for="sehir">Şehir <span class="required">*</span></label>
+                    <select id="sehir" required></select>
                   </div>
                   <div class="form-group">
-                    <label for="antrepoTipi">Antrepo Tipi</label>
-                    <input type="text" id="antrepoTipi" placeholder="Örn: A Tipi">
+                    <label for="acikAdres">Açık Adres <span class="required">*</span></label>
+                    <textarea id="acikAdres" required></textarea>
                   </div>
                   <div class="form-group">
-                    <label for="gumruk">Bulunduğu Gümrük</label>
-                    <input type="text" id="gumruk" placeholder="Örn: Erenköy Gümrüğü">
-                  </div>
-                  <div class="form-group">
-                    <label for="gumrukMudurlugu">Gümrük Müdürlüğü</label>
-                    <input type="text" id="gumrukMudurlugu" placeholder="Örn: İstanbul Gümrük Md.">
-                  </div>
-                  <div class="form-group">
-                    <label for="antrepoSirketi">Antrepo Şirketi</label>
-                    <input type="text" id="antrepoSirketi" placeholder="Örn: ABC Lojistik">
+                    <label for="antrepoSirketi">Antrepo Şirketi <span class="required">*</span></label>
+                    <select id="antrepoSirketi" required></select>
                   </div>
                 </div>
                 <div class="form-actions">

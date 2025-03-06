@@ -1,52 +1,68 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Hizmetler</title>
-  <link rel="stylesheet" href="../css/style.css">
+    <meta charset="UTF-8">
+    <title>Hizmetler | Antrepo</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- Modern DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <header class="topbar">
-    <!-- template.js ile doldurulacak -->
-  </header>
+    <header class="topbar"></header>
 
-  <div class="main-container">
-    <nav class="sidebar">
-      <!-- template.js ile doldurulacak -->
-    </nav>
+    <div class="main-container">
+        <nav class="sidebar"></nav>
 
-    <div class="content">
-      <div class="page-header">
-        <h1>Hizmetler</h1>
-        <button id="newServiceBtn" class="btn-primary">Yeni Hizmet Ekle</button>
-      </div>
+        <div class="content">
+            <div class="modern-page-header">
+                <div class="header-title">
+                    <h1>Maliyet Kalemleri</h1>
+                    <p class="subtitle">Tüm hizmet ve maliyet kalemlerini yönetin</p>
+                </div>
+                <div class="search-action-container">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="search" class="modern-search" placeholder="Hizmet ara...">
+                    </div>
+                    <button class="modern-btn modern-btn-primary" id="newHizmetBtn">
+                        <i class="fas fa-plus"></i>
+                        <span>Yeni Hizmet Ekle</span>
+                    </button>
+                </div>
+            </div>
 
-      <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Hizmet Adı</th>
-              <th>Hizmet Kodu</th>
-              <th>Hizmet Tipi</th>
-              <th>Birim</th>
-              <th>Para Birimi</th>
-              <th>Temel Ücret</th>
-              <th>Min Ücret</th>
-              <th>Çarpan</th>
-              <th>Durum</th>
-              <th>İşlemler</th>
-            </tr>
-          </thead>
-          <tbody id="serviceTableBody">
-            <!-- hizmet-list.js tarafından doldurulacak -->
-          </tbody>
-        </table>
-      </div>
+            <div class="modern-card">
+                <div class="modern-card-body">
+                    <table id="hizmetTable" class="modern-table display responsive nowrap" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Hizmet Adı</th>
+                                <th>Hizmet Kodu</th>
+                                <th>Tipi</th>
+                                <th>Birim</th>
+                                <th>Para Birimi</th>
+                                <th>Temel Ücret</th>
+                                <th>Min. Ücret</th>
+                                <th>Çarpan</th>
+                                <th>Durum</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <script type="module" src="../js/template.js"></script>
-  <script type="module" src="../js/hizmet-list.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="../js/template.js"></script>
+    <script type="module" src="../js/hizmet-list.js"></script>
 </body>
 </html>

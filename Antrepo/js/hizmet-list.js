@@ -1,102 +1,112 @@
 import { baseUrl } from './config.js';
 
-document.addEventListener("DOMContentLoaded", async function() {
-  const serviceTableBody = document.getElementById("serviceTableBody");
-  const newServiceBtn = document.getElementById("newServiceBtn");
-
-  async function fetchServices() {
-    try {
-      const resp = await fetch(`${baseUrl}/api/hizmetler`);
-      if (!resp.ok) throw new Error(`Sunucu hatası: ${resp.status}`);
-      const services = await resp.json();
-      renderServices(services);
-    } catch (error) {
-      console.error("Hizmetler çekilirken hata:", error);
-    }
-  }
-
-  function renderServices(services) {
-    serviceTableBody.innerHTML = "";
-    services.forEach(service => {
-      const tr = document.createElement("tr");
-
-      const tdId = document.createElement("td");
-      tdId.textContent = service.id;
-
-      const tdAdi = document.createElement("td");
-      tdAdi.textContent = service.hizmet_adi;
-
-      const tdKodu = document.createElement("td");
-      tdKodu.textContent = service.hizmet_kodu;
-
-      const tdTipi = document.createElement("td");
-      tdTipi.textContent = service.hizmet_tipi;
-
-      const tdBirim = document.createElement("td");
-      tdBirim.textContent = service.birim_adi || service.birim_id;
-
-      const tdParaBirimi = document.createElement("td");
-      if (service.para_birimi_adi) {
-        tdParaBirimi.textContent = `${service.para_birimi_adi} (${service.para_iso_kodu})`;
-      } else {
-        tdParaBirimi.textContent = service.para_birimi_id || "-";
-      }
-
-      const tdTemel = document.createElement("td");
-      tdTemel.textContent = service.temel_ucret;
-
-      const tdMin = document.createElement("td");
-      tdMin.textContent = service.min_ucret !== null ? service.min_ucret : "-";
-
-      const tdCarpan = document.createElement("td");
-      tdCarpan.textContent = service.carpan !== null ? service.carpan : "-";
-
-      const tdDurum = document.createElement("td");
-      tdDurum.textContent = service.durum;
-
-      const tdActions = document.createElement("td");
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "Düzenle";
-      editBtn.classList.add("btn-secondary");
-      editBtn.addEventListener("click", function() {
-        window.location.href = "hizmet-form.html?id=" + service.id;
-      });
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "Sil";
-      deleteBtn.classList.add("btn-secondary");
-      deleteBtn.addEventListener("click", async function() {
-        if (confirm("Bu hizmeti silmek istediğinize emin misiniz?")) {
-          try {
-            const delResp = await fetch(`${baseUrl}/api/hizmetler/${service.id}`, { method: "DELETE" });
-            if (!delResp.ok) throw new Error(`Silme hatası: ${delResp.status}`);
-            fetchServices();
-          } catch (error) {
-            console.error("Silme sırasında hata:", error);
-          }
-        }
-      });
-      tdActions.appendChild(editBtn);
-      tdActions.appendChild(deleteBtn);
-
-      tr.appendChild(tdId);
-      tr.appendChild(tdAdi);
-      tr.appendChild(tdKodu);
-      tr.appendChild(tdTipi);
-      tr.appendChild(tdBirim);
-      tr.appendChild(tdParaBirimi);
-      tr.appendChild(tdTemel);
-      tr.appendChild(tdMin);
-      tr.appendChild(tdCarpan);
-      tr.appendChild(tdDurum);
-      tr.appendChild(tdActions);
-
-      serviceTableBody.appendChild(tr);
+document.addEventListener('DOMContentLoaded', function() {
+    const hizmetTable = $('#hizmetTable').DataTable({
+        ajax: {
+            url: `${baseUrl}/api/hizmetler`,
+            dataSrc: '',
+            error: function(xhr, error, thrown) {
+                console.error('DataTables Error:', error);
+            }
+        },
+        columns: [
+            { data: 'id' },
+            { data: 'hizmet_adi' },
+            { data: 'hizmet_kodu' },
+            { data: 'hizmet_tipi' },
+            { data: 'birim_adi' },
+            { data: 'para_birimi_adi' },
+            { 
+                data: 'temel_ucret',
+                render: function(data) {
+                    return parseFloat(data).toFixed(2);
+                }
+            },
+            { 
+                data: 'min_ucret',
+                render: function(data) {
+                    return data ? parseFloat(data).toFixed(2) : '-';
+                }
+            },
+            { 
+                data: 'carpan',
+                render: function(data) {
+                    return data ? parseFloat(data).toFixed(3) : '-';
+                }
+            },
+            { data: 'durum' },
+            {
+                data: null,
+                orderable: false,
+                className: 'text-center',
+                render: function(data, type, row) {
+                    return `
+                        <div class="action-buttons">
+                            <button onclick="editHizmet(${row.id})" class="modern-btn-icon modern-btn-edit" title="Düzenle">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteHizmet(${row.id})" class="modern-btn-icon modern-btn-delete" title="Sil">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        ],
+        responsive: true,
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json',
+            paginate: {
+                first: '<i class="fas fa-angle-double-left"></i>',
+                previous: '<i class="fas fa-angle-left"></i>',
+                next: '<i class="fas fa-angle-right"></i>',
+                last: '<i class="fas fa-angle-double-right"></i>'
+            },
+            lengthMenu: 'Sayfa başına _MENU_ kayıt göster',
+            info: 'Toplam _TOTAL_ kayıttan _START_ - _END_ arası gösteriliyor'
+        },
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tümü"]],
+        pageLength: 10,
+        lengthChange: true,
+        autoWidth: false,
+        searching: true
     });
-  }
 
-  fetchServices();
+    // Custom arama fonksiyonunu bağlama
+    $('.modern-search').on('keyup', function() {
+        hizmetTable.search(this.value).draw();
+    });
 
-  newServiceBtn.addEventListener("click", function() {
-    window.location.href = "hizmet-form.html";
-  });
+    // Yeni Hizmet Ekle butonu
+    document.getElementById('newHizmetBtn')?.addEventListener('click', () => {
+        window.location.href = '/pages/hizmet-form.html';
+    });
 });
+
+// Edit ve Delete fonksiyonları
+window.editHizmet = function(id) {
+    window.location.href = `/pages/hizmet-form.html?id=${id}`;
+};
+
+window.deleteHizmet = function(id) {
+    if (confirm('Bu hizmeti silmek istediğinizden emin misiniz?')) {
+        fetch(`${baseUrl}/api/hizmetler/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                $('#hizmetTable').DataTable().ajax.reload();
+                alert('Kayıt başarıyla silindi.');
+            } else {
+                throw new Error('Silme işlemi başarısız.');
+            }
+        })
+        .catch(err => {
+            console.error('Silme hatası:', err);
+            alert('Silme işlemi sırasında bir hata oluştu.');
+        });
+    }
+};

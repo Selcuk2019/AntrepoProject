@@ -1,83 +1,93 @@
 import { baseUrl } from './config.js';
 
-document.addEventListener("DOMContentLoaded", async function() {
-  const unitTableBody = document.getElementById("unitTableBody");
-  const newUnitBtn = document.getElementById("newUnitBtn");
-
-  async function fetchUnits() {
-    try {
-      const response = await fetch(`${baseUrl}/api/birimler`);
-      if (!response.ok) throw new Error(`Sunucu hatası: ${response.status}`);
-      const units = await response.json();
-      renderUnits(units);
-    } catch (error) {
-      console.error("Birimler çekilirken hata:", error);
-    }
-  }
-
-  function renderUnits(units) {
-    unitTableBody.innerHTML = "";
-    units.forEach(unit => {
-      const tr = document.createElement("tr");
-      
-      const tdId = document.createElement("td");
-      tdId.textContent = unit.id;
-      
-      const tdName = document.createElement("td");
-      tdName.textContent = unit.birim_adi;
-      
-      const tdKategori = document.createElement("td");
-      tdKategori.textContent = unit.kategori;
-      
-      const tdSembol = document.createElement("td");
-      tdSembol.textContent = unit.sembol;
-      
-      const tdKisaKod = document.createElement("td");
-      tdKisaKod.textContent = unit.kisa_kod;
-      
-      const tdDurum = document.createElement("td");
-      tdDurum.textContent = unit.durum;
-      
-      // İşlemler sütunu
-      const tdActions = document.createElement("td");
-      const editBtn = document.createElement("button");
-      editBtn.textContent = "Düzenle";
-      editBtn.classList.add("btn-secondary");
-      editBtn.addEventListener("click", function() {
-        window.location.href = "unit-form.html?id=" + unit.id;
-      });
-      const deleteBtn = document.createElement("button");
-      deleteBtn.textContent = "Sil";
-      deleteBtn.classList.add("btn-secondary");
-      deleteBtn.addEventListener("click", async function() {
-        if (confirm("Bu birimi silmek istediğinize emin misiniz?")) {
-          try {
-            const delResp = await fetch(`${baseUrl}/api/birimler/${unit.id}`, { method: "DELETE" });
-            if (!delResp.ok) throw new Error(`Silme hatası: ${delResp.status}`);
-            fetchUnits();
-          } catch (error) {
-            console.error("Silme sırasında hata:", error);
-          }
-        }
-      });
-      tdActions.appendChild(editBtn);
-      tdActions.appendChild(deleteBtn);
-      
-      tr.appendChild(tdId);
-      tr.appendChild(tdName);
-      tr.appendChild(tdKategori);
-      tr.appendChild(tdSembol);
-      tr.appendChild(tdKisaKod);
-      tr.appendChild(tdDurum);
-      tr.appendChild(tdActions);
-      
-      unitTableBody.appendChild(tr);
+document.addEventListener('DOMContentLoaded', function() {
+    const unitTable = $('#unitTable').DataTable({
+        ajax: {
+            url: `${baseUrl}/api/birimler`,
+            dataSrc: '',
+            error: function(xhr, error, thrown) {
+                console.error('DataTables Error:', error);
+            }
+        },
+        columns: [
+            { data: 'id' },
+            { data: 'birim_adi' },
+            { data: 'kategori' },
+            { data: 'sembol' },
+            { data: 'kisa_kod' },
+            { data: 'durum' },
+            {
+                data: null,
+                orderable: false,
+                className: 'text-center',
+                render: function(data, type, row) {
+                    return `
+                        <div class="action-buttons">
+                            <button onclick="editUnit(${row.id})" class="modern-btn-icon modern-btn-edit" title="Düzenle">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteUnit(${row.id})" class="modern-btn-icon modern-btn-delete" title="Sil">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        ],
+        responsive: true,
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json',
+            paginate: {
+                first: '<i class="fas fa-angle-double-left"></i>',
+                previous: '<i class="fas fa-angle-left"></i>',
+                next: '<i class="fas fa-angle-right"></i>',
+                last: '<i class="fas fa-angle-double-right"></i>'
+            },
+            lengthMenu: 'Sayfa başına _MENU_ kayıt göster',
+            info: 'Toplam _TOTAL_ kayıttan _START_ - _END_ arası gösteriliyor'
+        },
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tümü"]],
+        pageLength: 10,
+        lengthChange: true,
+        autoWidth: false,
+        searching: true
     });
-  }
 
-  fetchUnits();
+    // Custom arama fonksiyonunu bağlama
+    $('.modern-search').on('keyup', function() {
+        unitTable.search(this.value).draw();
+    });
 
-  newUnitBtn.addEventListener("click", function() {
-    window.location.href = "unit-form.html";
-  });
+    // Yeni Birim Ekle butonu
+    document.getElementById('newUnitBtn')?.addEventListener('click', () => {
+        window.location.href = '/pages/unit-form.html';
+    });
 });
+
+// Edit ve Delete fonksiyonlarını global scope'a taşıyalım
+window.editUnit = function(id) {
+    window.location.href = `/pages/unit-form.html?id=${id}`;
+};
+
+window.deleteUnit = function(id) {
+    if (confirm('Bu birimi silmek istediğinizden emin misiniz?')) {
+        fetch(`${baseUrl}/api/birimler/${id}`, {
+            method: 'DELETE'
+        })
+        .then(response => {
+            if (response.ok) {
+                $('#unitTable').DataTable().ajax.reload();
+                alert('Kayıt başarıyla silindi.');
+            } else {
+                throw new Error('Silme işlemi başarısız.');
+            }
+        })
+        .catch(err => {
+            console.error('Silme hatası:', err);
+            alert('Silme işlemi sırasında bir hata oluştu.');
+        });
+    }
+};

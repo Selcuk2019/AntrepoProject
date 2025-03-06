@@ -71,29 +71,46 @@ router.get('/companies', async (req, res) => {
 // routes/api.js içinde
 router.get('/antrepolar', async (req, res) => {
   try {
+    // Debug log ekleyelim
+    console.log('GET /antrepolar endpoint çalıştı');
+    
     const sql = `
-      SELECT
+      SELECT 
         a.id,
-        a.antrepoAdi,
         a.antrepoKodu,
+        a.antrepoAdi,
+        at.name as antrepoTipi,
+        g.gumruk_adi as gumruk,
+        gm.bolge_mudurlugu as gumrukMudurlugu,
+        s.sehir_ad as sehir,
         a.acikAdres,
-        -- JOIN ile şehir adı
-        s.sehir_ad   AS sehir,
-        -- JOIN ile gümrük adı
-        g.gumruk_adi AS gumruk,
-        -- İhtiyacınız varsa:
+        sr.company_name as antrepoSirketi,
         a.kapasite,
-        a.notlar,
         a.aktif
       FROM antrepolar a
-      LEFT JOIN sehirler s  ON a.sehir  = s.id
+      LEFT JOIN antrepo_tipleri at ON a.antrepoTipi = at.id
       LEFT JOIN gumrukler g ON a.gumruk = g.gumruk_id
+      LEFT JOIN bolge_mudurlukleri gm ON a.gumrukMudurlugu = gm.bolge_id
+      LEFT JOIN sehirler s ON a.sehir = s.id
+      LEFT JOIN sirketler sr ON a.antrepoSirketi = sr.sirket_id
       ORDER BY a.id DESC
     `;
+
+    // Debug için SQL'i yazdıralım
+    console.log('SQL Query:', sql);
+
     const [rows] = await db.query(sql);
-    res.json(rows);  // ID yerine s.sehir_ad ve g.gumruk_adi dönmüş olacak
+    
+    // Debug için sonuçları yazdıralım
+    console.log('Query Results:', rows);
+    
+    res.json(rows);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("GET /antrepolar hatası:", error);
+    res.status(500).json({ 
+      error: error.message,
+      stack: error.stack // Geliştirme ortamında stack trace'i görmek için
+    });
   }
 });
 
@@ -102,25 +119,30 @@ router.get('/antrepolar/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const sql = `
-      SELECT
-        a.id,
-        a.antrepoAdi,
-        a.antrepoKodu,
-        a.acikAdres,
-        s.sehir_ad   AS sehir,
-        g.gumruk_adi AS gumruk
+      SELECT 
+        a.*,
+        at.name as antrepoTipi_name,
+        g.gumruk_adi as gumruk_name,
+        gm.bolge_mudurlugu as gumrukMudurlugu_name,
+        s.sehir_ad as sehir_name,
+        sr.company_name as antrepoSirketi_name
       FROM antrepolar a
-      LEFT JOIN sehirler s  ON a.sehir  = s.id
+      LEFT JOIN antrepo_tipleri at ON a.antrepoTipi = at.id
       LEFT JOIN gumrukler g ON a.gumruk = g.gumruk_id
+      LEFT JOIN bolge_mudurlukleri gm ON a.gumrukMudurlugu = gm.bolge_id
+      LEFT JOIN sehirler s ON a.sehir = s.id
+      LEFT JOIN sirketler sr ON a.antrepoSirketi = sr.sirket_id
       WHERE a.id = ?
     `;
     const [rows] = await db.query(sql, [id]);
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Antrepo not found' });
+      return res.status(404).json({ error: 'Antrepo bulunamadı' });
     }
-    return res.json(rows[0]);
+    console.log('Antrepo Detail API Response:', rows[0]); // Debug için
+    res.json(rows[0]);
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    console.error("GET /api/antrepolar/:id hatası:", error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -612,7 +634,7 @@ router.get('/maliyet-analizi', async (req, res) => {
       LEFT JOIN urunler u ON ag.urun_kodu = u.code
       ORDER BY ag.id
     `;
-    const [rowsGiris] = await db.query(sqlGirisler);
+    const [rowsGiris] = await db.query(sqlGiris);
     const resultArray = [];
 
     // Her giriş için ayrı ayrı hesaplama motoru mantığı çalıştırılacak
@@ -728,15 +750,18 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
     // 1) "antrepo_giris" kaydını çekiyoruz (sözleşme_id vb. için gerekli)
     const sqlGiris = `
       SELECT 
-        id, 
-        beyanname_no, 
-        antrepo_giris_tarihi,
-        miktar AS initialStock,
-        kap_adeti,
-        urun_kodu,
-        sozlesme_id
-      FROM antrepo_giris
-      WHERE id = ?
+        ag.id, 
+        ag.beyanname_no, 
+        ag.antrepo_giris_tarihi,
+        ag.miktar AS initialStock,
+        ag.kap_adeti,
+        ag.urun_kodu,
+        ag.sozlesme_id,
+        -- Burada JOIN ile ürün adını alıyoruz (örnek: urunler.name AS urun_adi)
+        u.name AS urun_adi
+      FROM antrepo_giris ag
+      LEFT JOIN urunler u ON ag.urun_kodu = u.code
+      WHERE ag.id = ?
     `;
     const [rowsGiris] = await db.query(sqlGiris, [girisId]);
     if (rowsGiris.length === 0) {
@@ -2189,5 +2214,206 @@ router.delete('/antrepo-giris/:girisId/ek-hizmetler/:ekHizmetId', async (req, re
   }
 });
 
+
+// GET /api/companies/:id - Tek bir şirketin detaylarını getir
+router.get('/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `
+      SELECT *
+      FROM sirketler
+      WHERE sirket_id = ?
+    `;
+    const [rows] = await db.query(sql, [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Şirket bulunamadı' });
+    }
+
+    // API response formatı - address alanları direkt tablodaki kolonlardan alınıyor
+    const company = {
+      sirket_id: rows[0].sirket_id,
+      firstName: rows[0].first_name,
+      lastName: rows[0].last_name,
+      companyName: rows[0].company_name,
+      displayName: rows[0].display_name,
+      emailAddress: rows[0].email,
+      phoneNumber: rows[0].phone_number,
+      currency: rows[0].currency,
+      taxRate: rows[0].tax_rate,
+      taxNumber: rows[0].tax_number,
+      taxOffice: rows[0].tax_office,
+      paymentTerms: rows[0].payment_terms,
+      address: {
+        city_id: rows[0].address_city_id,
+        district: rows[0].address_district,
+        postalCode: rows[0].address_postal_code,
+        detail: rows[0].address_detail
+      }
+    };
+    
+    res.json(company);
+  } catch (error) {
+    console.error('GET /companies/:id error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/companies/:id - Şirket bilgilerini güncelle
+router.put('/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      firstName, lastName, companyName, displayName, emailAddress, phoneNumber,
+      currency, taxRate, taxNumber, taxOffice, paymentTerms, address
+    } = req.body;
+
+    const sql = `
+      UPDATE sirketler 
+      SET 
+        first_name = ?,
+        last_name = ?,
+        company_name = ?,
+        display_name = ?,
+        phone_number = ?,
+        email = ?,
+        currency = ?,
+        tax_rate = ?,
+        tax_number = ?,
+        tax_office = ?,
+        payment_terms = ?,
+        address_city_id = ?,
+        address_district = ?,
+        address_postal_code = ?,
+        address_detail = ?,
+        updated_at = NOW()
+      WHERE sirket_id = ?
+    `;
+    
+    const values = [
+      firstName || null,
+      lastName || null,
+      companyName,
+      displayName,
+      phoneNumber,
+      emailAddress || null,
+      currency,
+      taxRate || null,
+      taxNumber || null,
+      taxOffice || null,
+      paymentTerms || null,
+      address.city_id,
+      address.district || null,
+      address.postalCode || null,
+      address.detail,
+      id
+    ];
+
+    const [result] = await db.query(sql, values);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Şirket bulunamadı' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('PUT /companies/:id error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/customs/:id - Tekil gümrük detayını getir
+router.get('/customs/:id', async (req, res) => {
+    try {
+        const gumrukId = req.params.id;
+        const sql = `
+            SELECT gumruk_id, gumruk_adi, sinif, sehir_ad, bolge_mudurlugu, notes
+            FROM gumrukler
+            WHERE gumruk_id = ?
+        `;
+        const [rows] = await db.query(sql, [gumrukId]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Gümrük bulunamadı' });
+        }
+        
+        res.json(rows[0]);
+    } catch (error) {
+        console.error('GET /customs/:id error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// PUT /api/antrepolar/:id - Antrepo güncelleme endpoint'i
+router.put('/antrepolar/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const {
+            antrepoAdi,
+            antrepoKodu,
+            antrepoTipi,
+            gumruk,
+            gumrukMudurlugu,
+            sehir,
+            acikAdres,
+            antrepoSirketi
+        } = req.body;
+
+        // Debug log
+        console.log('Update Request:', {
+            id,
+            body: req.body
+        });
+
+        const sql = `
+            UPDATE antrepolar 
+            SET 
+                antrepoAdi = ?,
+                antrepoKodu = ?,
+                antrepoTipi = ?,
+                gumruk = ?,
+                gumrukMudurlugu = ?,
+                sehir = ?,
+                acikAdres = ?,
+                antrepoSirketi = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        `;
+
+        const values = [
+            antrepoAdi,
+            antrepoKodu,
+            antrepoTipi,
+            gumruk,
+            gumrukMudurlugu,
+            sehir,
+            acikAdres,
+            antrepoSirketi,
+            id
+        ];
+
+        const [result] = await db.query(sql, values);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Antrepo bulunamadı'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Antrepo başarıyla güncellendi'
+        });
+
+    } catch (error) {
+        console.error('Antrepo Update Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Güncelleme sırasında hata oluştu',
+            error: error.message
+        });
+    }
+});
 
 module.exports = router;

@@ -1,96 +1,134 @@
 import { baseUrl } from './config.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
-  // 1) URL parametresi
-  const params = new URLSearchParams(window.location.search);
-  const antrepoId = params.get("id");
+    const params = new URLSearchParams(window.location.search);
+    const antrepoId = params.get("id");
 
-  // 2) Sekme geçişi (opsiyonel)
-  const tabs = document.querySelectorAll(".tabs-menu ul li");
-  const panels = document.querySelectorAll(".tab-panel");
-  tabs.forEach(tab => {
-    tab.addEventListener("click", () => {
-      tabs.forEach(t => t.classList.remove("active"));
-      panels.forEach(p => p.classList.remove("active"));
-      tab.classList.add("active");
-      const tabName = tab.getAttribute("data-tab");
-      document.getElementById(tabName).classList.add("active");
-    });
-  });
-
-  // 3) API'den antrepo kaydı çek
-  if (!antrepoId) {
-    console.warn("URL parametresinde antrepoId yok!");
-    return;
-  }
-
-  let currentAntrepo = null;
-  try {
-    const resp = await fetch(`${baseUrl}/api/antrepolar/${antrepoId}`);
-    if (!resp.ok) {
-      throw new Error(`Sunucu hatası: ${resp.status}`);
+    if (!antrepoId) {
+        alert("Antrepo ID bulunamadı!");
+        window.location.href = "antrepo-list.html";
+        return;
     }
-    currentAntrepo = await resp.json();
-    // Veriyi fillForm ile inputlara doldur
-    fillForm(currentAntrepo);
-  } catch (error) {
-    console.error("Antrepo verisi çekilirken hata:", error);
-  }
 
-  // 4) fillForm fonksiyonu (Tam Konum!)
-  function fillForm(a) {
-    // a.sehir_name -> "İstanbul", a.gumruk_name -> "Erenköy Gümrüğü", vb.
-    document.getElementById("sehir").value = a.sehir_name || "";
-    document.getElementById("gumruk").value = a.gumruk_name || "";
-    document.getElementById("gumrukMudurlugu").value = a.mudurluk_name || "";
-    document.getElementById("antrepoSirketi").value = a.sirket_name || "";
-    document.getElementById("antrepoTipi").value = a.antrepo_tipi_name || "";
-
-    // Diğer alanlar (ör. a.antrepoAdi, a.kapasite, a.acikAdres, a.notlar, vs.)
-    document.getElementById("antrepoAdi").value = a.antrepoAdi || "";
-    document.getElementById("antrepoKodu").value = a.antrepoKodu || "";
-    document.getElementById("kapasite").value = a.kapasite || "";
-    document.getElementById("acikAdres").value = a.acikAdres || "";
-    document.getElementById("notlar").value = a.notlar || "";
-  }
-
-  // 5) Kaydet butonu (PUT /api/antrepolar/:id)
-  const saveBtn = document.getElementById("saveAntrepoBtn");
-  saveBtn.addEventListener("click", async function() {
-    if (!currentAntrepo) return;
-
-    // Form verilerini al
-    const updatedData = {
-      sehir: document.getElementById("sehir").value,
-      gumruk: document.getElementById("gumruk").value,
-      gumrukMudurlugu: document.getElementById("gumrukMudurlugu").value,
-      antrepoSirketi: document.getElementById("antrepoSirketi").value,
-      antrepoTipi: document.getElementById("antrepoTipi").value,
-      antrepoAdi: document.getElementById("antrepoAdi").value,
-      antrepoKodu: document.getElementById("antrepoKodu").value,
-      kapasite: document.getElementById("kapasite").value,
-      acikAdres: document.getElementById("acikAdres").value,
-      notlar: document.getElementById("notlar").value,
-      // vs. ...
-    };
-
+    // Dropdown verilerini yükle
     try {
-      const updateResp = await fetch(`${baseUrl}/api/antrepolar/${antrepoId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-      });
-      if (!updateResp.ok) {
-        throw new Error(`Güncelleme hatası: ${updateResp.status}`);
-      }
-      const result = await updateResp.json();
-      if (result.success) {
-        alert("Antrepo güncellendi!");
-      } else {
-        alert("Güncelleme başarısız!");
-      }
+        // 1. Gümrükler
+        const gumrukResp = await fetch(`${baseUrl}/api/customs`);
+        const gumrukData = await gumrukResp.json();
+        populateDropdown('gumruk', gumrukData, 'gumruk_id', 'gumruk_adi');
+
+        // 2. Gümrük Müdürlükleri
+        const mudurlukResp = await fetch(`${baseUrl}/api/regions`);
+        const mudurlukData = await mudurlukResp.json();
+        populateDropdown('gumrukMudurlugu', mudurlukData, 'bolge_id', 'bolge_mudurlugu');
+
+        // 3. Şehirler
+        const sehirResp = await fetch(`${baseUrl}/api/cities`);
+        const sehirData = await sehirResp.json();
+        populateDropdown('sehir', sehirData, 'id', 'sehir_ad');
+
+        // 4. Antrepo Tipleri
+        const tipResp = await fetch(`${baseUrl}/api/antrepo-types`);
+        const tipData = await tipResp.json();
+        populateDropdown('antrepoTipi', tipData, 'id', 'name');
+
+        // 5. Şirketler
+        const sirketResp = await fetch(`${baseUrl}/api/companies`);
+        const sirketData = await sirketResp.json();
+        populateDropdown('antrepoSirketi', sirketData, 'sirket_id', 'company_name');
+
+        // Antrepo detaylarını çek
+        const antrepoResp = await fetch(`${baseUrl}/api/antrepolar/${antrepoId}`);
+        if (!antrepoResp.ok) throw new Error('Antrepo bulunamadı');
+        
+        const antrepo = await antrepoResp.json();
+        
+        // Form alanlarını doldur
+        document.getElementById('antrepoAdi').value = antrepo.antrepoAdi || '';
+        document.getElementById('antrepoKodu').value = antrepo.antrepoKodu || '';
+        document.getElementById('antrepoTipi').value = antrepo.antrepoTipi || ''; // ID değeri
+        document.getElementById('gumruk').value = antrepo.gumruk || '';           // ID değeri
+        document.getElementById('gumrukMudurlugu').value = antrepo.gumrukMudurlugu || ''; // ID değeri
+        document.getElementById('sehir').value = antrepo.sehir || '';             // ID değeri
+        document.getElementById('acikAdres').value = antrepo.acikAdres || '';
+        document.getElementById('antrepoSirketi').value = antrepo.antrepoSirketi || ''; // ID değeri
+
+        // Debug için
+        console.log('Antrepo Data:', antrepo);
+        console.log('Form Elements:', {
+            antrepoAdi: document.getElementById('antrepoAdi'),
+            antrepoKodu: document.getElementById('antrepoKodu'),
+            // ...diğer elementler
+        });
+
     } catch (error) {
-      console.error("Güncelleme sırasında hata:", error);
+        console.error('Hata:', error);
+        alert('Veriler yüklenirken hata oluştu!');
     }
-  });
+
+    // Dropdown doldurma yardımcı fonksiyonu
+    function populateDropdown(selectId, data, valueField, textField) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+
+        select.innerHTML = '<option value="">Seçiniz</option>';
+        
+        data.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item[valueField];
+            option.textContent = item[textField];
+            select.appendChild(option);
+        });
+    }
+
+    // Kaydet butonu
+    document.getElementById('saveAntrepoBtn').addEventListener('click', async () => {
+        try {
+            const updatedData = {
+                antrepoAdi: document.getElementById('antrepoAdi').value,
+                antrepoKodu: document.getElementById('antrepoKodu').value,
+                antrepoTipi: document.getElementById('antrepoTipi').value,
+                gumruk: document.getElementById('gumruk').value,
+                gumrukMudurlugu: document.getElementById('gumrukMudurlugu').value,
+                sehir: document.getElementById('sehir').value,
+                acikAdres: document.getElementById('acikAdres').value,
+                antrepoSirketi: document.getElementById('antrepoSirketi').value
+            };
+
+            console.log('Gönderilen veri:', updatedData);
+
+            const response = await fetch(`${baseUrl}/api/antrepolar/${antrepoId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(updatedData)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server error:', errorText);
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(result.message || 'Antrepo başarıyla güncellendi!');
+                window.location.href = 'antrepo-list.html';
+            } else {
+                throw new Error(result.message || 'Güncelleme başarısız');
+            }
+
+        } catch (error) {
+            console.error('Güncelleme hatası:', error);
+            alert('Güncelleme sırasında hata oluştu: ' + error.message);
+        }
+    });
+
+    // İptal butonu
+    document.getElementById('cancelBtn')?.addEventListener('click', () => {
+        window.location.href = 'antrepo-list.html';
+    });
 });

@@ -1,47 +1,64 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Birimler Listesi</title>
-  <link rel="stylesheet" href="../css/style.css">
-  <!-- Birimlere özel CSS dosyasını kullanabilirsiniz -->
-  <link rel="stylesheet" href="../css/unit.css">
+    <meta charset="UTF-8">
+    <title>Ölçü Birimleri | Antrepo</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- Modern DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-  <header class="topbar">
-    <!-- template.js tarafından doldurulacak -->
-  </header>
-  <div class="main-container">
-    <nav class="sidebar">
-      <!-- template.js tarafından doldurulacak -->
-    </nav>
-    <div class="content">
-      <div class="page-header">
-        <h1>Birimler</h1>
-        <button id="newUnitBtn" class="btn-primary">Yeni Birim Ekle</button>
-      </div>
-      <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Birim Adı</th>
-              <th>Kategori</th>
-              <th>Sembol</th>
-              <th>Kısa Kod</th>
-              <th>Durum</th>
-              <th>İşlemler</th>
-            </tr>
-          </thead>
-          <tbody id="unitTableBody">
-            <!-- unit-list.js tarafından doldurulacak -->
-          </tbody>
-        </table>
-      </div>
+    <header class="topbar"></header>
+
+    <div class="main-container">
+        <nav class="sidebar"></nav>
+
+        <div class="content">
+            <div class="modern-page-header">
+                <div class="header-title">
+                    <h1>Ölçü Birimleri</h1>
+                    <p class="subtitle">Tüm ölçü birimlerini görüntüleyin ve yönetin</p>
+                </div>
+                <div class="search-action-container">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="search" class="modern-search" placeholder="Birim ara...">
+                    </div>
+                    <button class="modern-btn modern-btn-primary" id="newUnitBtn">
+                        <i class="fas fa-plus"></i>
+                        <span>Yeni Birim Ekle</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="modern-card">
+                <div class="modern-card-body">
+                    <table id="unitTable" class="modern-table display responsive nowrap" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Birim Adı</th>
+                                <th>Kategori</th>
+                                <th>Sembol</th>
+                                <th>Kısa Kod</th>
+                                <th>Durum</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-  <!-- JS Dosyaları -->
-  <script type="module" src="../js/template.js"></script>
-  <script type="module" src="../js/unit-list.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="../js/template.js"></script>
+    <script type="module" src="../js/unit-list.js"></script>
 </body>
 </html>

@@ -1,10 +1,43 @@
 // File: hizmet-form.js
 import { baseUrl } from './config.js';
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async function() {
   const serviceForm = document.getElementById("serviceForm");
   const cancelBtn = document.getElementById("cancelBtn");
   const saveServiceBtn = document.getElementById("saveServiceBtn");
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const hizmetId = urlParams.get('id');
+  
+  // Eğer ID varsa, mevcut hizmet bilgilerini getir
+  if (hizmetId) {
+    try {
+      const response = await fetch(`${baseUrl}/api/hizmetler/${hizmetId}`);
+      if (!response.ok) throw new Error('Hizmet bilgileri alınamadı');
+      
+      const hizmet = await response.json();
+      
+      // Form alanlarını doldur
+      document.getElementById('hizmetAdi').value = hizmet.hizmet_adi;
+      document.getElementById('hizmetKodu').value = hizmet.hizmet_kodu;
+      document.getElementById('hizmetTipi').value = hizmet.hizmet_tipi;
+      document.getElementById('birimId').value = hizmet.birim_id;
+      document.getElementById('paraBirimiId').value = hizmet.para_birimi_id;
+      document.getElementById('temelUcret').value = hizmet.temel_ucret;
+      document.getElementById('minUcret').value = hizmet.min_ucret;
+      document.getElementById('carpan').value = hizmet.carpan;
+      document.getElementById('mesaiUygula').value = hizmet.mesai_uygula || 'Hayır';
+      document.getElementById('mesaiSaatleri').value = hizmet.mesai_saatleri || '';
+      document.getElementById('aciklama').value = hizmet.aciklama || '';
+      document.getElementById('durum').value = hizmet.durum;
+
+      // Sayfa başlığını güncelle
+      document.querySelector('.page-header h1').textContent = 'Hizmet Düzenle';
+    } catch (error) {
+      console.error('Hizmet bilgileri yüklenirken hata:', error);
+      alert('Hizmet bilgileri yüklenirken bir hata oluştu.');
+    }
+  }
 
   // Form alanlarını alalım:
   const hizmetAdiInput = document.getElementById("hizmetAdi");

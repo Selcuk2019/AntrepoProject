@@ -1,11 +1,9 @@
 import { baseUrl } from './config.js';
 
-
 document.addEventListener('DOMContentLoaded', function() {
-    // DataTables başlatma
     const companyTable = $('#companyTable').DataTable({
         ajax: {
-            url: '/api/companies',  // GET /api/companies rotası (henüz tanımlanmalı)
+            url: '/api/companies',
             dataSrc: '',
             error: function(xhr, error, thrown) {
                 console.error('DataTables Error:', error);
@@ -17,21 +15,42 @@ document.addEventListener('DOMContentLoaded', function() {
             { data: 'display_name' },
             { data: 'phone_number' },
             { data: 'email' },
-            {
-                data: 'city_name', // Şimdilik veri yoksa backend'de "city_name" döndürmelisiniz.
-                defaultContent: ''
+            { data: 'city_name', defaultContent: '' },
+            { 
+                data: 'created_at',
+                render: function(data) {
+                    if (!data) return '';
+                    const date = new Date(data);
+                    return date.toLocaleDateString('tr-TR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+                }
             },
-            { data: 'created_at' },
-            { data: 'updated_at' },
+            { 
+                data: 'updated_at',
+                render: function(data) {
+                    if (!data) return '';
+                    const date = new Date(data);
+                    return date.toLocaleDateString('tr-TR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+                }
+            },
             {
                 data: null,
+                orderable: false,
+                className: 'text-center',
                 render: function(data, type, row) {
                     return `
                         <div class="action-buttons">
-                            <button class="btn-icon btn-edit" onclick="editCompany(${row.sirket_id})">
+                            <button onclick="editCompany(${row.sirket_id})" class="modern-btn-icon modern-btn-edit" title="Düzenle">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn-icon btn-delete" onclick="deleteCompany(${row.sirket_id})">
+                            <button onclick="deleteCompany(${row.sirket_id})" class="modern-btn-icon modern-btn-delete" title="Sil">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -39,46 +58,60 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         ],
+        responsive: true,
         language: {
-            url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/tr.json'
-        }
+            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json',
+            paginate: {
+                first: '<i class="fas fa-angle-double-left"></i>',
+                previous: '<i class="fas fa-angle-left"></i>',
+                next: '<i class="fas fa-angle-right"></i>',
+                last: '<i class="fas fa-angle-double-right"></i>'
+            },
+            lengthMenu: 'Sayfa başına _MENU_ kayıt göster',
+            info: 'Toplam _TOTAL_ kayıttan _START_ - _END_ arası gösteriliyor'
+        },
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tümü"]],
+        pageLength: 10,
+        lengthChange: true,
+        autoWidth: false,
+        searching: true
     });
 
-    // "Yeni Şirket Ekle" butonu
-    const newCompanyBtn = document.getElementById('newCompanyBtn');
-    if (newCompanyBtn) {
-        newCompanyBtn.addEventListener('click', () => {
-            // new-company-form.html sayfasına gidebilir
-            window.location.href = '/pages/new-company-form.html';
-        });
-    }
+    // Custom arama fonksiyonunu bağlama
+    $('.modern-search').on('keyup', function() {
+        companyTable.search(this.value).draw();
+    });
+
+    // Yeni Şirket Ekle butonu
+    document.getElementById('newCompanyBtn')?.addEventListener('click', () => {
+        window.location.href = '/pages/new-company-form.html';
+    });
 });
 
-// Düzenleme fonksiyonu (edit)
-function editCompany(id) {
-    // Gelecekte "edit-company.html" sayfası varsa, oraya yönlendirebilirsiniz
-    window.location.href = `/pages/edit-company.html?id=${id}`;
-}
+// Edit ve Delete fonksiyonlarını global scope'a taşıyalım
+window.editCompany = function(id) {
+    window.location.href = `/pages/new-company-form.html?id=${id}`;
+};
 
-// Silme fonksiyonu (delete)
-function deleteCompany(id) {
+window.deleteCompany = function(id) {
     if (confirm('Bu şirketi silmek istediğinizden emin misiniz?')) {
         fetch(`/api/companies/${id}`, {
             method: 'DELETE'
         })
         .then(response => {
             if (response.ok) {
-                // Silme başarılı -> tabloyu yeniden yükleyin
                 $('#companyTable').DataTable().ajax.reload();
                 alert('Kayıt başarıyla silindi.');
             } else {
-                console.error('Silme hatası:', response.statusText);
-                alert('Silme işlemi başarısız.');
+                throw new Error('Silme işlemi başarısız.');
             }
         })
         .catch(err => {
-            console.error('Silme isteği hatası:', err);
-            alert('Bir hata oluştu.');
+            console.error('Silme hatası:', err);
+            alert('Silme işlemi sırasında bir hata oluştu.');
         });
     }
-}
+};
