@@ -2,7 +2,8 @@
 // Bu dosya, hesaplama motoru sayfasında (hesaplama-motoru.html) kullanılan JS kodudur.
 // /api/hesaplama-motoru/:girisId endpoint'ine istek atarak gelen verileri tabloya doldurur.
 
-import { baseUrl } from './config.js';
+// Remove or comment out the import if not needed
+// import { baseUrl } from './config.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -28,7 +29,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function fetchCalculation() {
     try {
-      const resp = await fetch(`${baseUrl}/api/hesaplama-motoru/${girisId}`);
+      // Use window.location.origin to build the API URL dynamically.
+      const apiUrl = `${window.location.origin}/api/hesaplama-motoru/${girisId}`;
+      const resp = await fetch(apiUrl);
       if (!resp.ok) {
         throw new Error(`Sunucu hatası: ${resp.status}`);
       }

@@ -835,40 +835,34 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
 
     function hesaplaArdiye(kalanStok, gunSayisi, sozlesmeParams) {
       try {
-        // 1. Input validation & conversion
+        // Input validation
         const stokMiktar = parseFloat(kalanStok) || 0;
         const gunNo = parseInt(gunSayisi) || 0;
 
-        // 2. Find matching tariff period
+        // Gün aralığını bul
         const aralik = sozlesmeParams.find(p => 
           gunNo >= parseInt(p.start_day) && 
           (!p.end_day || gunNo <= parseInt(p.end_day))
         );
 
-        if (!aralik) {
-          console.log('No matching tariff found for day:', gunNo);
-          return 0;
-        }
+        if (!aralik) return 0;
 
-        // 3. Convert and validate rates
-        const baseFee = parseFloat(aralik.base_fee) || 0;      // Taban ücret (örn: 145 USD)
-        const perKgRate = parseFloat(aralik.per_kg_rate) || 0; // Kg başına ücret (örn: 0.145 USD)
-
-        // 4. Ardiye hesaplama formülü:
-        // Taban Ücret + (Kg Başına Ücret × 1000) × Ton
-        const ardiye = baseFee + (perKgRate * 1000 * stokMiktar);
+        // Formül: Base Fee + (Kg Rate × Ton × 1000)
+        const baseFee = parseFloat(aralik.base_fee);     
+        const perKgRate = parseFloat(aralik.per_kg_rate);
+        const ardiye = baseFee + (perKgRate * stokMiktar * 1000);
 
         // Debug log
         console.log('Ardiye calculation:', {
-          gunNo,
-          stokMiktar,
+          gun: gunNo,
+          stok: stokMiktar,
           baseFee,
           perKgRate,
-          ardiye
+          formula: `${baseFee} + (${perKgRate} × ${stokMiktar} × 1000)`,
+          sonuc: ardiye
         });
 
         return Number(ardiye.toFixed(2));
-
       } catch (err) {
         console.error('hesaplaArdiye error:', err);
         return 0;
