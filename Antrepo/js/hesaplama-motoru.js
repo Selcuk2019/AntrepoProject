@@ -5,6 +5,12 @@
 // Remove or comment out the import if not needed
 // import { baseUrl } from './config.js';
 
+// Add helper to format date from yyyy-mm-dd to dd.mm.yyyy
+function formatDate(dateStr) {
+  const [year, month, day] = dateStr.split('-');
+  return `${day}.${month}.${year}`;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const urlParams = new URLSearchParams(window.location.search);
   const girisId = urlParams.get("entryId");
@@ -71,7 +77,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       
       tr.innerHTML = `
         <td>${row.dayIndex}</td>
-        <td>${row.date}</td>
+        <td>${formatDate(row.date)}</td>
         <td>${row.dayArdiye.toFixed(2)} ${paraBirimi}</td>
         <td>${row.dayEkHizmet.toFixed(2)} ${paraBirimi}</td>
         <td>${row.dayTotal.toFixed(2)} ${paraBirimi}</td>
