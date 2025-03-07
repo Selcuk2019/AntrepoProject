@@ -186,7 +186,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       silBtn.textContent = "Sil";
       silBtn.classList.add("btn-secondary");
       silBtn.addEventListener("click", () => {
-        deleteEkHizmet(item.id);
+        deleteTransaction(item);
       });
       tdIslemler.appendChild(silBtn);
       tr.appendChild(tdIslemler);
@@ -305,17 +305,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     return data;
   }
   
-  async function deleteEkHizmet(ekHizmetId) {
+  async function deleteTransaction(record) {
+    // Use record.antrepo_giris_id if available; otherwise, fallback to activeGirisId
+    const girisId = record.antrepo_giris_id || activeGirisId;
+    if (!girisId) {
+      console.error("Antrepo giriş ID bulunamadı.");
+      return;
+    }
+    let endpoint;
+    if (record.type === "ekHizmet") {
+      endpoint = `${window.location.origin}/api/antrepo-giris/${girisId}/ek-hizmetler/${record.id}`;
+    } else {
+      endpoint = `${window.location.origin}/api/antrepo-giris/${girisId}/hareketler/${record.id}`;
+    }
+    
     try {
-      const resp = await fetch(`${baseUrl}/api/antrepo-giris/${activeGirisId}/ek-hizmetler/${ekHizmetId}`, {
-        method: "DELETE"
-      });
-      if (!resp.ok) throw new Error(`Silme hatası: ${resp.status}`);
-      const updatedList = await fetchEkHizmetler(activeGirisId);
-      renderEkHizmetler(updatedList);
-    } catch (err) {
-      console.error("Ek hizmet silme hatası:", err);
-      alert("Ek hizmet silinirken hata oluştu.");
+      const resp = await fetch(endpoint, { method: 'DELETE' });
+      if (!resp.ok) {
+        throw new Error(`Silme hatası: ${resp.status}`);
+      }
+      // ...handle successful deletion...
+    } catch (error) {
+      console.error("Silme işlemi hatası:", error);
+      alert("Silme işlemi sırasında hata oluştu: " + error.message);
     }
   }
   
@@ -368,7 +380,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       silBtn.textContent = "Sil";
       silBtn.classList.add("btn-secondary");
       silBtn.addEventListener("click", () => {
-        deleteEkHizmet(item.id);
+        deleteTransaction(item);
       });
       tdIslemler.appendChild(silBtn);
       tr.appendChild(tdIslemler);
