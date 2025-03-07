@@ -41,55 +41,85 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function populateResults(result) {
-    const { antrepoGiris, dailyBreakdown = [], totalCost = 0, paraBirimi } = result;
+    if (!result) {
+      console.error('Result verisi boş');
+      return;
+    }
 
+    const { antrepoGiris, dailyBreakdown = [], totalCost = 0 } = result;
+    // Para birimi bilgisini ISO kodundan al
+    const paraBirimi = antrepoGiris?.para_birimi_iso || 'USD';
+
+    // Summary info güvenli atamalar
     beyannameNoSpan.textContent = antrepoGiris?.beyanname_no || "-";
     girisTarihiSpan.textContent = antrepoGiris?.antrepo_giris_tarihi
-      ? new Date(antrepoGiris.antrepo_giris_tarihi).toISOString().split('T')[0]
+      ? new Date(antrepoGiris.antrepo_giris_tarihi).toLocaleDateString('tr-TR')
       : "-";
-    urunAdiSpan.textContent = antrepoGiris?.urun_tanimi || "-";
+    urunAdiSpan.textContent = antrepoGiris?.urun_adi || "-";
     urunKoduSpan.textContent = antrepoGiris?.urun_kodu || "-";
-    initialStockSpan.textContent = antrepoGiris?.initialStock || "0";
+    initialStockSpan.textContent = result.currentStock.toFixed(2);
 
     dailyTableBody.innerHTML = "";
+    
     dailyBreakdown.forEach((row) => {
+      if (!row) return;
+
       const tr = document.createElement("tr");
+      
+      tr.innerHTML = `
+        <td>${row.dayIndex}</td>
+        <td>${row.date}</td>
+        <td>${row.dayArdiye.toFixed(2)} ${paraBirimi}</td>
+        <td>${row.dayEkHizmet.toFixed(2)} ${paraBirimi}</td>
+        <td>${row.dayTotal.toFixed(2)} ${paraBirimi}</td>
+        <td>${row.cumulative.toFixed(2)} ${paraBirimi}</td>
+        <td>${row.stockAfter.toFixed(2)}</td>
+      `;
 
-      const tdGun = document.createElement("td");
-      tdGun.textContent = row.dayIndex;
-
-      const tdTarih = document.createElement("td");
-      tdTarih.textContent = row.date;
-
-      const tdArdiye = document.createElement("td");
-      tdArdiye.textContent = `${row.dayArdiye.toFixed(2)} ${paraBirimi}`;
-
-      const tdEkHizmet = document.createElement("td");
-      tdEkHizmet.textContent = `${row.dayEkHizmet.toFixed(2)} ${paraBirimi}`;
-
-      const tdDailyTotal = document.createElement("td");
-      tdDailyTotal.textContent = `${row.dayTotal.toFixed(2)} ${paraBirimi}`;
-
-      const tdCumulative = document.createElement("td");
-      tdCumulative.textContent = `${row.cumulative.toFixed(2)} ${paraBirimi}`;
-
-      const tdStock = document.createElement("td");
-      tdStock.textContent = row.stockAfter.toFixed(2);
-
-      tr.append(
-        tdGun,
-        tdTarih,
-        tdArdiye,
-        tdEkHizmet,
-        tdDailyTotal,
-        tdCumulative,
-        tdStock
-      );
       dailyTableBody.appendChild(tr);
     });
 
-    totalMaliyetSpan.textContent = `${parseFloat(totalCost).toFixed(2)} ${paraBirimi}`;
+    totalMaliyetSpan.textContent = `${totalCost.toFixed(2)} ${paraBirimi}`;
   }
 
-  await fetchCalculation();
+  try {
+    await fetchCalculation();
+  } catch (error) {
+    console.error("Hesaplama yüklenirken hata:", error);
+    // Kullanıcıya hata göster
+    dailyTableBody.innerHTML = `
+      <tr>
+        <td colspan="7" class="error-message">
+          Hesaplama yüklenirken hata oluştu: ${error.message}
+        </td>
+      </tr>
+    `;
+  }
+
+  // DataTable initialization was causing "$ is not defined"
+  // Comment out or remove the following block if jQuery is not loaded:
+  // const dailyTable = $('.datatable').DataTable({
+  //   // ...existing columns config...
+    
+  //   responsive: true,
+  //   autoWidth: false,
+  //   searching: true,
+  //   dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+  //        '<"row"<"col-sm-12"tr>>' +
+  //        '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+  //   lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tümü"]],
+  //   pageLength: 10,
+  //   lengthChange: true,
+  //   language: {
+  //       url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json',
+  //       lengthMenu: 'Sayfa başına _MENU_ kayıt göster',
+  //       info: 'Toplam _TOTAL_ kayıttan _START_ - _END_ arası gösteriliyor',
+  //       paginate: {
+  //           first: '<i class="fas fa-angle-double-left"></i>',
+  //           previous: '<i class="fas fa-angle-left"></i>',
+  //           next: '<i class="fas fa-angle-right"></i>',
+  //           last: '<i class="fas fa-angle-double-right"></i>'
+  //       }
+  //   }
+  // });
 });

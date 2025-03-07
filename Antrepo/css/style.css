@@ -2238,3 +2238,418 @@ table th, table td {
 }
 
 /* ...existing code... */
+
+/* ===================== ANTREPO GİRİŞ FORMU STYLES ===================== */
+/* Önceki tanımları override eden özel stiller */
+
+.antrepo-giris {
+    /* Container özellikleri */
+    --form-border-radius: 12px;
+    --form-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+    --form-padding: 1.5rem;
+}
+
+/* Form Section özelleştirmeleri */
+.antrepo-giris .form-section {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: var(--form-padding);
+    transition: all 0.2s ease;
+}
+
+.antrepo-giris .form-section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Özel input stilleri */
+.antrepo-giris .form-group input,
+.antrepo-giris .form-group select,
+.antrepo-giris .form-group textarea {
+    background: #fff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+}
+
+/* Readonly alanlar */
+.antrepo-giris .form-group input[readonly] {
+    background-color: #f1f5f9;
+    cursor: not-allowed;
+}
+
+/* Datalist container */
+.antrepo-giris .datalist-container {
+    position: relative;
+}
+
+.antrepo-giris .clear-datalist {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #94a3b8;
+}
+
+/* ...existing code... */
+
+/* ===================== ANTREPO GİRİŞ FORMU STYLES ===================== */
+.antrepo-form {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  margin: 1rem 0;
+  padding: 2rem;
+}
+
+.antrepo-form .form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.antrepo-form .form-section {
+  background: #f8fafc !important; /* Zorla uygula */
+  border: 1px solid #e5e7eb !important;
+  border-radius: 10px !important;
+  padding: 1.5rem !important;
+  transition: all 0.2s ease;
+}
+
+.antrepo-form .form-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.antrepo-form .form-section h2 {
+  color: var(--logo-color);
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.antrepo-form .form-group {
+  margin-bottom: 1.25rem;
+}
+
+.antrepo-form .form-group label {
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.antrepo-form .form-group input,
+.antrepo-form .form-group select,
+.antrepo-form .form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background: #fff;
+}
+
+.antrepo-form .form-group input:focus,
+.antrepo-form .form-group select:focus,
+.antrepo-form .form-group textarea:focus {
+  border-color: var(--logo-color);
+  box-shadow: 0 0 0 3px rgba(44,102,221,0.1);
+  outline: none;
+}
+
+/* Readonly alanlar */
+.antrepo-form .form-group input[readonly],
+.antrepo-form .form-group textarea[readonly] {
+  background-color: #f1f5f9 !important;
+  cursor: not-allowed;
+}
+
+/* Required işareti */
+.antrepo-form .required {
+  color: #ef4444;
+  margin-left: 4px;
+}
+
+/* Datalist container */
+.antrepo-form .datalist-container {
+  position: relative;
+}
+
+.antrepo-form .datalist-container input {
+  padding-right: 2.5rem;
+}
+
+.antrepo-form .clear-datalist {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 0.2s;
+}
+
+/* ...existing code... */
+
+/* Tablo link stilleri */
+.table-link {
+  color: var(--primary-color);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.table-link:hover {
+  text-decoration: underline;
+  color: var(--logo-color);
+}
+
+/* ...existing code... */
+
+/* Maliyet Analizi Özel Stilleri */
+.modern-page-header {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 2rem;
+}
+
+.header-title h1 {
+    font-size: 1.75rem;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.header-title .subtitle {
+    color: #6b7280;
+    font-size: 0.95rem;
+}
+
+.modern-table {
+    width: 100% !important;
+    margin: 1rem 0 !important;
+}
+
+.modern-table thead th {
+    background: #f8fafc !important;
+    padding: 1rem !important;
+    font-weight: 600 !important;
+    color: #1f2937 !important;
+    border: none !important;
+    white-space: nowrap !important;
+}
+
+.modern-table tbody td {
+    padding: 1rem !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid #e5e7eb !important;
+}
+
+.modern-table tbody tr:hover {
+    background-color: #f8fafc !important;
+}
+
+.table-link {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.table-link:hover {
+    color: var(--logo-color);
+    text-decoration: underline;
+}
+
+.btn-detail {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: inline-block;
+}
+
+.btn-detail:hover {
+    background: var(--logo-color);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(44,102,221,0.2);
+}
+
+/* ...existing code... */
+
+/* DataTables Sıralama Okları ve Başlık Stilleri */
+table.dataTable thead .sorting,
+table.dataTable thead .sorting_asc,
+table.dataTable thead .sorting_desc {
+    position: relative;
+    padding-right: 35px !important; /* Ok için yer bırak */
+    cursor: pointer;
+    background-image: none !important; /* Varsayılan okları kaldır */
+}
+
+table.dataTable thead .sorting::after,
+table.dataTable thead .sorting_asc::after,
+table.dataTable thead .sorting_desc::after {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    color: #94a3b8;
+    font-size: 0.8rem;
+    opacity: 0.5;
+}
+
+table.dataTable thead .sorting::after {
+    content: "\f0dc"; /* fas fa-sort */
+}
+
+table.dataTable thead .sorting_asc::after {
+    content: "\f0de"; /* fas fa-sort-up */
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+table.dataTable thead .sorting_desc::after {
+    content: "\f0dd"; /* fas fa-sort-down */
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+/* Başlık hover efekti */
+table.dataTable thead th:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* Sıralama aktif olan başlık stili */
+table.dataTable thead .sorting_asc,
+table.dataTable thead .sorting_desc {
+    background-color: #f8fafc !important;
+    color: var(--primary-color) !important;
+    font-weight: 600 !important;
+}
+
+/* ...existing code... */
+
+/* DataTables Sıralama ve Başlık Stilleri - Güncellendi */
+table.dataTable thead th {
+    position: relative;
+    background: #f8fafc !important;
+    padding: 1rem !important;
+    font-weight: 600 !important;
+    color: #1f2937 !important;
+    border: none !important;
+    border-bottom: 2px solid #e5e7eb !important;
+    white-space: nowrap !important;
+}
+
+/* Tüm sorting işaretlerini temizle */
+table.dataTable thead .sorting,
+table.dataTable thead .sorting_asc,
+table.dataTable thead .sorting_desc {
+    background-image: none !important;
+    padding-right: 30px !important;
+}
+
+/* Custom sorting işaretleri */
+table.dataTable thead th.sorting:before,
+table.dataTable thead th.sorting:after,
+table.dataTable thead th.sorting_asc:before,
+table.dataTable thead th.sorting_asc:after,
+table.dataTable thead th.sorting_desc:before,
+table.dataTable thead th.sorting_desc:after {
+    display: none !important;
+}
+
+/* Yeni custom ok işareti */
+table.dataTable thead th.sorting::after,
+table.dataTable thead th.sorting_asc::after,
+table.dataTable thead th.sorting_desc::after {
+    display: inline-block !important;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 0.8rem;
+    opacity: 0.6;
+}
+
+/* Default sort icon */
+table.dataTable thead th.sorting::after {
+    content: "\f0dc";
+    color: #94a3b8;
+}
+
+/* Ascending sort icon */
+table.dataTable thead th.sorting_asc::after {
+    content: "\f0de";
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+/* Descending sort icon */
+table.dataTable thead th.sorting_desc::after {
+    content: "\f0dd";
+    color: var(--primary-color);
+    opacity: 1;
+}
+
+/* Hover effect */
+table.dataTable thead th:hover {
+    background-color: #f1f5f9 !important;
+    cursor: pointer;
+}
+
+/* Active sort column */
+table.dataTable thead th.sorting_asc,
+table.dataTable thead th.sorting_desc {
+    background-color: #f1f5f9 !important;
+    font-weight: 600 !important;
+}
+
+/* ...existing code... */
+
+/* Yeni navigasyon buton stili */
+.button-container {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 1rem;
+}
+
+.modern-nav-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: linear-gradient(135deg, #408dfb 0%, #2C66DD 100%);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(44, 102, 221, 0.15);
+}
+
+.modern-nav-button i {
+    font-size: 1rem;
+}
+
+.modern-nav-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(44, 102, 221, 0.25);
+    color: white;
+}
+
+/* ...existing code... */

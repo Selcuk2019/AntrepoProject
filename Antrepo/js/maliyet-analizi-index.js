@@ -1,15 +1,56 @@
-// maliyet-analizi-index.js
 import { baseUrl } from './config.js';
 
 document.addEventListener("DOMContentLoaded", async () => {
   const tableBody = document.getElementById("maliyetTableBody");
+  let dataTable = null; // DataTable instance'ı için değişken
 
   async function fetchMaliyetAnalizi() {
     try {
       const resp = await fetch(`${baseUrl}/api/maliyet-analizi`);
       if (!resp.ok) throw new Error(`Hata: ${resp.status}`);
       const data = await resp.json();
-      populateTable(data);
+      await populateTable(data);
+      
+      // Tüm veriler yüklendikten sonra DataTable'ı başlat
+      if (dataTable) {
+        dataTable.destroy(); // Eğer varsa mevcut DataTable'ı temizle
+      }
+      
+      // DataTable konfigürasyonunu güncelle
+      dataTable = $('#maliyetTable').DataTable({
+        language: {
+          url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/tr.json'
+        },
+        pageLength: 25,
+        order: [[2, 'desc']], // Antrepo Giriş Tarihine göre sırala
+        responsive: true,
+        dom: '<"top"f>rt<"bottom"lip><"clear">',
+        ordering: true, // Sıralama özelliğini aktif et
+        // Sütun başlıklarının sıralama özelliklerini özelleştir
+        columnDefs: [
+          {
+            targets: '_all', // Tüm sütunlar için
+            sortable: true, // Sıralanabilir yap
+            className: 'sorting' // Tüm sütunlara sorting sınıfını ekle
+          },
+          {
+            targets: -1, // Son sütun (İşlemler sütunu)
+            sortable: false, // İşlemler sütununu sıralanamaz yap
+            className: 'no-sort' // Sıralama olmayan sütunlar için
+          }
+        ],
+        initComplete: function() {
+          // Arama kutusunu özelleştir
+          $('.dataTables_filter input').attr('placeholder', 'Ara...');
+          $('.dataTables_filter input').addClass('modern-search');
+          $('.dataTables_filter label').html($('.dataTables_filter input'));
+        },
+        "drawCallback": function( settings ) {
+          // Sıralama ikonlarını yeniden initialize et
+          $('th.sorting').removeClass('sorting_asc sorting_desc');
+        }
+      });
+
     } catch (error) {
       console.error("Maliyet analizi verisi alınırken hata:", error);
       tableBody.innerHTML = `<tr><td colspan="14">Veri alınamadı: ${error.message}</td></tr>`;
@@ -69,33 +110,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  function populateTable(data) {
+  // Tarih formatlama yardımcı fonksiyonu
+  function formatDate(dateStr) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "-";
+    
+    const day = d.getDate().toString().padStart(2, '0');
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const year = d.getFullYear();
+    
+    return `${day}.${month}.${year}`;
+  }
+
+  async function populateTable(data) {
     tableBody.innerHTML = "";
 
-    // data.forEach => her satır, Maliyet Analizi endpoint'inden gelen temel bilgiler
-    data.forEach(async (item) => {
+    for (const item of data) { // forEach yerine for...of kullanıyoruz
       const tr = document.createElement("tr");
 
-      // 1) Ürün Adı
+      // 1) Ürün Adı - Link olarak (productCode yerine productId kullanıyoruz)
       const tdProductName = document.createElement("td");
-      tdProductName.textContent = item.productName || "-";
+      tdProductName.innerHTML = `<a href="stock-card.html?id=${item.productId}" class="table-link">${item.productName || "-"}</a>`;
 
-      // 2) Ürün Kodu
+      // 2) Ürün Kodu - Link olarak (productCode yerine productId kullanıyoruz)
       const tdProductCode = document.createElement("td");
-      tdProductCode.textContent = item.productCode || "-";
+      tdProductCode.innerHTML = `<a href="stock-card.html?id=${item.productId}" class="table-link">${item.productCode || "-"}</a>`;
 
       // 3) Antrepo Giriş Tarihi
       const tdEntryDate = document.createElement("td");
-      if (item.entryDate) {
-        const d = new Date(item.entryDate);
-        tdEntryDate.textContent = isNaN(d.getTime()) ? "-" : d.toISOString().split('T')[0];
-      } else {
-        tdEntryDate.textContent = "-";
-      }
+      tdEntryDate.textContent = formatDate(item.entryDate);
 
-      // 4) Antrepo Giriş Form No
+      // 4) Antrepo Giriş Form No - Link olarak
       const tdFormNo = document.createElement("td");
-      tdFormNo.textContent = item.formNo || "-";
+      const formNoLink = document.createElement("a");
+      formNoLink.href = `antrepo-giris-formu.html?id=${encodeURIComponent(item.entryId)}&view=true`;
+      formNoLink.textContent = item.formNo || "-";
+      formNoLink.classList.add("table-link");
+      tdFormNo.appendChild(formNoLink);
 
       // 5) Antrepo Giriş Adedi
       const tdEntryCount = document.createElement("td");
@@ -107,12 +159,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // 7) Son Antrepo Çıkış Tarihi
       const tdLastExitDate = document.createElement("td");
-      if (item.lastExitDate) {
-        const d2 = new Date(item.lastExitDate);
-        tdLastExitDate.textContent = isNaN(d2.getTime()) ? "-" : d2.toISOString().split('T')[0];
-      } else {
-        tdLastExitDate.textContent = "-";
-      }
+      tdLastExitDate.textContent = formatDate(item.lastExitDate);
 
       // 8) Son Çıkış Adedi
       const tdLastExitAmount = document.createElement("td");
@@ -144,10 +191,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       let mirrorToplamMaliyet = "...";
       tdTotalCost.textContent = mirrorToplamMaliyet; // Geçici
 
-      // 13) Birim Maliyete Etkisi
+      // 13) Birim Maliyete Etkisi - Para birimi ile birlikte
       const tdUnitImpact = document.createElement("td");
       let mirrorUnitImpact = "...";
-      tdUnitImpact.textContent = mirrorUnitImpact;
+      tdUnitImpact.textContent = mirrorUnitImpact;  // Geçici değer
 
       // 14) Detay Linki
       const tdDetail = document.createElement("td");
@@ -175,18 +222,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
       tableBody.appendChild(tr);
 
-      // Şimdi asenkron olarak hesaplama motoru verisini çekelim
+      // Hesaplama motoru verisini çek ve güncelle
       const calc = await fetchHesaplamaMotoru(item.entryId);
-      // calc => { mevcutMaliyet, toplamMaliyet, birimMaliyet, paraBirimi }
+      
+      // DOM elemanlarını bir kere seç ve değişkenlere ata
+      const currentCostCell = tr.querySelector('td:nth-child(11)');
+      const totalCostCell = tr.querySelector('td:nth-child(12)');
+      const unitImpactCell = tr.querySelector('td:nth-child(13)');
 
-      // Güncel verilerle tablo hücrelerini dolduralım:
-      tdCurrentCost.textContent = `${calc.mevcutMaliyet.toFixed(2)} ${calc.paraBirimi}`;
-      tdTotalCost.textContent = `${calc.toplamMaliyet.toFixed(2)} ${calc.paraBirimi}`;
-      tdUnitImpact.textContent = calc.birimMaliyet
-        ? calc.birimMaliyet.toFixed(2)
-        : "0.00";
-    });
+      // null check ekleyelim
+      if (currentCostCell && totalCostCell && unitImpactCell) {
+        currentCostCell.textContent = `${calc.mevcutMaliyet.toFixed(2)} ${calc.paraBirimi}`;
+        totalCostCell.textContent = `${calc.toplamMaliyet.toFixed(2)} ${calc.paraBirimi}`;
+        unitImpactCell.textContent = calc.birimMaliyet 
+          ? `${calc.birimMaliyet.toFixed(2)} ${calc.paraBirimi}`
+          : `0.00 ${calc.paraBirimi}`;
+      }
+    }
   }
 
   await fetchMaliyetAnalizi();
 });
+
+// Excel export fonksiyonu
+window.exportToExcel = function() {
+    const table = document.getElementById("maliyetTable");
+    const wb = XLSX.utils.table_to_book(table, { sheet: "Maliyet Analizi" });
+    XLSX.writeFile(wb, `Maliyet_Analizi_${new Date().toISOString().split('T')[0]}.xlsx`);
+};

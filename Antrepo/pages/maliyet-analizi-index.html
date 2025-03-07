@@ -1,52 +1,78 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <title>Maliyet Analizi - Özet</title>
-  <link rel="stylesheet" href="../css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maliyet Analizi</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-  <header class="topbar">
-    <!-- template.js ile doldurulacak -->
-  </header>
-  <div class="main-container">
-    <nav class="sidebar">
-      <!-- template.js ile doldurulacak -->
-    </nav>
+    <header class="topbar">
+        <!-- template.js ile doldurulacak -->
+    </header>
+    <div class="main-container">
+        <nav class="sidebar">
+            <!-- template.js ile doldurulacak -->
+        </nav>
+        
+        <div class="content">
+            <div class="modern-page-header">
+                <div class="header-title">
+                    <h1>Maliyet Analizi</h1>
+                    <p class="subtitle">Antrepo giriş ve maliyetlerinin detaylı analizi</p>
+                </div>
+                <div class="search-action-container">
+                    <div class="search-box">
+                        <i class="fas fa-search search-icon"></i>
+                        <input type="text" class="modern-search" id="tableSearch" placeholder="Ara...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modern-card">
+                <div class="modern-card-body">
+                    <table id="maliyetTable" class="modern-table display">
+                        <thead>
+                            <tr>
+                                <th>Ürün Adı</th>
+                                <th>Ürün Kodu</th>
+                                <th>Antrepo Giriş Tarihi</th>
+                                <th>Form No</th>
+                                <th>Giriş Adedi</th>
+                                <th>Giriş Kap Adedi</th>
+                                <th>Son Çıkış Tarihi</th>
+                                <th>Son Çıkış Adedi</th>
+                                <th>Mevcut Stok</th>
+                                <th>Mevcut Kap Adedi</th>
+                                <th>Mevcut Maliyet</th>
+                                <th>Toplam Maliyet</th>
+                                <th>Birim Maliyete Etkisi</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="maliyetTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- Eski linki kaldırıp yerine yeni button-container ekliyoruz -->
+            <div class="button-container">
+                <a href="product-list.html" class="modern-nav-button">
+                    <i class="fas fa-box"></i>
+                    Ürünler Sayfasına Git
+                </a>
+            </div>
+        </div> <!-- /content -->
+    </div> <!-- /main-container -->
     
-    <div class="content">
-      <h1>Maliyet Analizi Özet</h1>
-      <div class="card maliyet-analizi-container">
-        <table id="maliyetTable" class="datatable">
-          <thead>
-            <tr>
-              <th>Ürün Adı</th>
-              <th>Ürün Kodu</th>
-              <th>Antrepo Giriş Tarihi</th>
-              <th>Antrepo Giriş Form No</th>
-              <th>Antrepo Giriş Adedi</th>
-              <th>Antrepo Giriş Kap Adedi</th>
-              <th>Son Antrepo Çıkış Tarihi</th>
-              <th>Son Çıkış Adedi</th>
-              <th>Mevcut Stok (Ton)</th>
-              <th>Mevcut Kap Adedi</th>
-              <th>Mevcut Maliyet</th>  <!-- Para birimi sabit "USD" yerine dinamik ekleyeceğiz -->
-              <th>Toplam Maliyet</th>
-              <th>Birim Maliyete Etkisi</th>
-              <th>İşlemler</th>
-            </tr>
-          </thead>          
-          <tbody id="maliyetTableBody">
-            <!-- JS dolduracak -->
-          </tbody>
-        </table>
-      </div>
-      <a href="product-list.html" class="btn">Ürün Listesine Dön</a>
-    </div> <!-- /content -->
-  </div> <!-- /main-container -->
-  
-  <!-- template.js'i mutlaka ekliyoruz (navigasyon vb.) -->
-  <script src="../js/template.js"></script>
-  <script type="module" src="../js/maliyet-analizi-index.js"></script>
+    <!-- template.js'i mutlaka ekliyoruz (navigasyon vb.) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="../js/template.js"></script>
+    <script type="module" src="../js/maliyet-analizi-index.js"></script>
 </body>
 </html>

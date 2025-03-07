@@ -1192,3 +1192,66 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Sayfa açıldığında hareketleri getir
   fetchHareketler();
 });
+
+// Tüm searchable datalist'ler için arama ve temizleme fonksiyonlarını ekle
+document.addEventListener('DOMContentLoaded', function() {
+  // Tüm aranabilir datalist'leri seç
+  const searchableDataLists = document.querySelectorAll('.searchable-datalist');
+
+  searchableDataLists.forEach(input => {
+    const datalistId = input.getAttribute('list');
+    const datalist = document.getElementById(datalistId);
+    const clearBtn = input.nextElementSibling.nextElementSibling;
+    const allOptions = []; // Orijinal options'ları sakla
+
+    // Başlangıçtaki options'ları sakla
+    if (datalist) {
+      datalist.querySelectorAll('option').forEach(opt => {
+        allOptions.push({
+          value: opt.value,
+          label: opt.label || opt.value
+        });
+      });
+    }
+
+    // Input'a her yazıldığında filtreleme yap
+    input.addEventListener('input', function(e) {
+      const searchText = this.value.toLowerCase();
+      
+      // Datalist'i temizle
+      while (datalist.firstChild) {
+        datalist.removeChild(datalist.firstChild);
+      }
+
+      // Filtrelenmiş sonuçları ekle
+      allOptions.forEach(opt => {
+        if (opt.label.toLowerCase().includes(searchText)) {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.label = opt.label;
+          datalist.appendChild(option);
+        }
+      });
+    });
+
+    // Clear button'una tıklanınca
+    clearBtn.addEventListener('click', function() {
+      input.value = '';
+      input.focus();
+      
+      // Tüm options'ları geri yükle
+      while (datalist.firstChild) {
+        datalist.removeChild(datalist.firstChild);
+      }
+      allOptions.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.label = opt.label;
+        datalist.appendChild(option);
+      });
+
+      // Custom event tetikle (değişiklikleri yakalamak için)
+      input.dispatchEvent(new Event('change'));
+    });
+  });
+});
