@@ -133,16 +133,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
   
-  function renderHareketler(list) {
+  function renderHareketler(list = []) {  // Add default empty array
     hareketTableBody.innerHTML = "";
+    
+    // Handle empty list case
+    if (!list || !list.length) {
+      hareketTableBody.innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center">
+            Kayıt bulunamadı
+          </td>
+        </tr>`;
+      return;
+    }
+    
     list.forEach(item => {
       const tr = document.createElement("tr");
   
-      // 1) Tarih
+      // 1) Tarih - No timezone conversion needed since API sends YYYY-MM-DD
       const tdTarih = document.createElement("td");
-      tdTarih.textContent = item.islem_tarihi
-        ? item.islem_tarihi.substring(0, 10)
-        : "";
+      tdTarih.textContent = item.islem_tarihi || "";
       tr.appendChild(tdTarih);
   
       // 2) İşlem Tipi
@@ -306,25 +316,36 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   
   async function deleteTransaction(record) {
-    // Use record.antrepo_giris_id if available; otherwise, fallback to activeGirisId
     const girisId = record.antrepo_giris_id || activeGirisId;
     if (!girisId) {
       console.error("Antrepo giriş ID bulunamadı.");
       return;
     }
-    let endpoint;
-    if (record.type === "ekHizmet") {
-      endpoint = `${window.location.origin}/api/antrepo-giris/${girisId}/ek-hizmetler/${record.id}`;
-    } else {
-      endpoint = `${window.location.origin}/api/antrepo-giris/${girisId}/hareketler/${record.id}`;
-    }
-    
+  
     try {
+      // Check if this is a service record by looking for hizmet_id
+      const isHizmet = record.hizmet_id !== undefined;
+      const endpoint = isHizmet 
+        ? `${baseUrl}/api/antrepo-giris/${girisId}/ek-hizmetler/${record.id}`
+        : `${baseUrl}/api/antrepo-giris/${girisId}/hareketler/${record.id}`;
+  
+      console.log("Deleting from endpoint:", endpoint); // Debug log
+  
       const resp = await fetch(endpoint, { method: 'DELETE' });
       if (!resp.ok) {
         throw new Error(`Silme hatası: ${resp.status}`);
       }
-      // ...handle successful deletion...
+  
+      // Refresh both lists after successful delete
+      const [hareketler, ekHizmetler] = await Promise.all([
+        fetchHareketler(),
+        fetchEkHizmetler(girisId)
+      ]);
+  
+      renderHareketler(hareketler || []);
+      renderEkHizmetler(ekHizmetler || []);
+  
+      alert("Kayıt başarıyla silindi.");
     } catch (error) {
       console.error("Silme işlemi hatası:", error);
       alert("Silme işlemi sırasında hata oluştu: " + error.message);
@@ -334,8 +355,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   /************************************************************
    * 6) Ek Hizmetler Tablosu Render Fonksiyonları
    ************************************************************/
-  function renderEkHizmetler(list) {
+  function renderEkHizmetler(list = []) {  // Add default empty array
     ekHizmetlerTableBody.innerHTML = "";
+    
+    // Handle empty list case
+    if (!list || !list.length) {
+      ekHizmetlerTableBody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center">
+            Ek hizmet kaydı bulunamadı
+          </td>
+        </tr>`;
+      return;
+    }
+    
     list.forEach(item => {
       const tr = document.createElement("tr");
       

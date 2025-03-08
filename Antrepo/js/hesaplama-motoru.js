@@ -1,3 +1,9 @@
+import dayjs from 'https://cdn.skypack.dev/dayjs';
+import utc from 'https://cdn.skypack.dev/dayjs/plugin/utc';
+import timezone from 'https://cdn.skypack.dev/dayjs/plugin/timezone';
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
 // hesaplama-motoru.js
 // Bu dosya, hesaplama motoru sayfasında (hesaplama-motoru.html) kullanılan JS kodudur.
 // /api/hesaplama-motoru/:girisId endpoint'ine istek atarak gelen verileri tabloya doldurur.
@@ -38,6 +44,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       // Use window.location.origin to build the API URL dynamically.
       const apiUrl = `${window.location.origin}/api/hesaplama-motoru/${girisId}`;
       const resp = await fetch(apiUrl);
+      if (resp.status === 404) {
+        // No record exists yet for this entry
+        console.warn("Antrepo giriş formu için henüz veri yok.");
+        dailyTableBody.innerHTML = `<tr>
+          <td colspan="7" class="info-message">
+            Henüz antrepo giriş formu üzerinden kayıt yapılmamıştır.
+          </td>
+        </tr>`;
+        return; // Exit quietly without error
+      }
       if (!resp.ok) {
         throw new Error(`Sunucu hatası: ${resp.status}`);
       }
@@ -56,35 +72,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const { antrepoGiris, dailyBreakdown = [], totalCost = 0 } = result;
-    // Para birimi bilgisini ISO kodundan al
     const paraBirimi = antrepoGiris?.para_birimi_iso || 'USD';
 
-    // Summary info güvenli atamalar
+    // Remove tz conversion so that the date remains as stored (local)
     beyannameNoSpan.textContent = antrepoGiris?.beyanname_no || "-";
     girisTarihiSpan.textContent = antrepoGiris?.antrepo_giris_tarihi
-      ? new Date(antrepoGiris.antrepo_giris_tarihi).toLocaleDateString('tr-TR')
+      ? dayjs(antrepoGiris.antrepo_giris_tarihi).format('YYYY-MM-DD')
       : "-";
     urunAdiSpan.textContent = antrepoGiris?.urun_adi || "-";
     urunKoduSpan.textContent = antrepoGiris?.urun_kodu || "-";
     initialStockSpan.textContent = result.currentStock.toFixed(2);
 
+    // Format currency values properly
+    function formatCurrency(amount, currency) {
+      return `${amount.toFixed(2)} ${currency}`;
+    }
+
     dailyTableBody.innerHTML = "";
     
     dailyBreakdown.forEach((row) => {
       if (!row) return;
-
       const tr = document.createElement("tr");
-      
       tr.innerHTML = `
         <td>${row.dayIndex}</td>
-        <td>${formatDate(row.date)}</td>
-        <td>${row.dayArdiye.toFixed(2)} ${paraBirimi}</td>
-        <td>${row.dayEkHizmet.toFixed(2)} ${paraBirimi}</td>
-        <td>${row.dayTotal.toFixed(2)} ${paraBirimi}</td>
-        <td>${row.cumulative.toFixed(2)} ${paraBirimi}</td>
+        <td>${dayjs(row.date).format('YYYY-MM-DD')}</td>
+        <td>${formatCurrency(row.dayArdiye, paraBirimi)}</td>
+        <td>${formatCurrency(row.dayEkHizmet, paraBirimi)}</td>
+        <td>${formatCurrency(row.dayTotal, paraBirimi)}</td>
+        <td>${formatCurrency(row.cumulative, paraBirimi)}</td>
         <td>${row.stockAfter.toFixed(2)}</td>
       `;
-
       dailyTableBody.appendChild(tr);
     });
 
