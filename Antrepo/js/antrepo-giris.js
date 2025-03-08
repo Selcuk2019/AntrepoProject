@@ -133,26 +133,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
   
-  function renderHareketler(list = []) {  // Add default empty array
+  function renderHareketler(list) {
     hareketTableBody.innerHTML = "";
-    
-    // Handle empty list case
-    if (!list || !list.length) {
-      hareketTableBody.innerHTML = `
-        <tr>
-          <td colspan="9" class="text-center">
-            Kayıt bulunamadı
-          </td>
-        </tr>`;
-      return;
-    }
-    
     list.forEach(item => {
       const tr = document.createElement("tr");
   
-      // 1) Tarih - No timezone conversion needed since API sends YYYY-MM-DD
+      // 1) Tarih
       const tdTarih = document.createElement("td");
-      tdTarih.textContent = item.islem_tarihi || "";
+      tdTarih.textContent = item.islem_tarihi
+        ? item.islem_tarihi.substring(0, 10)
+        : "";
       tr.appendChild(tdTarih);
   
       // 2) İşlem Tipi
@@ -195,11 +185,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       const silBtn = document.createElement("button");
       silBtn.textContent = "Sil";
       silBtn.classList.add("btn-secondary");
-      silBtn.addEventListener("click", async () => {
-        const isConfirmed = await showConfirmModal('Bu hareketi silmek istediğinizden emin misiniz?');
-        if (isConfirmed) {
-          deleteTransaction(item);
-        }
+      silBtn.addEventListener("click", () => {
+        deleteEkHizmet(item.id);
       });
       tdIslemler.appendChild(silBtn);
       tr.appendChild(tdIslemler);
@@ -318,60 +305,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     return data;
   }
   
-  async function deleteTransaction(record) {
-    const girisId = record.antrepo_giris_id || activeGirisId;
-    if (!girisId) {
-      console.error("Antrepo giriş ID bulunamadı.");
-      return;
-    }
-  
+  async function deleteEkHizmet(ekHizmetId) {
     try {
-      // Check if this is a service record by looking for hizmet_id
-      const isHizmet = record.hizmet_id !== undefined;
-      const endpoint = isHizmet 
-        ? `${baseUrl}/api/antrepo-giris/${girisId}/ek-hizmetler/${record.id}`
-        : `${baseUrl}/api/antrepo-giris/${girisId}/hareketler/${record.id}`;
-  
-      console.log("Deleting from endpoint:", endpoint); // Debug log
-  
-      const resp = await fetch(endpoint, { method: 'DELETE' });
-      if (!resp.ok) {
-        throw new Error(`Silme hatası: ${resp.status}`);
-      }
-  
-      // Refresh both lists after successful delete
-      const [hareketler, ekHizmetler] = await Promise.all([
-        fetchHareketler(),
-        fetchEkHizmetler(girisId)
-      ]);
-  
-      renderHareketler(hareketler || []);
-      renderEkHizmetler(ekHizmetler || []);
-  
-      alert("Kayıt başarıyla silindi.");
-    } catch (error) {
-      console.error("Silme işlemi hatası:", error);
-      alert("Silme işlemi sırasında hata oluştu: " + error.message);
+      const resp = await fetch(`${baseUrl}/api/antrepo-giris/${activeGirisId}/ek-hizmetler/${ekHizmetId}`, {
+        method: "DELETE"
+      });
+      if (!resp.ok) throw new Error(`Silme hatası: ${resp.status}`);
+      const updatedList = await fetchEkHizmetler(activeGirisId);
+      renderEkHizmetler(updatedList);
+    } catch (err) {
+      console.error("Ek hizmet silme hatası:", err);
+      alert("Ek hizmet silinirken hata oluştu.");
     }
   }
   
   /************************************************************
    * 6) Ek Hizmetler Tablosu Render Fonksiyonları
    ************************************************************/
-  function renderEkHizmetler(list = []) {  // Add default empty array
+  function renderEkHizmetler(list) {
     ekHizmetlerTableBody.innerHTML = "";
-    
-    // Handle empty list case
-    if (!list || !list.length) {
-      ekHizmetlerTableBody.innerHTML = `
-        <tr>
-          <td colspan="8" class="text-center">
-            Ek hizmet kaydı bulunamadı
-          </td>
-        </tr>`;
-      return;
-    }
-    
     list.forEach(item => {
       const tr = document.createElement("tr");
       
@@ -415,11 +367,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       const silBtn = document.createElement("button");
       silBtn.textContent = "Sil";
       silBtn.classList.add("btn-secondary");
-      silBtn.addEventListener("click", async () => {
-        const isConfirmed = await showConfirmModal('Bu ek hizmeti silmek istediğinizden emin misiniz?');
-        if (isConfirmed) {
-          deleteTransaction(item);
-        }
+      silBtn.addEventListener("click", () => {
+        deleteEkHizmet(item.id);
       });
       tdIslemler.appendChild(silBtn);
       tr.appendChild(tdIslemler);
@@ -1306,36 +1255,3 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
-
-// Özelleştirilmiş confirm fonksiyonu
-function showConfirmModal(message) {
-  return new Promise((resolve) => {
-    const modal = document.getElementById('confirmModal');
-    const modalBody = modal.querySelector('.confirm-modal-body');
-    const yesBtn = document.getElementById('confirmYes');
-    const noBtn = document.getElementById('confirmNo');
-
-    modalBody.textContent = message;
-    modal.style.display = 'flex';
-
-    function handleYes() {
-      modal.style.display = 'none';
-      cleanup();
-      resolve(true);
-    }
-
-    function handleNo() {
-      modal.style.display = 'none';
-      cleanup();
-      resolve(false);
-    }
-
-    function cleanup() {
-      yesBtn.removeEventListener('click', handleYes);
-      noBtn.removeEventListener('click', handleNo);
-    }
-
-    yesBtn.addEventListener('click', handleYes);
-    noBtn.addEventListener('click', handleNo);
-  });
-}

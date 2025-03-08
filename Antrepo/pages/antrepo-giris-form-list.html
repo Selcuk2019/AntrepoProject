@@ -17,15 +17,30 @@
       top: 40px;
       right: 20px;
       background: #fff;
-      border: 1px solid var(--border-color);
-      border-radius: 4px;
-      padding: 10px;
-      z-index: 100;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      min-width: 200px;
     }
     .dropdown-menu label {
-      display: block;
-      margin-bottom: 5px;
-      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      padding: 0.5rem;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .dropdown-menu label:hover {
+      background-color: #f3f4f6;
+    }
+    .dropdown-menu input[type="checkbox"] {
+      margin-right: 0.75rem;
+    }
+    #applyColumnsBtn {
+      width: 100%;
+      margin-top: 1rem;
+      padding: 0.5rem;
     }
   </style>
   <!-- DataTables CSS -->
@@ -47,17 +62,25 @@
       <div class="page-header">
         <h1>Antrepo Giriş Formları</h1>
         <div class="header-actions">
-          <button id="newEntryBtn" class="btn-primary">Yeni Antrepo Giriş Formu Oluştur</button>
-          <button id="addColumnBtn" class="btn-secondary">Sütun Ekle</button>
+          <button id="newEntryBtn" class="btn-primary">
+            <i class="fas fa-plus"></i> Yeni Antrepo Giriş Formu
+          </button>
+          <button id="addColumnBtn" class="btn-secondary">
+            <i class="fas fa-columns"></i> Sütun Ekle
+          </button>
           <div id="columnDropdown" class="dropdown-menu" style="display:none;">
-            <!-- Eklenmesini istediğiniz sütunların listesi (checkbox şeklinde) -->
-            <label><input type="checkbox" value="proforma_tarihi"> Proforma Tarihi</label>
-            <label><input type="checkbox" value="ticari_fatura_tarihi"> Ticari Fatura Tarihi</label>
-            <label><input type="checkbox" value="urun_birim_fiyat"> Ürün Birim Fiyat</label>
-            <label><input type="checkbox" value="para_birimi"> Para Birimi</label>
-            <button id="applyColumnsBtn" class="btn-primary">Ekle</button>
-            <div id="additionalFields"></div>
-
+            <label>
+              <input type="checkbox" value="proforma_tarihi"> Proforma Tarihi
+            </label>
+            <label>
+              <input type="checkbox" value="ticari_fatura_tarihi"> Ticari Fatura Tarihi
+            </label>
+            <label>
+              <input type="checkbox" value="urun_birim_fiyat"> Ürün Birim Fiyat
+            </label>
+            <label>
+              <input type="checkbox" value="para_birimi"> Para Birimi
+            </label>
           </div>
         </div>
       </div>

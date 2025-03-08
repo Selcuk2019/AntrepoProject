@@ -2884,36 +2884,47 @@ table.dataTable thead th.sorting_desc {
 .table-header-right {
   display: flex;
   align-items: center;
+  margin-left: auto;
 }
 
-/* Sayfa Başına Gösterim Seçici Stili */
-.dataTables_length select.modern-select {
-  padding: 0.5rem 2rem 0.5rem 1rem;
-  font-size: 0.9rem;
-  border: 1.5px solid #e5e7eb;
+/* Sayfa başına kayıt seçici stili */
+.dataTables_length {
+  margin-right: 1.5rem;
+}
+
+.dataTables_length label {
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+  color: #374151;
+}
+
+.dataTables_length select {
+  margin: 0 0.5rem;
+  padding: 0.375rem 2rem 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid #e5e7eb;
   border-radius: 6px;
   background-color: white;
+  cursor: pointer;
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.5rem center;
   background-repeat: no-repeat;
   background-size: 1.5em 1.5em;
   appearance: none;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s;
 }
 
-.dataTables_length select.modern-select:hover {
+.dataTables_length select:hover {
   border-color: #2563eb;
 }
 
-.dataTables_length select.modern-select:focus {
+.dataTables_length select:focus {
   outline: none;
   border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
 }
 
-/* Tablo Alt Kısmı - Pagination */
+/* Tablo alt kısmı - sadece pagination */
 .table-bottom {
   display: flex;
   justify-content: space-between;
