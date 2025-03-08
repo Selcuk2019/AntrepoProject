@@ -3087,3 +3087,61 @@ div.dataTables_wrapper div.dataTables_length select {
 }
 
 /* ...existing code... */
+
+/* ...existing code... */
+
+/* Custom Dropdown Styles */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background: #fff;
+  cursor: pointer;
+}
+
+.dropdown-input:focus {
+  border-color: var(--logo-color);
+  box-shadow: 0 0 0 3px rgba(44,102,221,0.1);
+  outline: none;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  margin-top: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+  background: #f8fafc;
+  color: var(--primary-color);
+}
+
+.dropdown-item.selected {
+  background: #eef2ff;
+  color: var(--primary-color);
+}
+
+/* ...existing code... */

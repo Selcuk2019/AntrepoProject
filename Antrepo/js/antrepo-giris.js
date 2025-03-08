@@ -298,6 +298,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     fetchBirimler()
   ]);
 
+  fillParaBirimDropdown();
+
   async function fetchEkHizmetler(girisId) {
     const resp = await fetch(`${baseUrl}/api/antrepo-giris/${girisId}/ek-hizmetler`);
     if (!resp.ok) throw new Error(`Ek hizmetler hata: ${resp.status}`);
@@ -417,9 +419,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   function fillParaBirimDropdown() {
     if (!selectParaBirimi) return;
-    selectParaBirimi.innerHTML = `<option value="">Seçiniz</option>`;
+    
+    selectParaBirimi.innerHTML = '<option value="">Seçiniz...</option>';
     allParaBirimleri.forEach(pb => {
-      const opt = document.createElement("option");
+      const opt = document.createElement('option');
       opt.value = pb.id.toString();
       opt.textContent = `${pb.para_birimi_adi} (${pb.iso_kodu})`;
       selectParaBirimi.appendChild(opt);
