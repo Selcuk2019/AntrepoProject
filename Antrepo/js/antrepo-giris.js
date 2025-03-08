@@ -195,8 +195,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const silBtn = document.createElement("button");
       silBtn.textContent = "Sil";
       silBtn.classList.add("btn-secondary");
-      silBtn.addEventListener("click", () => {
-        deleteTransaction(item);
+      silBtn.addEventListener("click", async () => {
+        const isConfirmed = await showConfirmModal('Bu hareketi silmek istediğinizden emin misiniz?');
+        if (isConfirmed) {
+          deleteTransaction(item);
+        }
       });
       tdIslemler.appendChild(silBtn);
       tr.appendChild(tdIslemler);
@@ -412,8 +415,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const silBtn = document.createElement("button");
       silBtn.textContent = "Sil";
       silBtn.classList.add("btn-secondary");
-      silBtn.addEventListener("click", () => {
-        deleteTransaction(item);
+      silBtn.addEventListener("click", async () => {
+        const isConfirmed = await showConfirmModal('Bu ek hizmeti silmek istediğinizden emin misiniz?');
+        if (isConfirmed) {
+          deleteTransaction(item);
+        }
       });
       tdIslemler.appendChild(silBtn);
       tr.appendChild(tdIslemler);
@@ -1300,3 +1306,36 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 });
+
+// Özelleştirilmiş confirm fonksiyonu
+function showConfirmModal(message) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('confirmModal');
+    const modalBody = modal.querySelector('.confirm-modal-body');
+    const yesBtn = document.getElementById('confirmYes');
+    const noBtn = document.getElementById('confirmNo');
+
+    modalBody.textContent = message;
+    modal.style.display = 'flex';
+
+    function handleYes() {
+      modal.style.display = 'none';
+      cleanup();
+      resolve(true);
+    }
+
+    function handleNo() {
+      modal.style.display = 'none';
+      cleanup();
+      resolve(false);
+    }
+
+    function cleanup() {
+      yesBtn.removeEventListener('click', handleYes);
+      noBtn.removeEventListener('click', handleNo);
+    }
+
+    yesBtn.addEventListener('click', handleYes);
+    noBtn.addEventListener('click', handleNo);
+  });
+}

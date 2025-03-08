@@ -73,31 +73,24 @@ document.addEventListener("DOMContentLoaded", async () => {
           mevcutMaliyet: 0,
           toplamMaliyet: 0,
           birimMaliyet: 0,
-          paraBirimi: calcData.paraBirimi || "USD"
+          paraBirimi: calcData.antrepoGiris?.para_birimi_iso || "USD"
         };
       }
 
       // Son satır
       const lastRow = breakdown[breakdown.length - 1];
-      const mevcutMaliyet = lastRow.dayTotal;      // Günlük Toplam (dayTotal)
-      const toplamMaliyet = lastRow.cumulative;    // Kümülatif Toplam (cumulative)
+      const mevcutMaliyet = lastRow.dayTotal;      // Günlük Toplam
+      const toplamMaliyet = lastRow.cumulative;    // Kümülatif Toplam
 
-      // Birim Maliyete Etkisi
-      // calcData.unitCostImpact => orada top-level'da gelebilir
-      // ama isterseniz kendiniz de hesaplayabilirsiniz
-      let birimMaliyet = calcData.unitCostImpact || 0;
-
-      // Örneğin: birimMaliyet = toplamMaliyet / totalGirisMiktari
-      // totalGirisMiktari => item.entryCount'tan da gelebilir
-      // Veya calcData.antrepoGiris.initialStock'tan
-      // Bu örnekte calcData.unitCostImpact'ı kullanıyoruz:
-      // (calcData da totalCost, unitCostImpact alanları var)
+      // Birim Maliyete Etkisi = Kümülatif Toplam / Toplam Giriş Miktarı
+      const totalInitialStock = calcData.antrepoGiris?.miktar || 0;
+      const birimMaliyet = totalInitialStock > 0 ? toplamMaliyet / totalInitialStock : 0;
 
       return {
         mevcutMaliyet,
         toplamMaliyet,
-        birimMaliyet: birimMaliyet,
-        paraBirimi: calcData.paraBirimi || "USD"
+        birimMaliyet,
+        paraBirimi: calcData.antrepoGiris?.para_birimi_iso || "USD"
       };
     } catch (err) {
       console.error("Hesaplama motoru çağrısı hatası:", err);
