@@ -65,6 +65,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  function formatDateToTurkish(dateStr) {
+    if (!dateStr) return "-";
+    const [year, month, day] = dateStr.split('-');
+    return `${day}.${month}.${year}`;
+  }
+
   function populateResults(result) {
     if (!result) {
       console.error('Result verisi boş');
@@ -95,7 +101,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${row.dayIndex}</td>
-        <td>${dayjs(row.date).format('YYYY-MM-DD')}</td>
+        <td>${formatDateToTurkish(dayjs(row.date).format('YYYY-MM-DD'))}</td>
         <td>${formatCurrency(row.dayArdiye, paraBirimi)}</td>
         <td>${formatCurrency(row.dayEkHizmet, paraBirimi)}</td>
         <td>${formatCurrency(row.dayTotal, paraBirimi)}</td>
@@ -106,6 +112,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     totalMaliyetSpan.textContent = `${totalCost.toFixed(2)} ${paraBirimi}`;
+
+    // DataTable initialization
+    $('#calculationTable').DataTable({
+      responsive: true,
+      autoWidth: false,
+      searching: true,
+      // DOM yapılandırmasını ve sayfalama stilini güncelliyoruz
+      dom: '<"table-top"<"table-header-left"l><"table-header-right"f>>rt<"table-bottom"ip>',
+      lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
+      pageLength: 25,
+      pagingType: "simple_numbers",
+      language: {
+        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json',
+        paginate: {
+          first: '«',
+          previous: '‹',
+          next: '›',
+          last: '»'
+        }
+      },
+      ordering: true,
+      order: [[0, 'asc']]
+    });
   }
 
   try {

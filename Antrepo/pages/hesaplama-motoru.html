@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <title>Hesaplama Motoru</title>
   <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css">
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
   <!-- Optional favicon link -->
   <link rel="icon" href="../images/favicon.ico" type="image/x-icon">
 </head>
@@ -11,25 +14,62 @@
   <header class="topbar">
     <!-- template.js ile doldurulacak -->
   </header>
+  
   <div class="main-container">
     <nav class="sidebar">
       <!-- template.js ile doldurulacak -->
     </nav>
     
     <div class="content">
-      <h1>Hesaplama Motoru</h1>
-
-      <div id="summaryInfo" class="card">
-        <p><strong>Beyanname No:</strong> <span id="beyannameNo"></span></p>
-        <p><strong>Giriş Tarihi:</strong> <span id="girisTarihi"></span></p>
-        <p><strong>Ürün Adı:</strong> <span id="urunAdi"></span></p>
-        <p><strong>Ürün Kodu:</strong> <span id="urunKodu"></span></p>
-        <p><strong>Beyanname Adeti (Ton):</strong> <span id="initialStock"></span></p>
+      <div class="page-header">
+        <h1>Hesaplama Motoru</h1>
       </div>
 
-      <div class="card">
+      <!-- Üst Form Container -->
+      <div class="info-container">
+        <div class="info-grid">
+          <!-- Sol Kolon -->
+          <div class="info-column">
+            <div class="info-group">
+              <label>Beyanname No</label>
+              <div class="info-value" id="beyannameNo">-</div>
+            </div>
+            <div class="info-group">
+              <label>Giriş Tarihi</label>
+              <div class="info-value" id="girisTarihi">-</div>
+            </div>
+          </div>
+          
+          <!-- Orta Kolon -->
+          <div class="info-column">
+            <div class="info-group">
+              <label>Ürün Adı</label>
+              <div class="info-value" id="urunAdi">-</div>
+            </div>
+            <div class="info-group">
+              <label>Ürün Kodu</label>
+              <div class="info-value" id="urunKodu">-</div>
+            </div>
+          </div>
+          
+          <!-- Sağ Kolon -->
+          <div class="info-column">
+            <div class="info-group">
+              <label>Beyanname Adeti (Ton)</label>
+              <div class="info-value" id="initialStock">0.00</div>
+            </div>
+            <div class="info-group">
+              <label>Toplam Maliyet</label>
+              <div class="info-value highlight" id="totalMaliyet">0.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DataTable Container -->
+      <div class="table-container">
         <h2>Günlük Hesaplama Detayları</h2>
-        <table class="datatable">
+        <table id="calculationTable" class="display modern-table" style="width:100%">
           <thead>
             <tr>
               <th>Gün</th>
@@ -38,7 +78,7 @@
               <th>Ek Hizmet</th>
               <th>Günlük Toplam</th>
               <th>Kümülatif Toplam</th>
-              <th>Kalan Stok</th>
+              <th>Kalan Stok (Ton)</th>
             </tr>
           </thead>
           <tbody id="dailyTableBody">
@@ -46,17 +86,17 @@
           </tbody>
         </table>
       </div>
-      
-      <p>Toplam Maliyet: <span id="totalMaliyet">0.00</span></p>
 
-      <div class="card">
-        <button id="backBtn" class="btn">Geri</button>
+      <div class="button-container">
+        <button id="backBtn" class="modern-nav-button">
+          <i class="fas fa-arrow-left"></i>
+          Geri Dön
+        </button>
       </div>
-    </div> <!-- /content -->
-  </div> <!-- /main-container -->
+    </div>
+  </div>
   
   <script src="../js/template.js"></script>
-  <!-- Update this path to point correctly to the JS file -->
   <script type="module" src="../js/hesaplama-motoru.js"></script>
 </body>
 </html>

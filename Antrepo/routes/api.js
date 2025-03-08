@@ -3,6 +3,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const dayjs = require('dayjs');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // GET /api/customs - Gümrükler tablosundan verileri çek
 router.get('/customs', async (req, res) => {
@@ -526,7 +531,7 @@ router.get('/antrepo-giris/:girisId/hareketler', async (req, res) => {
       SELECT 
       h.id,
       h.antrepo_giris_id,
-      h.islem_tarihi,
+      DATE_FORMAT(h.islem_tarihi, '%Y-%m-%d') AS islem_tarihi, -- Format as YYYY-MM-DD
       h.islem_tipi,
       h.miktar,
       h.kap_adeti,
@@ -751,14 +756,15 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
   try {
     const girisId = req.params.girisId;
     
-    // 1. Ana giriş bilgilerini al
+    // 1. Ana giriş bilgilerini al (ISO8601 tarih formatı ile)
     const sqlAntrepoGiris = `
       SELECT 
         ag.*,
         u.name as urun_adi,
         pb.iso_kodu as para_birimi_iso,
         pb.para_birimi_adi,
-        pb.sembol as para_birimi_sembol
+        pb.sembol as para_birimi_sembol,
+        DATE_FORMAT(ag.antrepo_giris_tarihi, '%Y-%m-%dT%H:%i:%s%z') AS antrepo_giris_tarihi
       FROM antrepo_giris ag
       LEFT JOIN urunler u ON ag.urun_kodu = u.code
       LEFT JOIN para_birimleri pb ON ag.para_birimi = pb.id
@@ -769,10 +775,10 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
       return res.status(404).json({ error: 'Antrepo giriş kaydı bulunamadı' });
     }
 
-    // 2. Tüm hareketleri getir
+    // 2. Tüm hareketleri getir (islem_tarihi için aynı dönüşüm)
     const sqlHareketler = `
       SELECT 
-        islem_tarihi,
+        DATE_FORMAT(islem_tarihi, '%Y-%m-%dT%H:%i:%s%z') AS islem_tarihi,
         islem_tipi,
         miktar,
         created_at
@@ -782,13 +788,14 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
     `;
     const [hareketler] = await db.query(sqlHareketler, [girisId]);
 
-    // 3. Ek hizmetleri getir
+    // 3. Ek hizmetleri getir - Fix the SQL to correctly fetch services
     const sqlEkHizmetler = `
       SELECT 
         DATE_FORMAT(agh.ek_hizmet_tarihi, '%Y-%m-%d') AS ek_hizmet_tarihi,
         agh.toplam,
         h.hizmet_adi,
-        pb.iso_kodu as para_birimi
+        pb.iso_kodu as para_birimi,
+        agh.aciklama
       FROM antrepo_giris_hizmetler agh
       LEFT JOIN hizmetler h ON agh.hizmet_id = h.id
       LEFT JOIN para_birimleri pb ON agh.para_birimi_id = pb.id
@@ -797,19 +804,23 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
     `;
     const [ekHizmetler] = await db.query(sqlEkHizmetler, [girisId]);
 
-    // 4. Tarih aralığını belirle
+    // 4. Tarih aralığını belirle - İlk günü hariç tutmak için
     const ilkGiris = hareketler.find(h => h.islem_tipi === 'Giriş');
     if (!ilkGiris) {
       return res.status(404).json({ error: 'Giriş hareketi bulunamadı' });
     }
-    const baslangicTarihi = new Date(ilkGiris.islem_tarihi);
-    baslangicTarihi.setHours(0, 0, 0, 0);
+
+    // DÜZELTME 1: Başlangıç tarihini bir gün ileri al
+    const baslangicTarihi = dayjs(ilkGiris.islem_tarihi)
+      .add(1, 'day')  // İlk günü hesaplamadan çıkarmak için
+      .startOf('day')
+      .toDate();
 
     // "now" değişkeni, bugünün gerçek zamanını içersin:
     const now = new Date();
-    const todayEnd = new Date(now);
-    todayEnd.setHours(23, 59, 59, 999);
-
+    // Set end boundary to tomorrow's midnight to include the current day
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    
     console.log("Calculation start:", {
       now: now.toISOString(),
       todayEnd: todayEnd.toISOString()
@@ -835,9 +846,13 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
 
     function hesaplaArdiye(kalanStok, gunSayisi, sozlesmeParams) {
       try {
-        // Input validation
         const stokMiktar = parseFloat(kalanStok) || 0;
         const gunNo = parseInt(gunSayisi) || 0;
+
+        // DÜZELTME 2: Stok veya gün sayısı 0/negatif ise ardiye hesaplama
+        if (stokMiktar <= 0 || gunNo < 1) {
+          return 0;
+        }
 
         // Gün aralığını bul
         const aralik = sozlesmeParams.find(p => 
@@ -871,16 +886,14 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
 
     function hesaplaStok(tarih, hareketler) {
       let stok = 0;
+      const tarihStr = tarih.toISOString().split('T')[0];
+
       for (const hareket of hareketler) {
-        const hareketTarihi = new Date(hareket.islem_tarihi);
-        // Bugünün hareketleri için saat kontrolü ekle
-        if (tarih === now && hareketTarihi <= now) {
-          if (hareket.islem_tipi === 'Giriş') {
-            stok += parseFloat(hareket.miktar || 0);
-          } else if (hareket.islem_tipi === 'Çıkış') {
-            stok -= parseFloat(hareket.miktar || 0);
-          }
-        } else if (hareketTarihi.toISOString().split('T')[0] <= tarih.toISOString().split('T')[0]) {
+        // Hareketin tarihini saat bilgisi olmadan karşılaştır
+        const hareketTarihStr = hareket.islem_tarihi.split('T')[0];
+        
+        // Sadece aynı gün veya önceki günlerin hareketlerini hesapla
+        if (hareketTarihStr <= tarihStr) {
           if (hareket.islem_tipi === 'Giriş') {
             stok += parseFloat(hareket.miktar || 0);
           } else if (hareket.islem_tipi === 'Çıkış') {
@@ -888,6 +901,7 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
           }
         }
       }
+      
       return Math.max(0, stok);
     }
 
@@ -913,36 +927,35 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
         // Gün sayısını son giriş tarihine göre hesapla
         const lastEntryDate = new Date(lastEntry.islem_tarihi);
         lastEntryDate.setHours(0, 0, 0, 0);
-        const gunSayisi = Math.floor((currentDate - lastEntryDate) / (1000 * 60 * 60 * 24)) + 1;
+        // DÜZELTME 3: Gün sayısı hesaplamasında +1 kaldırıldı
+        const gunSayisi = Math.floor((currentDate - lastEntryDate) / (1000 * 60 * 60 * 24));
 
-        // Ardiye hesapla (artık hafta sonu çarpanı yok)
         const dayArdiye = hesaplaArdiye(kalanStok, gunSayisi, sozlesmeParams);
 
-        // O güne ait ek hizmetleri filtrele
-        const gunlukEkHizmetler = ekHizmetler
-          .filter(eh => eh.ek_hizmet_tarihi === dateStr)
-          .reduce((sum, eh) => sum + parseFloat(eh.toplam || 0), 0);
+        // DÜZELTME 4: Hem stok hem ardiye 0 ise günü tabloya ekleme 
+        if (kalanStok > 0 || dayArdiye > 0) {
+          const gunlukEkHizmetler = ekHizmetler
+            .filter(eh => eh.ek_hizmet_tarihi === dateStr)
+            .reduce((sum, eh) => sum + parseFloat(eh.toplam || 0), 0);
 
-        const dayTotal = dayArdiye + gunlukEkHizmetler;
-        cumulativeCost += dayTotal;
+          const dayTotal = dayArdiye + gunlukEkHizmetler;
+          cumulativeCost += dayTotal;
 
-        dailyBreakdown.push({
-          dayIndex: dayCounter,
-          date: dateStr,
-          dayArdiye: parseFloat(dayArdiye.toFixed(2)),
-          dayEkHizmet: parseFloat(gunlukEkHizmetler.toFixed(2)),
-          dayTotal: parseFloat(dayTotal.toFixed(2)),
-          cumulative: parseFloat(cumulativeCost.toFixed(2)),
-          stockAfter: parseFloat(kalanStok.toFixed(2))
-        });
+          dailyBreakdown.push({
+            dayIndex: dayCounter,
+            date: dateStr,
+            dayArdiye: parseFloat(dayArdiye.toFixed(2)),
+            dayEkHizmet: parseFloat(gunlukEkHizmetler.toFixed(2)),
+            dayTotal: parseFloat(dayTotal.toFixed(2)),
+            cumulative: parseFloat(cumulativeCost.toFixed(2)),
+            stockAfter: parseFloat(kalanStok.toFixed(2))
+          });
+        }
 
-        // Bir sonraki güne geç
         currentDate.setDate(currentDate.getDate() + 1);
-        currentDate.setHours(0, 0, 0, 0);
         dayCounter++;
       } catch (err) {
         console.error('Daily calculation error:', err);
-        // Continue with next iteration
       }
     }
 

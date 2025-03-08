@@ -24,7 +24,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         pageLength: 25,
         order: [[2, 'desc']], // Antrepo Giriş Tarihine göre sırala
         responsive: true,
-        dom: '<"top"f>rt<"bottom"lip><"clear">',
+        // DOM yapılandırmasını güncelle
+        dom: '<"table-top"<"table-header-left"l><"table-header-right"f>>rt<"table-bottom"ip>',
+        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         ordering: true, // Sıralama özelliğini aktif et
         // Sütun başlıklarının sıralama özelliklerini özelleştir
         columnDefs: [
@@ -44,10 +46,22 @@ document.addEventListener("DOMContentLoaded", async () => {
           $('.dataTables_filter input').attr('placeholder', 'Ara...');
           $('.dataTables_filter input').addClass('modern-search');
           $('.dataTables_filter label').html($('.dataTables_filter input'));
+          
+          // Sayfa başına gösterim seçicisini özelleştir
+          $('.dataTables_length select').addClass('modern-select');
         },
         "drawCallback": function( settings ) {
           // Sıralama ikonlarını yeniden initialize et
           $('th.sorting').removeClass('sorting_asc sorting_desc');
+        },
+        pagingType: "simple_numbers",
+        language: {
+          paginate: {
+            first: '«',
+            previous: '‹',
+            next: '›',
+            last: '»'
+          }
         }
       });
 
