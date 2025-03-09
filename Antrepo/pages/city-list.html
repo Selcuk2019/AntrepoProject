@@ -4,25 +4,35 @@
   <meta charset="UTF-8" />
   <title>Şehir ve Liman Yönetimi</title>
   <link rel="stylesheet" href="../style.css" />
+  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
 </head>
 <body>
+  <header class="topbar"></header>
 
-  <h1>Şehir ve Liman Yönetimi</h1>
-  <!-- "Yeni Şehir Ekle" butonu -->
-  <button id="addCityBtn">Yeni Şehir Ekle</button>
+  <div class="main-container">
+    <nav class="sidebar"></nav>
+    <div class="content">
+      <h1>Şehir ve Liman Yönetimi</h1>
+      <!-- "Yeni Şehir Ekle" butonu -->
+      <button id="addCityBtn">Yeni Şehir Ekle</button>
 
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Şehir Adı</th>
-        <th>Liman</th>
-      </tr>
-    </thead>
-    <tbody id="cityTableBody">
-      <!-- JavaScript ile satırlar eklenecek -->
-    </tbody>
-  </table>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Şehir Adı</th>
+            <th>Liman</th>
+          </tr>
+        </thead>
+        <tbody id="cityTableBody">
+          <!-- JavaScript ile satırlar eklenecek -->
+        </tbody>
+      </table>
+    </div>
+  </div>
 
   <!-- Şehirlere ait JS dosyamız -->
   <script src="../js/city-list.js"></script>

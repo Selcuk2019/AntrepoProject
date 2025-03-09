@@ -5,16 +5,18 @@
   <title>Stok Kartı</title>
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/stock-card.css">
+  <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 </head>
 <body>
-  <header class="topbar">
-    <!-- template.js dolduracak -->
-  </header>
+  <header class="topbar"></header>
 
   <div class="main-container">
-    <nav class="sidebar">
-      <!-- template.js dolduracak -->
-    </nav>
+    <nav class="sidebar"></nav>
 
     <div class="content">
       <div class="page-header">
@@ -34,6 +36,19 @@
     </div>
   </div>
 
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+      $(document).ready(function() {
+          setTimeout(() => {
+              $('#packaging-type').select2({
+                  placeholder: "Seçiniz",
+                  allowClear: true,
+                  width: '100%'
+              });
+          }, 1000); // Wait for dynamic content to load
+      });
+  </script>
   <script src="../js/template.js"></script>
   <script type="module" src="../js/stock-card.js"></script>
 </body>

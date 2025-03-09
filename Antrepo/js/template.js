@@ -56,8 +56,10 @@ class Template {
                 <li><a href="${this.rootPath}index.html"><i class="fas fa-home"></i> Anasayfa</a></li>
                 <li><a href="${this.rootPath}pages/antrepo-giris-formu.html"><i class="fas fa-file-import"></i> Antrepo Giriş Formu</a></li>
                 <li><a href="${this.rootPath}pages/antrepo-giris-form-list.html"><i class="fas fa-list"></i> Antrepo Giriş Formları</a></li>
+                <li><a href="${this.rootPath}pages/maliyet-analizi-index.html"><i class="fas fa-list"></i>   Maliyet analizi</a></li>
                 <li><a href="${this.rootPath}pages/antrepo-list.html"><i class="fas fa-warehouse"></i> Antrepolar</a></li>
                 <li><a href="${this.rootPath}pages/company-list.html"><i class="fas fa-building"></i> Antrepo Şirketleri</a></li>
+                <li><a href="${this.rootPath}pages/product-list.html"><i class="fas fa-building"></i> Ürünler</a></li>
                 <li><a href="${this.rootPath}pages/customs-list.html"><i class="fas fa-globe"></i> Gümrükler</a></li>
                 <li><a href="${this.rootPath}pages/contract-list.html"><i class="fas fa-file-contract"></i> Sözleşmeler</a></li>
                 <li><a href="${this.rootPath}pages/unit-list.html"><i class="fas fa-ruler"></i> Ölçü Birimleri</a></li>
@@ -65,7 +67,7 @@ class Template {
                 
             </ul>
 
-            <div class="divider-circle"></div>
+            <div class="divider-dashes">--- --- ---</div>
 
             <ul class="sidebar-section section-2">
             <li><a href="/pages/admin-panel.html"><i class="fas fa-user-shield"></i> Admin Panel</a></li>
@@ -190,13 +192,18 @@ class Sidebar {
     }
 }
 
-// Template nesnesini oluştur ve başlat
-const template = new Template();
-template.init();
+// Ensure template is initialized on all pages
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize template for all pages
+    const template = new Template();
+    template.init();
 
-// Sayfa yüklendiğinde sidebar'ı ekle
-document.addEventListener('DOMContentLoaded', () => {
+    // Remove the old sidebar initialization
     if (document.getElementById('sidebar-container')) {
         new Sidebar();
     }
 });
+
+// Remove or comment out the individual template initialization
+// const template = new Template();
+// template.init();

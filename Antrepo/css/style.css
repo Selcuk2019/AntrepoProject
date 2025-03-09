@@ -316,12 +316,35 @@ body {
   padding: 0;
 }
 
-/* Liste ayarları */
+/* Menü blokları */
 .sidebar-section {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+
+.sidebar-section li a {
+  display: block;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 16px; 
+  line-height: 1.4;
+}
+
+/* Hover efekti */
+.sidebar-section li a:hover {
+  background-color: #3a3e57;
+}
+
+/* Tireli bölücü */
+.divider-dashes {
+  text-align: center; /* Ortalamak için */
+  color: #fff;        /* Tirelerin rengi */
+  margin: 8px 0;      /* Dikey boşluk */
+  font-size: 14px;    /* Tirelerin yazı boyutu */
+}
+
 
 .sidebar-section li a {
   display: block;

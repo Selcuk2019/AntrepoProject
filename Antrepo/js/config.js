@@ -1,2 +1,2 @@
 // config.js
-export const baseUrl = 'http://localhost:60014'; // Port numarasının doğru olduğundan emin olun
+export const baseUrl = 'http://localhost:50459'; // Port numarasının doğru olduğundan emin olun
