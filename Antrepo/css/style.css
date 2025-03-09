@@ -109,6 +109,248 @@ body {
   background-color: var(--sidebar-hover-bg);
 }
 
+.sidebar {
+  width: 220px;                
+  background-color: #2e3148;  
+  min-height: 100vh;          
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Liste ortak ayarlar */
+.sidebar-section {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Liste öğeleri (linkler) */
+.sidebar-section li a {
+  display: block;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 14px;
+}
+
+/* Hover efekti */
+.sidebar-section li a:hover {
+  background-color: #3a3e57;
+}
+
+/* Daire şeklinde bölücü */
+.divider-circle {
+  width: 20px;
+  height: 20px;
+  background-color: #6bccd3; /* Daire rengi */
+  border-radius: 50%;     /* Daire için */
+  margin: 8px auto;       /* Ortalamak ve dikey boşluk vermek */
+}
+.sidebar {
+  width: 220px;
+  background-color: #2e3148;
+  min-height: 100vh;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Liste ortak ayarlar */
+.sidebar-section {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Menü linkleri */
+.sidebar-section li a {
+  display: block;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 16px;   /* PUNTOLARINI BÜYÜTÜYORUZ */
+  line-height: 1.4;  /* Satır yüksekliği biraz artırılabilir */
+}
+
+/* Hover efekti */
+.sidebar-section li a:hover {
+  background-color: #3a3e57;
+}
+
+/* Daire Divider */
+.divider-circle {
+  display: block;        /* blok düzeyinde, margin auto çalışsın */
+  width: 20px;           /* daire boyutu */
+  height: 20px;
+  background-color: #66ccff; /* dilediğin renk */
+  border-radius: 50%;
+  margin: 8px auto;      /* dikeyde 8px boşluk, yatayda ortalama */
+}
+.sidebar {
+  width: 220px;
+  background-color: #2e3148;
+  min-height: 100vh;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Liste ortak ayarlar */
+.sidebar-section {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Menü linkleri */
+.sidebar-section li a {
+  display: block;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 16px;   /* PUNTOLARINI BÜYÜTÜYORUZ */
+  line-height: 1.4;  /* Satır yüksekliği biraz artırılabilir */
+}
+
+/* Hover efekti */
+.sidebar-section li a:hover {
+  background-color: #3a3e57;
+}
+
+/* Daire Divider */
+.divider-circle {
+  display: block;        /* blok düzeyinde, margin auto çalışsın */
+  width: 20px;           /* daire boyutu */
+  height: 20px;
+  background-color: #66ccff; /* dilediğin renk */
+  border-radius: 50%;
+  margin: 8px auto;      /* dikeyde 8px boşluk, yatayda ortalama */
+}
+.sidebar {
+  width: 220px;
+  background-color: #2e3148;
+  min-height: 100vh;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Liste ortak ayarlar */
+.sidebar-section {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Menü linkleri */
+.sidebar-section li a {
+  display: block;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 16px;   /* PUNTOLARINI BÜYÜTÜYORUZ */
+  line-height: 1.4;  /* Satır yüksekliği biraz artırılabilir */
+}
+
+/* Hover efekti */
+.sidebar-section li a:hover {
+  background-color: #3a3e57;
+}
+
+/* Daire Divider */
+.divider-circle {
+  display: block;        /* blok düzeyinde, margin auto çalışsın */
+  width: 20px;           /* daire boyutu */
+  height: 20px;
+  background-color: #66ccff; /* dilediğin renk */
+  border-radius: 50%;
+  margin: 8px auto;      /* dikeyde 8px boşluk, yatayda ortalama */
+}
+.sidebar {
+  width: 220px;
+  background-color: #2e3148;
+  min-height: 100vh;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Liste ortak ayarlar */
+.sidebar-section {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Menü linkleri */
+.sidebar-section li a {
+  display: block;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 16px;   /* PUNTOLARINI BÜYÜTÜYORUZ */
+  line-height: 1.4;  /* Satır yüksekliği biraz artırılabilir */
+}
+
+/* Hover efekti */
+.sidebar-section li a:hover {
+  background-color: #3a3e57;
+}
+
+/* Daire Divider */
+.divider-circle {
+  display: block;        /* blok düzeyinde, margin auto çalışsın */
+  width: 20px;           /* daire boyutu */
+  height: 20px;
+  background-color: #66ccff; /* dilediğin renk */
+  border-radius: 50%;
+  margin: 8px auto;      /* dikeyde 8px boşluk, yatayda ortalama */
+}
+.sidebar {
+  width: 220px;
+  background-color: #2e3148;
+  min-height: 100vh;
+  font-family: sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Liste ayarları */
+.sidebar-section {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-section li a {
+  display: block;
+  padding: 8px 16px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.sidebar-section li a:hover {
+  background-color: #3a3e57;
+}
+
+/* Daire divider, hafif solda */
+.divider-circle {
+  display: block;
+  width: 20px;
+  height: 20px;
+  background-color: #66ccff; /* Daire rengi */
+  border-radius: 50%;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  margin-left: 40px; /* Sol taraftan boşluk */
+  margin-right: 0;  /* Sağ taraftan boşluk */
+}
+
+
+
 /* ===================== CONTENT ===================== */
 .content {
   flex-grow: 1;

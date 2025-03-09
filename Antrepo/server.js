@@ -13,7 +13,8 @@ app.use(express.static(path.join(__dirname, '/')));
 // API rotalarını /api altında kullan
 app.use('/api', apiRoutes);
 
-let PORT = process.env.PORT || 3002;
+// Use SERVER_PORT from .env if available
+let PORT = process.env.PORT || process.env.SERVER_PORT || 3002;
 let server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
