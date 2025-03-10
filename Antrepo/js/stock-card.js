@@ -47,12 +47,7 @@ document.addEventListener("DOMContentLoaded", async function() {
           </div>
           <div class="detail-row">
             <div class="detail-label">Paketleme Tipi</div>
-            <div class="detail-value">
-              <select id="packaging-type" class="form-select">
-                <option value="">Seçiniz</option>
-                <option value="${product.paketleme_tipi}" ${product.paketleme_tipi ? 'selected' : ''}>${product.paketleme_tipi_name || "Belirtilmedi"}</option>
-              </select>
-            </div>
+            <div class="detail-value">${product.paketleme_tipi_name || "Belirtilmedi"}</div>
           </div>
           <div class="detail-row">
             <div class="detail-label">Son Güncelleme</div>
@@ -72,22 +67,6 @@ document.addEventListener("DOMContentLoaded", async function() {
         </div>
       </div>
     `;
-
-    // Paketleme tiplerini yükle
-    try {
-      const packagingTypesResp = await fetch(`${baseUrl}/api/paketleme-tipleri`);
-      if (packagingTypesResp.ok) {
-        const packagingTypes = await packagingTypesResp.json();
-        const selectElement = document.getElementById('packaging-type');
-        packagingTypes.forEach(type => {
-          if (type.id !== product.paketleme_tipi) {
-            selectElement.add(new Option(type.name, type.id));
-          }
-        });
-      }
-    } catch (error) {
-      console.error("Paketleme tipleri yüklenirken hata:", error);
-    }
 
     // Stok miktarını güncelle
     const stockResp = await fetch(`${baseUrl}/api/stock-card/${productId}`);

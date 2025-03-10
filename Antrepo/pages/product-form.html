@@ -8,7 +8,49 @@
     <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
-
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+  <style>
+    /* Doğrudan sayfaya özgü inline stil - kesinlikle çalışacak */
+    .form-actions {
+      display: flex !important;
+      justify-content: space-between !important;
+      margin-top: 25px !important;
+      border-top: 1px solid #e0e0e0 !important;
+      padding-top: 20px !important;
+    }
+    
+    .form-button {
+      min-width: 120px !important;
+      padding: 12px 24px !important;
+      font-size: 16px !important;
+      text-align: center !important;
+      border-radius: 6px !important;
+      font-weight: 500 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      border: none !important;
+    }
+    
+    .btn-cancel {
+      background-color: #f0f0f0 !important;
+      color: #333 !important;
+      border: 1px solid #ddd !important;
+    }
+    
+    .btn-save {
+      background-color: #0d6efd !important;
+      color: white !important;
+    }
+    
+    .btn-cancel:hover {
+      background-color: #e0e0e0 !important;
+    }
+    
+    .btn-save:hover {
+      background-color: #0b5ed7 !important;
+    }
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -48,14 +90,19 @@
             <textarea id="description"></textarea>
           </div>
 
+          <!-- Buton yerleşimi: İptal solda, Kaydet sağda - space-between ile -->
           <div class="form-actions">
-            <button type="submit" class="btn-primary">Kaydet</button>
-            <button type="button" class="btn-secondary" onclick="history.back()">İptal</button>
+            <button type="button" class="form-button btn-cancel" onclick="history.back()">İptal</button>
+            <button type="submit" class="form-button btn-save">Kaydet</button>
           </div>
         </form>
       </div>
     </div>
   </div>
+  <!-- JQuery ve Select2 JS -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  
   <script src="../js/template.js"></script>
   <script type="module" src="../js/product-form.js"></script>
 </body>

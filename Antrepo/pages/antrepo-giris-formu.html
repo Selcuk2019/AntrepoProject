@@ -39,6 +39,8 @@
       max-width: 500px;
     }
   </style>
+  <!-- Select2 CSS - Eğer yoksa ekleyin -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 </head>
 <body>
   <header class="topbar"></header>
@@ -207,9 +209,10 @@
             </div>
             <!-- Para birimi seçici -->
             <div class="form-group">
-              <label for="paraBirimi">Para Birimi</label>
-              <select id="paraBirimi" name="paraBirimi">
-                <!-- ...existing optionlar... -->
+              <label for="paraBirimi">Para Birimi <span class="required">*</span></label>
+              <select id="paraBirimi" name="paraBirimi" class="form-select currency-select" required>
+                <option value=""></option>
+                <!-- Para birimleri dinamik olarak JavaScript'ten doldurulacak -->
               </select>
             </div>
             <div class="form-group">
@@ -586,5 +589,18 @@
   <script src="../js/template.js?v=2"></script>
   <script type="module" src="../js/antrepo-giris.js"></script>
   <script type="module" src="../js/antrepo-hareketler.js"></script>
+  <!-- jQuery ve Select2 JS - Eğer yoksa ekleyin -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      // Para Birimi select kutusunu başlat
+      $('.currency-select').select2({
+        placeholder: "Para birimi seçiniz...",
+        allowClear: true,
+        width: '100%'
+      });
+    });
+  </script>
 </body>
 </html>

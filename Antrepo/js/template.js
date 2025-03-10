@@ -1,8 +1,3 @@
-// Config kontrolü
-if (!window.APP_CONFIG) {
-    console.error('Config yüklenemedi!');
-}
-
 document.addEventListener('DOMContentLoaded', function() {
     window.apiHeaders = {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -204,6 +199,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Remove or comment out the individual template initialization
-// const template = new Template();
-// template.init();
+// Bu dosyayı incelememiz ve paketleme tipi select elementini etkileyecek kodları kontrol etmemiz gerekiyor
+
+// Bu dosyayı inceleyerek, selectlere müdahale eden kodları bulun ve geçici olarak kapatın:
+
+/* Örneğin şöyle bir kod varsa:
+$(document).ready(function() {
+  // Tüm select elementlerini initialize et
+  $('select').select2();
+  
+  // Bunun yerine şunu kullanın:
+  $('select:not(.no-auto-init)').select2();
+});
+*/

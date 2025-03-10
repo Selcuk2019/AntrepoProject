@@ -3410,3 +3410,48 @@ div.dataTables_wrapper div.dataTables_length select {
 }
 
 /* ...existing code... */
+
+/* Ürün formu için özel buton stilleri - dosyanın sonuna ekleyin */
+
+/* Sadece product-form sayfasındaki butonlar için spesifik stil */
+.product-form-actions {
+  display: flex;
+  justify-content: space-between !important;
+  margin-top: 25px !important;
+  width: 100% !important;
+}
+
+/* Yüksek öncelikli stil için !important kullanıyoruz */
+.product-form-actions .product-btn {
+  width: 150px !important;
+  padding: 10px 20px !important;
+  font-size: 16px !important;
+  text-align: center !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  border: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.2s ease !important;
+  height: 42px !important;
+  font-weight: 500 !important;
+}
+
+.product-form-actions .btn-primary {
+  background-color: #0d6efd !important;
+  color: white !important;
+}
+
+.product-form-actions .btn-secondary {
+  background-color: #8c96a0 !important; /* Daha açık gri renk */
+  color: white !important;
+}
+
+.product-form-actions .btn-primary:hover {
+  background-color: #0b5ed7 !important;
+}
+
+.product-form-actions .btn-secondary:hover {
+  background-color: #7a8793 !important;
+}

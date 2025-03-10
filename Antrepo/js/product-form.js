@@ -10,17 +10,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Sayfa başlığını güncelle
   document.querySelector('.page-header h1').textContent = productId ? 'Ürün Düzenle' : 'Yeni Ürün Ekle';
 
-  // Paketleme tiplerini yükle ve dönen promise'i sakla
+  // Paketleme tiplerini yükle ve Select2 ile başlat
   const loadPackagingTypes = async () => {
     try {
       const resp = await fetch(`${baseUrl}/api/packaging-types`);
       if (!resp.ok) throw new Error(`Paketleme tipleri hata: ${resp.status}`);
       const data = await resp.json();
 
+      // Boş bir option ekleyerek placeholder'ın görünmesini sağla
       packagingTypeSelect.innerHTML = `
-        <option value="" disabled>Seçiniz</option>
+        <option value=""></option>
         ${data.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
       `;
+      
+      // Select2 ile başlat
+      $(packagingTypeSelect).select2({
+        placeholder: "Seçiniz",
+        allowClear: true,
+        width: '100%'
+      });
+      
       return true;
     } catch (error) {
       console.error("Paketleme tipleri yüklenirken hata:", error);
@@ -28,7 +37,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  // Önce paketleme tiplerini yükle
+  // Önce paketleme tiplerini yükle ve Select2'yi başlat
   await loadPackagingTypes();
 
   // Sonra, eğer düzenleme modundaysa ürün bilgilerini getir
@@ -44,9 +53,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("bagSize").value = product.paket_hacmi || '';
       document.getElementById("description").value = product.description || '';
       
-      // Paketleme tipini seç
+      // Paketleme tipini seç - Select2 için trigger('change') ekle
       if (product.paketleme_tipi_id) {
-        packagingTypeSelect.value = product.paketleme_tipi_id;
+        $(packagingTypeSelect).val(product.paketleme_tipi_id).trigger('change');
       }
     } catch (error) {
       console.error("Ürün yükleme hatası:", error);

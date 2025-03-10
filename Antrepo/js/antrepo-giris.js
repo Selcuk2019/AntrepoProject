@@ -420,13 +420,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   function fillParaBirimDropdown() {
     if (!selectParaBirimi) return;
     
-    selectParaBirimi.innerHTML = '<option value="">Seçiniz...</option>';
+    // Önce mevcut seçenekleri temizleyelim
+    selectParaBirimi.innerHTML = '<option value=""></option>';
+    
+    // API'den çekilen para birimlerini dropdown'a ekleyelim
     allParaBirimleri.forEach(pb => {
       const opt = document.createElement('option');
       opt.value = pb.id.toString();
       opt.textContent = `${pb.para_birimi_adi} (${pb.iso_kodu})`;
       selectParaBirimi.appendChild(opt);
     });
+    
+    // Eğer Select2 zaten başlatılmışsa güncelle
+    try {
+      $(selectParaBirimi).trigger('change');
+    } catch (e) {
+      console.log("Select2 henüz başlatılmamış olabilir.");
+    }
   }
   function fillSirketDatalist() {
     antrepoSirketiList.innerHTML = "";
@@ -1256,5 +1266,26 @@ document.addEventListener('DOMContentLoaded', function() {
       // Custom event tetikle (değişiklikleri yakalamak için)
       input.dispatchEvent(new Event('change'));
     });
+  });
+});
+
+// Para Birimi select kutusunu başlat - Dosyanın başlangıç kısmına ekle
+$(document).ready(function() {
+  // Para Birimi select kutusunu başlat
+  $('#paraBirimi').select2({
+    placeholder: "Para birimi seçiniz...",
+    allowClear: true,
+    width: '100%'
+  });
+  
+  // Para birimini zorunlu hale getir (required attribute kontrolü)
+  $('#antrepoForm').on('submit', function(e) {
+    const parabirimi = $('#paraBirimi').val();
+    if (!parabirimi) {
+      e.preventDefault();
+      alert('Lütfen para birimi seçiniz!');
+      $('#paraBirimi').focus();
+      return false;
+    }
   });
 });
