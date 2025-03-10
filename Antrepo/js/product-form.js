@@ -25,6 +25,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
       const variant = await response.json();
       
+      // Ürün bilgilerini göster
+      const productInfo = document.createElement('div');
+      productInfo.className = 'product-info';
+      productInfo.innerHTML = `
+        <div class="alert alert-info">
+          <strong>Düzenlenen Varyant:</strong>
+          <p>Ürün Adı: ${variant.urun_adi}</p>
+          <p>Ürün Kodu: ${variant.urun_kodu}</p>
+        </div>
+      `;
+      
+      // Form container'ın en üstüne ekle
+      const formContainer = document.querySelector('.form-container');
+      formContainer.insertBefore(productInfo, formContainer.firstChild);
+      
       // Form alanlarını doldur
       document.getElementById("bagSize").value = variant.paket_hacmi;
       $(packagingTypeSelect).val(variant.paketleme_tipi_id).trigger('change');

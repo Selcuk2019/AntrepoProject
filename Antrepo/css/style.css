@@ -3888,3 +3888,32 @@ div.dataTables_wrapper div.dataTables_length select {
 }
 
 /* ...existing code... */
+
+/* ...existing code... */
+
+/* Ürün bilgi kutusu için stiller */
+.product-info {
+  margin-bottom: 20px;
+}
+
+.alert-info {
+  background-color: #f0f7ff;
+  border: 1px solid #cce5ff;
+  border-radius: 6px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.alert-info strong {
+  color: #004085;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.alert-info p {
+  color: #004085;
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+/* ...existing code... */

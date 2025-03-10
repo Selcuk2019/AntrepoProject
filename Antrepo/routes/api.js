@@ -2574,9 +2574,12 @@ router.get('/urun_varyantlari/:id', async (req, res) => {
         v.urun_id,
         v.paket_hacmi,
         v.paketleme_tipi_id,
-        pt.name as paketleme_tipi_adi
+        pt.name as paketleme_tipi_adi,
+        u.name as urun_adi,
+        u.code as urun_kodu
       FROM urun_varyantlari v
       LEFT JOIN paketleme_tipleri pt ON v.paketleme_tipi_id = pt.id
+      LEFT JOIN urunler u ON v.urun_id = u.id
       WHERE v.id = ?
     `;
     const [rows] = await db.query(sql, [id]);
