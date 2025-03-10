@@ -2,241 +2,234 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Antrepo Giriş Formu</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  
   <!-- Custom CSS -->
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/antrepo-giris-formu.css">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
   
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  
   <!-- DataTables CSS -->
   <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
   <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
-
-  <!-- Modal styles -->
-  <style>
-    .modal {
-      display: none; 
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgba(0,0,0,0.5);
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background-color: #fff;
-      margin: auto;
-      padding: 20px;
-      border-radius: 4px;
-      width: 90%;
-      max-width: 500px;
-    }
-  </style>
-  <!-- Select2 CSS - Eğer yoksa ekleyin -->
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 </head>
+
 <body>
-  <header class="topbar"></header>
+  <!-- Topbar -->
+  <header class="topbar">
+    <!-- Topbar içeriği template.js ile doldurulacak -->
+  </header>
 
-    <div class="main-container">
-        <nav class="sidebar"></nav>
-    <div class="content">
-      <div class="page-header">
-        <h1>Antrepo Giriş Formu</h1>
-      </div>
+  <div class="main-container">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <!-- Sidebar içeriği template.js ile doldurulacak -->
+    </nav>
 
-      <div class="card">
-        <form id="antrepoForm" class="form-grid">
-          <!-- Bölüm 1: Genel Bilgiler -->
-          <div class="form-section">
-            <h2>Genel Bilgiler</h2>
-            <div class="form-group">
-              <label for="beyannameFormTarihi">Beyanname/Form Tarihi <span class="required">*</span></label>
-              <input type="date" id="beyannameFormTarihi" required>
-            </div>
-            <div class="form-group">
-              <label for="beyannameNo">Beyanname / Form No <span class="required">*</span></label>
-              <input type="text" id="beyannameNo" placeholder="Örn: ANT-2023-001" required>
-            </div>
-            <!-- İlgili Sözleşme (datalist + clear buton) -->
-            <div class="form-group">
-              <label for="sozlesmeInput">İlgili Sözleşme</label>
-              <div class="datalist-container">
-                <input type="text" id="sozlesmeInput" list="sozlesmeList" placeholder="Sözleşme kodu veya adı girin...">
-                <datalist id="sozlesmeList">
-                  <!-- /api/sozlesmeler'den doldurulacak -->
-                </datalist>
-                <button type="button" class="clear-datalist" id="clearSozlesmeBtn">×</button>
-              </div>
-              <button type="button" id="openSozlesmeBtn" class="btn-secondary" style="margin-top: 6px;">Sözleşmeyi Görüntüle</button>
-            </div>
-            <!-- Antrepo Şirketi -->
-            <div class="form-group">
-              <label for="antrepoSirketi">Antrepo Şirketi <span class="required">*</span></label>
-              <div class="datalist-container">
-                <input type="text" id="antrepoSirketi" list="antrepoSirketiList" placeholder="Antrepo Şirketi seçin..." required>
-                <datalist id="antrepoSirketiList">
-                  <!-- sirketler tablosundaki display_name gelecek -->
-                </datalist>
-                <button type="button" class="clear-datalist" id="clearSirketBtn">×</button>
-              </div>
-            </div>
-          </div>
+    <!-- Ana İçerik -->
+    <main class="content">
+      <div class="container-fluid p-0">
+        <!-- Sayfa başlığı -->
+        <div class="page-header mb-4">
+          <h1>Antrepo Giriş Formu</h1>
+        </div>
 
-          <!-- Bölüm 2: Gümrük & Antrepo -->
-          <div class="form-section">
-            <h2>Gümrük & Antrepo</h2>
-            <div class="form-group">
-              <label for="antrepoAd">Antrepo (Ad) <span class="required">*</span></label>
-              <div class="datalist-container">
-                <input type="text" id="antrepoAd" list="antrepoIdList" placeholder="Antrepo adını seçin..." required>
-                <datalist id="antrepoIdList"></datalist>
-                <button type="button" class="clear-datalist" id="clearAntrepoAdBtn">×</button>
+        <!-- Form Kartı -->
+        <div class="card">
+          <div class="card-body">
+            <form id="antrepoForm" class="form-grid">
+              <!-- Form bölümleri -->
+              <div class="form-section">
+                <h2>Genel Bilgiler</h2>
+                <div class="form-group">
+                  <label for="beyannameFormTarihi">Beyanname/Form Tarihi <span class="required">*</span></label>
+                  <input type="date" id="beyannameFormTarihi" required>
+                </div>
+                <div class="form-group">
+                  <label for="beyannameNo">Beyanname / Form No <span class="required">*</span></label>
+                  <input type="text" id="beyannameNo" placeholder="Örn: ANT-2023-001" required>
+                </div>
+                <!-- İlgili Sözleşme (datalist + clear buton) -->
+                <div class="form-group">
+                  <label for="sozlesmeInput">İlgili Sözleşme</label>
+                  <div class="datalist-container">
+                    <input type="text" id="sozlesmeInput" list="sozlesmeList" placeholder="Sözleşme kodu veya adı girin...">
+                    <datalist id="sozlesmeList">
+                      <!-- /api/sozlesmeler'den doldurulacak -->
+                    </datalist>
+                    <button type="button" class="clear-datalist" id="clearSozlesmeBtn">×</button>
+                  </div>
+                  <button type="button" id="openSozlesmeBtn" class="btn-secondary" style="margin-top: 6px;">Sözleşmeyi Görüntüle</button>
+                </div>
+                <!-- Antrepo Şirketi -->
+                <div class="form-group">
+                  <label for="antrepoSirketi">Antrepo Şirketi <span class="required">*</span></label>
+                  <div class="datalist-container">
+                    <input type="text" id="antrepoSirketi" list="antrepoSirketiList" placeholder="Antrepo Şirketi seçin..." required>
+                    <datalist id="antrepoSirketiList">
+                      <!-- sirketler tablosundaki display_name gelecek -->
+                    </datalist>
+                    <button type="button" class="clear-datalist" id="clearSirketBtn">×</button>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="form-group">
-              <label for="antrepoKodu">Antrepo Kodu <span class="required">*</span></label>
-              <div class="datalist-container">
-                <input type="text" id="antrepoKodu" list="antrepoKoduList" placeholder="Antrepo kodunu seçin..." required>
-                <datalist id="antrepoKoduList"></datalist>
-                <button type="button" class="clear-datalist" id="clearAntrepoKoduBtn">×</button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="adres">Adres</label>
-              <input type="text" id="adres" readonly>
-            </div>
-            <div class="form-group">
-              <label for="sehir">Şehir</label>
-              <input type="text" id="sehir" readonly>
-            </div>
-            <div class="form-group">
-              <label for="gumruk">Gümrük <span class="required">*</span></label>
-              <input type="text" id="gumruk" readonly required>
-            </div>
-          </div>
 
-          <!-- Bölüm 4: Ürün Bilgileri -->
-          <div class="form-section">
-            <h2>Ürün Bilgileri</h2>
-            <div class="form-group">
-              <label for="urunTanimi">Ürün Tanımı <span class="required">*</span></label>
-              <div class="datalist-container">
-                <input type="text" id="urunTanimi" list="urunTanimiList" placeholder="Ürün tanımını seçin..." required>
-                <datalist id="urunTanimiList">
-                  <!-- value=urun_adi -->
-                </datalist>
-                <button type="button" class="clear-datalist" id="clearUrunTanimiBtn">×</button>
+              <!-- Bölüm 2: Gümrük & Antrepo -->
+              <div class="form-section">
+                <h2>Gümrük & Antrepo</h2>
+                <div class="form-group">
+                  <label for="antrepoAd">Antrepo (Ad) <span class="required">*</span></label>
+                  <div class="datalist-container">
+                    <input type="text" id="antrepoAd" list="antrepoIdList" placeholder="Antrepo adını seçin..." required>
+                    <datalist id="antrepoIdList"></datalist>
+                    <button type="button" class="clear-datalist" id="clearAntrepoAdBtn">×</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="antrepoKodu">Antrepo Kodu <span class="required">*</span></label>
+                  <div class="datalist-container">
+                    <input type="text" id="antrepoKodu" list="antrepoKoduList" placeholder="Antrepo kodunu seçin..." required>
+                    <datalist id="antrepoKoduList"></datalist>
+                    <button type="button" class="clear-datalist" id="clearAntrepoKoduBtn">×</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="adres">Adres</label>
+                  <input type="text" id="adres" readonly>
+                </div>
+                <div class="form-group">
+                  <label for="sehir">Şehir</label>
+                  <input type="text" id="sehir" readonly>
+                </div>
+                <div class="form-group">
+                  <label for="gumruk">Gümrük <span class="required">*</span></label>
+                  <input type="text" id="gumruk" readonly required>
+                </div>
               </div>
-            </div>
-            <div class="form-group">
-              <label for="urunKodu">Ürün Kodu <span class="required">*</span></label>
-              <div class="datalist-container">
-                <input type="text" id="urunKodu" list="urunKoduList" placeholder="Ürün kodunu seçin..." required>
-                <datalist id="urunKoduList">
-                  <!-- value=urun_kodu -->
-                </datalist>
-                <button type="button" class="clear-datalist" id="clearUrunKoduBtn">×</button>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="paketBoyutu">Paket Boyutu (Kg cinsinden)</label>
-              <input type="text" id="paketBoyutu" readonly>
-            </div>
-            <div class="form-group">
-              <label for="paketlemeTipi">Paketleme Tipi</label>
-              <input type="text" id="paketlemeTipi" readonly>
-            </div>
-            <div class="form-group">
-              <label for="miktar">Miktar (Ton) <span class="required">*</span></label>
-              <input type="number" step="0.01" id="miktar" required>
-              <div class="checkbox-row">
-                <input type="checkbox" id="ilkGiris">
-                <label for="ilkGiris">İlk Giriş Olarak Kaydet</label>
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="kapAdeti">Kap Adeti <span class="required">*</span></label>
-              <input type="number" id="kapAdeti" required>
-            </div>
-            <div class="form-group">
-              <label for="brutAgirlik">Brüt Ağırlık (Ton) <span class="required">*</span></label>
-              <input type="number" step="0.01" id="brutAgirlik" required>
-            </div>
-            <div class="form-group">
-              <label for="netAgirlik">Net Ağırlık (Ton) <span class="required">*</span></label>
-              <input type="number" step="0.01" id="netAgirlik" required>
-            </div>
-            <div class="form-group">
-              <label for="antrepoGirisTarihi">Antrepo Giriş Tarihi <span class="required">*</span></label>
-              <input type="date" id="antrepoGirisTarihi" required>
-            </div>
-          </div>
 
-          <!-- Bölüm 5: Fatura & Depolama Detayları -->
-          <div class="form-section">
-            <h2>Fatura & Depolama Detayları</h2>
-            <div class="form-group">
-              <label for="gondericiSirket">Gönderici Şirket</label>
-              <input type="text" id="gondericiSirket" placeholder="Manuel giriniz">
+              <!-- Bölüm 4: Ürün Bilgileri -->
+              <div class="form-section">
+                <h2>Ürün Bilgileri</h2>
+                <div class="form-group">
+                  <label for="urunTanimi">Ürün Tanımı</label>
+                  <div class="datalist-container">
+                    <input type="text" id="urunTanimi" class="searchable-datalist" list="urunTanimiList">
+                    <datalist id="urunTanimiList"></datalist>
+                    <button type="button" class="clear-datalist" id="clearUrunTanimiBtn">×</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="urunKodu">Ürün Kodu</label>
+                  <div class="datalist-container">
+                    <input type="text" id="urunKodu" class="searchable-datalist" list="urunKoduList">
+                    <datalist id="urunKoduList"></datalist>
+                    <button type="button" class="clear-datalist" id="clearUrunKoduBtn">×</button>
+                  </div>
+                </div>
+                <!-- Paketleme Tipi alanını öne alıyoruz -->
+                <div class="form-group">
+                  <label for="paketlemeTipi">Paketleme Tipi</label>
+                  <select id="paketlemeTipi" class="form-control">
+                    <option value="">Seçiniz...</option>
+                  </select>
+                </div>
+                <!-- Paket Boyutu alanı sonra geliyor -->
+                <div class="form-group">
+                  <label for="paketBoyutu">Paket Boyutu (Kg)</label>
+                  <select id="paketBoyutu" class="form-control">
+                    <option value="">Seçiniz...</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="miktar">Miktar</label>
+                  <input type="number" id="miktar">
+                </div>
+                <div class="form-group">
+                  <label for="kapAdeti">Kap Adeti</label>
+                  <input type="number" id="kapAdeti">
+                </div>
+                <div class="form-group">
+                  <label for="brutAgirlik">Brüt Ağırlık</label>
+                  <input type="number" id="brutAgirlik">
+                </div>
+                <div class="form-group">
+                  <label for="netAgirlik">Net Ağırlık</label>
+                  <input type="number" id="netAgirlik">
+                </div>
+                <div class="form-group">
+                  <label for="antrepoGirisTarihi">Antrepo Giriş Tarihi</label>
+                  <input type="date" id="antrepoGirisTarihi">
+                </div>
+              </div>
+
+              <!-- Bölüm 5: Fatura & Depolama Detayları -->
+              <div class="form-section">
+                <h2>Fatura & Depolama Detayları</h2>
+                <div class="form-group">
+                  <label for="gondericiSirket">Gönderici Şirket</label>
+                  <input type="text" id="gondericiSirket" placeholder="Manuel giriniz">
+                </div>
+                <div class="form-group">
+                  <label for="aliciSirket">Alıcı Şirket</label>
+                  <input type="text" id="aliciSirket" placeholder="Manuel giriniz">
+                </div>
+                <div class="form-group">
+                  <label for="proformaNo">Proforma Fatura No <span class="required">*</span></label>
+                  <input type="text" id="proformaNo" required>
+                </div>
+                <div class="form-group">
+                  <label for="proformaTarihi">Proforma Fatura Tarihi <span class="required">*</span></label>
+                  <input type="date" id="proformaTarihi" required>
+                </div>
+                <div class="form-group">
+                  <label for="ticariFaturaNo">Ticari Fatura No <span class="required">*</span></label>
+                  <input type="text" id="ticariFaturaNo" required>
+                </div>
+                <div class="form-group">
+                  <label for="ticariFaturaTarihi">Ticari Fatura Tarihi <span class="required">*</span></label>
+                  <input type="date" id="ticariFaturaTarihi" required>
+                </div>
+                <div class="form-group">
+                  <label for="depolamaSuresi">Tahmini Depolama Süresi (Gün)</label>
+                  <input type="number" id="depolamaSuresi">
+                </div>
+                <div class="form-group">
+                  <label for="faturaMeblagi">Fatura Meblağı (Tüm Kalemler Dahil) <span class="required">*</span></label>
+                  <input type="number" step="0.01" id="faturaMeblagi" required>
+                </div>
+                <div class="form-group">
+                  <label for="urunBirimFiyat">Ürün Birim Fiyat (Fatura Meblağı / Miktar) <span class="required">*</span></label>
+                  <input type="number" step="0.01" id="urunBirimFiyat" required>
+                </div>
+                <!-- Para birimi seçici -->
+                <div class="form-group">
+                  <label for="paraBirimi">Para Birimi <span class="required">*</span></label>
+                  <select id="paraBirimi" name="paraBirimi" class="form-select currency-select" required>
+                    <option value=""></option>
+                    <!-- Para birimleri dinamik olarak JavaScript'ten doldurulacak -->
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="faturaAciklama">Açıklama / Notlar</label>
+                  <textarea id="faturaAciklama" rows="4"></textarea>
+                  <textarea id="faturaAciklamaMirror" readonly style="display:none;" rows="4"></textarea>
+                </div>
+                <div class="form-actions" style="grid-column: 1 / -1;">
+                  <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
+                  <button type="submit" class="btn-primary" id="saveBtn">Kaydet</button>
+                </div>
+              </form>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="aliciSirket">Alıcı Şirket</label>
-              <input type="text" id="aliciSirket" placeholder="Manuel giriniz">
-            </div>
-            <div class="form-group">
-              <label for="proformaNo">Proforma Fatura No <span class="required">*</span></label>
-              <input type="text" id="proformaNo" required>
-            </div>
-            <div class="form-group">
-              <label for="proformaTarihi">Proforma Fatura Tarihi <span class="required">*</span></label>
-              <input type="date" id="proformaTarihi" required>
-            </div>
-            <div class="form-group">
-              <label for="ticariFaturaNo">Ticari Fatura No <span class="required">*</span></label>
-              <input type="text" id="ticariFaturaNo" required>
-            </div>
-            <div class="form-group">
-              <label for="ticariFaturaTarihi">Ticari Fatura Tarihi <span class="required">*</span></label>
-              <input type="date" id="ticariFaturaTarihi" required>
-            </div>
-            <div class="form-group">
-              <label for="depolamaSuresi">Tahmini Depolama Süresi (Gün)</label>
-              <input type="number" id="depolamaSuresi">
-            </div>
-            <div class="form-group">
-              <label for="faturaMeblagi">Fatura Meblağı (Tüm Kalemler Dahil) <span class="required">*</span></label>
-              <input type="number" step="0.01" id="faturaMeblagi" required>
-            </div>
-            <div class="form-group">
-              <label for="urunBirimFiyat">Ürün Birim Fiyat (Fatura Meblağı / Miktar) <span class="required">*</span></label>
-              <input type="number" step="0.01" id="urunBirimFiyat" required>
-            </div>
-            <!-- Para birimi seçici -->
-            <div class="form-group">
-              <label for="paraBirimi">Para Birimi <span class="required">*</span></label>
-              <select id="paraBirimi" name="paraBirimi" class="form-select currency-select" required>
-                <option value=""></option>
-                <!-- Para birimleri dinamik olarak JavaScript'ten doldurulacak -->
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="faturaAciklama">Açıklama / Notlar</label>
-              <textarea id="faturaAciklama" rows="4"></textarea>
-              <textarea id="faturaAciklamaMirror" readonly style="display:none;" rows="4"></textarea>
-            </div>
-            <div class="form-actions" style="grid-column: 1 / -1;">
-              <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
-              <button type="submit" class="btn-primary" id="saveBtn">Kaydet</button>
-            </div>
-          </form>
           </div>
 
           <!-- Giriş & Çıkış İşlemleri + Ek Hizmetler container -->

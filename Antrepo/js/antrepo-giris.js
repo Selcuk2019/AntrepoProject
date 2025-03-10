@@ -11,6 +11,15 @@ import { baseUrl } from './config.js';
 
 let activeGirisId = null;
 
+// Global değişkenleri en üstte tanımla
+let allSozlesmeler = [];
+let allSirketler = [];
+let allAntrepolar = [];
+let allUrunler = [];
+let allParaBirimleri = [];
+let allHizmetler = [];
+let allBirimler = [];
+
 document.addEventListener("DOMContentLoaded", async () => {
   /************************************************************
    * 1) HTML Elemanlarının Seçimi
@@ -1419,45 +1428,317 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
   
-  // Sayfa açıldığında hareketleri getir
-  fetchHareketler();
+// Sayfa açıldığında hareketleri getir
+fetchHareketler();
 
-  // Clear butonlarını ayarla
-  document.getElementById("clearAntrepoAdBtn")?.addEventListener("click", () => {
-    inputAntrepoAd.value = "";
-    inputAntrepoKodu.value = "";
-    inputAdres.value = "";
-    inputSehir.value = "";
-    inputGumruk.value = "";
-    inputAntrepoAd.focus();
+// Clear butonlarını ayarla
+document.getElementById("clearAntrepoAdBtn")?.addEventListener("click", () => {
+  inputAntrepoAd.value = "";
+  inputAntrepoKodu.value = "";
+  inputAdres.value = "";
+  inputSehir.value = "";
+  inputGumruk.value = "";
+  inputAntrepoAd.focus();
+});
+
+document.getElementById("clearAntrepoKoduBtn")?.addEventListener("click", () => {
+  inputAntrepoAd.value = "";
+  inputAntrepoKodu.value = "";
+  inputAdres.value = "";
+  inputSehir.value = "";
+  inputGumruk.value = "";
+  inputAntrepoKodu.focus();
+});
+
+document.getElementById("clearUrunTanimiBtn")?.addEventListener("click", () => {
+  inputUrunTanimi.value = "";
+  inputUrunKodu.value = "";
+  inputPaketBoyutu.value = "";
+  inputPaketlemeTipi.value = "";
+  inputUrunTanimi.focus();
+});
+
+document.getElementById("clearUrunKoduBtn")?.addEventListener("click", () => {
+  inputUrunTanimi.value = "";
+  inputUrunKodu.value = "";
+  inputPaketBoyutu.value = "";
+  inputPaketlemeTipi.value = "";
+  inputUrunKodu.focus();
+});
+
+// Select2 başlatma
+$(document).ready(function() {
+  // Paketleme Tipi için Select2
+  $('#paketlemeTipi').select2({
+    placeholder: 'Paketleme Tipi Seçin',
+    allowClear: true,
+    width: '100%'
   });
 
-  document.getElementById("clearAntrepoKoduBtn")?.addEventListener("click", () => {
-    inputAntrepoAd.value = "";
-    inputAntrepoKodu.value = "";
-    inputAdres.value = "";
-    inputSehir.value = "";
-    inputGumruk.value = "";
-    inputAntrepoKodu.focus();
-  });
-
-  document.getElementById("clearUrunTanimiBtn")?.addEventListener("click", () => {
-    inputUrunTanimi.value = "";
-    inputUrunKodu.value = "";
-    inputPaketBoyutu.value = "";
-    inputPaketlemeTipi.value = "";
-    inputUrunTanimi.focus();
-  });
-
-  document.getElementById("clearUrunKoduBtn")?.addEventListener("click", () => {
-    inputUrunTanimi.value = "";
-    inputUrunKodu.value = "";
-    inputPaketBoyutu.value = "";
-    inputPaketlemeTipi.value = "";
-    inputUrunKodu.focus();
+  // Paket Boyutu için Select2
+  $('#paketBoyutu').select2({
+    placeholder: 'Paket Boyutu Seçin',
+    allowClear: true,
+    width: '100%'
   });
 });
 
+  // Reset fonksiyonları
+  function resetPaketlemeTipi() {
+    $('#paketlemeTipi')
+      .empty()
+      .append('<option value="">Seçiniz...</option>')
+      .trigger('change');
+  }
+
+  function resetPaketBoyutu() {
+    $('#paketBoyutu')
+      .empty()
+      .append('<option value="">Seçiniz...</option>')
+      .trigger('change');
+  }
+
+  // Ürün seçildiğinde Paketleme Tiplerini getir
+  $('#urunTanimi').on('change', async function() {
+    const urunAdi = $(this).val();
+    if (!urunAdi) {
+      resetPaketlemeTipi();
+      resetPaketBoyutu();
+      return;
+    }
+
+    try {
+      // API'den ürünü al
+      const response = await fetch(`${baseUrl}/api/urunler?name=${encodeURIComponent(urunAdi)}`);
+      if (!response.ok) throw new Error('Ürün bilgileri alınamadı');
+      const urunler = await response.json();
+      const urun = urunler.find(u => u.name === urunAdi);
+      
+      if (!urun) {
+        resetPaketlemeTipi();
+        resetPaketBoyutu();
+        return;
+      }
+
+      // Varyantları getir
+      const variantsResponse = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${urun.id}`);
+      if (!variantsResponse.ok) throw new Error('Varyant bilgileri alınamadı');
+      const variants = await variantsResponse.json();
+
+      // Benzersiz paketleme tiplerini al
+      const uniqueTypes = [...new Set(variants.map(v => ({
+          id: v.paketleme_tipi_id,
+          text: v.paketleme_tipi_adi
+      })))];
+
+      // Paketleme Tipi select'ini güncelle
+      $('#paketlemeTipi')
+          .empty()
+          .append('<option value="">Seçiniz...</option>');
+
+      uniqueTypes.forEach(type => {
+          $('#paketlemeTipi').append(new Option(type.text, type.id));
+      });
+
+      resetPaketBoyutu();
+    } catch (error) {
+      console.error('Paketleme tipleri yüklenirken hata:', error);
+      alert('Paketleme tipleri yüklenirken bir hata oluştu!');
+    }
+  });
+
+  // Paketleme Tipi seçildiğinde Paket Boyutlarını getir
+  $('#paketlemeTipi').on('change', async function() {
+    const paketlemeTipiId = $(this).val();
+    const urunAdi = $('#urunTanimi').val();
+
+    if (!paketlemeTipiId || !urunAdi) {
+      resetPaketBoyutu();
+      return;
+    }
+
+    try {
+      // Önce ürünü bul
+      const urunResponse = await fetch(`${baseUrl}/api/urunler?name=${encodeURIComponent(urunAdi)}`);
+      if (!urunResponse.ok) throw new Error('Ürün bilgileri alınamadı');
+      const urunler = await urunResponse.json();
+      const urun = urunler.find(u => u.name === urunAdi);
+
+      if (!urun) {
+        resetPaketBoyutu();
+        return;
+      }
+
+      // Varyantları getir
+      const variantsResponse = await fetch(
+          `${baseUrl}/api/urun_varyantlari?urunId=${urun.id}&paketlemeTipiId=${paketlemeTipiId}`
+      );
+      if (!variantsResponse.ok) throw new Error('Varyant bilgileri alınamadı');
+      const variants = await variantsResponse.json();
+
+      // Select2 için paket boyutlarını güncelle
+      $('#paketBoyutu')
+          .empty()
+          .append('<option value="">Seçiniz...</option>');
+
+      variants.forEach(variant => {
+          $('#paketBoyutu').append(
+              new Option(`${variant.paket_hacmi} Kg`, variant.paket_hacmi)
+          );
+      });
+
+    } catch (error) {
+      console.error('Paket boyutları yüklenirken hata:', error);
+      alert('Paket boyutları yüklenirken bir hata oluştu!');
+    }
+  });
+
+  // Reset fonksiyonları
+  function resetPaketlemeTipi() {
+    $('#paketlemeTipi')
+        .empty()
+        .append('<option value="">Seçiniz...</option>')
+        .trigger('change');
+  }
+
+  function resetPaketBoyutu() {
+    $('#paketBoyutu')
+        .empty()
+        .append('<option value="">Seçiniz...</option>')
+        .trigger('change');
+    
+    /* Datalist versiyonu için:
+    document.getElementById('paketBoyutu').value = '';
+    document.getElementById('paketBoyutuList').innerHTML = '';
+    */
+  }
+});
+
+// Tüm searchable datalist'ler için arama ve temizleme fonksiyonlarını ekle
+
+
+// Select2 başlatma
+$(document).ready(function() {
+    // Paketleme Tipi için Select2
+    $('#paketlemeTipi').select2({
+        placeholder: 'Paketleme Tipi Seçin',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Paket Boyutu için Select2
+    $('#paketBoyutu').select2({
+        placeholder: 'Paket Boyutu Seçin',
+        allowClear: true,
+        width: '100%'
+    });
+});
+
+// Ürün seçildiğinde Paketleme Tiplerini getir
+$('#urunTanimi').on('change', async function() {
+    const urunAdi = $(this).val();
+    if (!urunAdi) {
+        resetPaketlemeTipi();
+        resetPaketBoyutu();
+        return;
+    }
+
+    try {
+        const urun = allUrunler.find(u => u.name === urunAdi);
+        if (!urun) return;
+
+        const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${urun.id}`);
+        if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
+        const variants = await response.json();
+
+        // Benzersiz paketleme tiplerini al
+        const uniqueTypes = [...new Set(variants.map(v => ({
+            id: v.paketleme_tipi_id,
+            text: v.paketleme_tipi_adi
+        })))];
+
+        // Paketleme Tipi select'ini güncelle
+        $('#paketlemeTipi')
+            .empty()
+            .append('<option value="">Seçiniz...</option>');
+
+        uniqueTypes.forEach(type => {
+            $('#paketlemeTipi').append(new Option(type.text, type.id));
+        });
+
+        resetPaketBoyutu();
+    } catch (error) {
+        console.error('Paketleme tipleri yüklenirken hata:', error);
+        alert('Paketleme tipleri yüklenirken bir hata oluştu!');
+    }
+});
+
+// Paketleme Tipi seçildiğinde Paket Boyutlarını getir
+$('#paketlemeTipi').on('change', async function() {
+    const paketlemeTipiId = $(this).val();
+    const urunAdi = $('#urunTanimi').val();
+
+    if (!paketlemeTipiId || !urunAdi) {
+        resetPaketBoyutu();
+        return;
+    }
+
+    try {
+        const urun = allUrunler.find(u => u.name === urunAdi);
+        if (!urun) return;
+
+        const response = await fetch(
+            `${baseUrl}/api/urun_varyantlari?urunId=${urun.id}&paketlemeTipiId=${paketlemeTipiId}`
+        );
+        if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
+        const variants = await response.json();
+
+        // Select2 versiyonu için:
+        $('#paketBoyutu')
+            .empty()
+            .append('<option value="">Seçiniz...</option>');
+
+        variants.forEach(variant => {
+            $('#paketBoyutu').append(
+                new Option(`${variant.paket_hacmi} Kg`, variant.paket_hacmi)
+            );
+        });
+
+        /* VEYA Datalist versiyonu için:
+        const paketBoyutuList = document.getElementById('paketBoyutuList');
+        paketBoyutuList.innerHTML = '';
+        variants.forEach(variant => {
+            const option = document.createElement('option');
+            option.value = `${variant.paket_hacmi} Kg`;
+            paketBoyutuList.appendChild(option);
+        });
+        */
+
+    } catch (error) {
+        console.error('Paket boyutları yüklenirken hata:', error);
+        alert('Paket boyutları yüklenirken bir hata oluştu!');
+    }
+});
+
+// Reset fonksiyonları
+function resetPaketlemeTipi() {
+    $('#paketlemeTipi')
+        .empty()
+        .append('<option value="">Seçiniz...</option>')
+        .trigger('change');
+}
+
+function resetPaketBoyutu() {
+    $('#paketBoyutu')
+        .empty()
+        .append('<option value="">Seçiniz...</option>')
+        .trigger('change');
+    
+    /* Datalist versiyonu için:
+    document.getElementById('paketBoyutu').value = '';
+    document.getElementById('paketBoyutuList').innerHTML = '';
+    */
+}
 // Tüm searchable datalist'ler için arama ve temizleme fonksiyonlarını ekle
 document.addEventListener('DOMContentLoaded', function() {
   // Tüm aranabilir datalist'leri seç
@@ -1540,4 +1821,21 @@ $(document).ready(function() {
       return false;
     }
   });
+});
+
+// Select2 başlatma
+$(document).ready(function() {
+    // Paketleme Tipi için Select2
+    $('#paketlemeTipi').select2({
+        placeholder: 'Paketleme Tipi Seçin',
+        allowClear: true,
+        width: '100%'
+    });
+
+    // Paket Boyutu için Select2
+    $('#paketBoyutu').select2({
+        placeholder: 'Paket Boyutu Seçin',
+        allowClear: true,
+        width: '100%'
+    });
 });
