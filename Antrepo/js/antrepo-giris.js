@@ -613,30 +613,63 @@ document.addEventListener("DOMContentLoaded", async () => {
   /************************************************************
    * 7) Event Listeners - Antrepo Ad / Kodu
    ************************************************************/
-  inputAntrepoAd.addEventListener("change", () => {
-    const val = inputAntrepoAd.value.trim().toLowerCase();
-    const found = allAntrepolar.find(a => a.antrepoAdi.toLowerCase() === val);
-    if (found) {
-      inputAntrepoKodu.value = found.antrepoKodu || "";
-      inputAdres.value = found.acikAdres || "";
-      inputSehir.value = found.sehir || "";
-      inputGumruk.value = found.gumruk || "";
+  // Eski change listener'ları kaldırıyorum ve yerine input listener'ları ekliyorum
+  
+  // 1. Antrepo Adı inputu için yeni event listener
+  inputAntrepoAd.addEventListener("input", function() {
+    const userInput = inputAntrepoAd.value.trim().toLowerCase();
+    
+    // Boş ise diğer alanları temizle
+    if (!userInput) {
+      inputAntrepoKodu.value = "";
+      inputAdres.value = "";
+      inputSehir.value = "";
+      inputGumruk.value = "";
+      return;
+    }
+    
+    // Girilen değerin tam olarak eşleşip eşleşmediğini kontrol et
+    const foundAntrepo = allAntrepolar.find(a => a.antrepoAdi.toLowerCase() === userInput);
+    
+    // Tam eşleşme varsa diğer alanları doldur
+    if (foundAntrepo) {
+      inputAntrepoKodu.value = foundAntrepo.antrepoKodu || "";
+      inputAdres.value = foundAntrepo.acikAdres || "";
+      inputSehir.value = foundAntrepo.sehir || "";
+      inputGumruk.value = foundAntrepo.gumruk || "";
     } else {
+      // Eşleşme yoksa diğer alanları temizle
       inputAntrepoKodu.value = "";
       inputAdres.value = "";
       inputSehir.value = "";
       inputGumruk.value = "";
     }
   });
-  inputAntrepoKodu.addEventListener("change", () => {
-    const val = inputAntrepoKodu.value.trim().toLowerCase();
-    const found = allAntrepolar.find(a => a.antrepoKodu.toLowerCase() === val);
-    if (found) {
-      inputAntrepoAd.value = found.antrepoAdi || "";
-      inputAdres.value = found.acikAdres || "";
-      inputSehir.value = found.sehir || "";
-      inputGumruk.value = found.gumruk || "";
+  
+  // 2. Antrepo Kodu inputu için yeni event listener
+  inputAntrepoKodu.addEventListener("input", function() {
+    const userInput = inputAntrepoKodu.value.trim().toLowerCase();
+    
+    // Boş ise diğer alanları temizle
+    if (!userInput) {
+      inputAntrepoAd.value = "";
+      inputAdres.value = "";
+      inputSehir.value = "";
+      inputGumruk.value = "";
+      return;
+    }
+    
+    // Girilen değerin tam olarak eşleşip eşleşmediğini kontrol et
+    const foundAntrepo = allAntrepolar.find(a => a.antrepoKodu.toLowerCase() === userInput);
+    
+    // Tam eşleşme varsa diğer alanları doldur
+    if (foundAntrepo) {
+      inputAntrepoAd.value = foundAntrepo.antrepoAdi || "";
+      inputAdres.value = foundAntrepo.acikAdres || "";
+      inputSehir.value = foundAntrepo.sehir || "";
+      inputGumruk.value = foundAntrepo.gumruk || "";
     } else {
+      // Eşleşme yoksa diğer alanları temizle
       inputAntrepoAd.value = "";
       inputAdres.value = "";
       inputSehir.value = "";
@@ -644,34 +677,85 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
   
+  // Change listener'ları bir süre daha tutuyorum (uyumluluk için)
+  // Ama bunları da input listener'ı gibi davranacak şekilde revize ediyorum
+  inputAntrepoAd.addEventListener("change", function() {
+    inputAntrepoAd.dispatchEvent(new Event("input"));
+  });
+  
+  inputAntrepoKodu.addEventListener("change", function() {
+    inputAntrepoKodu.dispatchEvent(new Event("input"));
+  });
+  
   /************************************************************
    * 8) Event Listeners - Ürün Tanımı / Kodu
    ************************************************************/
-  inputUrunTanimi.addEventListener("change", () => {
-    const val = inputUrunTanimi.value.trim().toLowerCase();
-    const found = allUrunler.find(u => u.name.toLowerCase() === val);
-    if (found) {
-      inputUrunKodu.value = found.code || "";
-      inputPaketBoyutu.value = found.paket_hacmi ? found.paket_hacmi + " Kg" : "";
-      inputPaketlemeTipi.value = found.paketleme_tipi_name || "";
+  // Eski change listener'ları kaldırıyorum ve yerine input listener'ları ekliyorum
+  
+  // 1. Ürün Tanımı inputu için yeni event listener
+  inputUrunTanimi.addEventListener("input", function() {
+    const userInput = inputUrunTanimi.value.trim().toLowerCase();
+    
+    // Boş ise diğer alanları temizle
+    if (!userInput) {
+      inputUrunKodu.value = "";
+      inputPaketBoyutu.value = "";
+      inputPaketlemeTipi.value = "";
+      return;
+    }
+    
+    // Girilen değerin tam olarak eşleşip eşleşmediğini kontrol et
+    const foundUrun = allUrunler.find(u => u.name.toLowerCase() === userInput);
+    
+    // Tam eşleşme varsa diğer alanları doldur
+    if (foundUrun) {
+      inputUrunKodu.value = foundUrun.code || "";
+      inputPaketBoyutu.value = foundUrun.paket_hacmi ? foundUrun.paket_hacmi + " Kg" : "";
+      inputPaketlemeTipi.value = foundUrun.paketleme_tipi_name || "";
     } else {
+      // Eşleşme yoksa diğer alanları temizle
       inputUrunKodu.value = "";
       inputPaketBoyutu.value = "";
       inputPaketlemeTipi.value = "";
     }
   });
-  inputUrunKodu.addEventListener("change", () => {
-    const val = inputUrunKodu.value.trim().toLowerCase();
-    const found = allUrunler.find(u => u.code.toLowerCase() === val);
-    if (found) {
-      inputUrunTanimi.value = found.name || "";
-      inputPaketBoyutu.value = found.paket_hacmi ? found.paket_hacmi + " Kg" : "";
-      inputPaketlemeTipi.value = found.paketleme_tip_name || "";
+  
+  // 2. Ürün Kodu inputu için yeni event listener
+  inputUrunKodu.addEventListener("input", function() {
+    const userInput = inputUrunKodu.value.trim().toLowerCase();
+    
+    // Boş ise diğer alanları temizle
+    if (!userInput) {
+      inputUrunTanimi.value = "";
+      inputPaketBoyutu.value = "";
+      inputPaketlemeTipi.value = "";
+      return;
+    }
+    
+    // Girilen değerin tam olarak eşleşip eşleşmediğini kontrol et
+    const foundUrun = allUrunler.find(u => u.code.toLowerCase() === userInput);
+    
+    // Tam eşleşme varsa diğer alanları doldur
+    if (foundUrun) {
+      inputUrunTanimi.value = foundUrun.name || "";
+      inputPaketBoyutu.value = foundUrun.paket_hacmi ? foundUrun.paket_hacmi + " Kg" : "";
+      inputPaketlemeTipi.value = foundUrun.paketleme_tipi_name || "";
     } else {
+      // Eşleşme yoksa diğer alanları temizle
       inputUrunTanimi.value = "";
       inputPaketBoyutu.value = "";
       inputPaketlemeTipi.value = "";
     }
+  });
+  
+  // Change listener'ları bir süre daha tutuyorum (uyumluluk için)
+  // Ama bunları da input listener'ı gibi davranacak şekilde revize ediyorum
+  inputUrunTanimi.addEventListener("change", function() {
+    inputUrunTanimi.dispatchEvent(new Event("input"));
+  });
+  
+  inputUrunKodu.addEventListener("change", function() {
+    inputUrunKodu.dispatchEvent(new Event("input"));
   });
   
   /************************************************************
