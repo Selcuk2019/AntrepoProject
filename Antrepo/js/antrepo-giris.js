@@ -1204,6 +1204,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   
   // Sayfa açıldığında hareketleri getir
   fetchHareketler();
+
+  // Clear butonlarını ayarla
+  document.getElementById("clearAntrepoAdBtn")?.addEventListener("click", () => {
+    inputAntrepoAd.value = "";
+    inputAntrepoKodu.value = "";
+    inputAdres.value = "";
+    inputSehir.value = "";
+    inputGumruk.value = "";
+    inputAntrepoAd.focus();
+  });
+
+  document.getElementById("clearAntrepoKoduBtn")?.addEventListener("click", () => {
+    inputAntrepoAd.value = "";
+    inputAntrepoKodu.value = "";
+    inputAdres.value = "";
+    inputSehir.value = "";
+    inputGumruk.value = "";
+    inputAntrepoKodu.focus();
+  });
+
+  document.getElementById("clearUrunTanimiBtn")?.addEventListener("click", () => {
+    inputUrunTanimi.value = "";
+    inputUrunKodu.value = "";
+    inputPaketBoyutu.value = "";
+    inputPaketlemeTipi.value = "";
+    inputUrunTanimi.focus();
+  });
+
+  document.getElementById("clearUrunKoduBtn")?.addEventListener("click", () => {
+    inputUrunTanimi.value = "";
+    inputUrunKodu.value = "";
+    inputPaketBoyutu.value = "";
+    inputPaketlemeTipi.value = "";
+    inputUrunKodu.focus();
+  });
 });
 
 // Tüm searchable datalist'ler için arama ve temizleme fonksiyonlarını ekle
