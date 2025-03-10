@@ -6,9 +6,95 @@
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="../css/stock-card.css">
   <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+  
+  <!-- Sekme stilleri için ek CSS -->
+  <style>
+    .tabs-container {
+      margin-bottom: 20px;
+    }
+    
+    .tabs-nav {
+      display: flex;
+      border-bottom: 2px solid #e5e7eb;
+      margin-bottom: 20px;
+    }
+    
+    .tab-button {
+      padding: 12px 20px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #6b7280;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .tab-button:hover {
+      color: #374151;
+      background-color: #f8fafc;
+    }
+    
+    .tab-button.active {
+      color: #2C66DD;
+      border-bottom-color: #2C66DD;
+      font-weight: 600;
+    }
+    
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(5px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .stock-card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      padding: 24px;
+    }
+    
+    .table-responsive {
+      overflow-x: auto;
+    }
+    
+    .stock-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .stock-table th {
+      background-color: #f8fafc;
+      padding: 12px 16px;
+      text-align: left;
+      font-weight: 600;
+      color: #374151;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .stock-table td {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #4b5563;
+    }
+    
+    .stock-table tr:hover {
+      background-color: #f8fafc;
+    }
+  </style>
 </head>
 <body>
   <header class="topbar">
@@ -33,6 +119,76 @@
         <!-- Güncel stok bilgisi -->
         <div id="currentStockDisplay" class="stok-adet">
           <!-- Güncel stok (Ton) burada gösterilecek -->
+        </div>
+        
+        <!-- Sekme yapısı -->
+        <div class="tabs-container">
+          <div class="tabs-nav">
+            <button class="tab-button active" data-tab="stok-miktarlari">Stok Miktarları</button>
+            <button class="tab-button" data-tab="stok-hareketleri">Stok Hareketleri</button>
+            <button class="tab-button" data-tab="urun-varyantlari">Ürün Varyantları</button>
+          </div>
+          
+          <!-- Stok Miktarları Sekmesi -->
+          <div id="stok-miktarlari" class="tab-content active">
+            <div class="table-responsive">
+              <table class="stock-table">
+                <thead>
+                  <tr>
+                    <th>Depo</th>
+                    <th>Miktar</th>
+                    <th>Birim</th>
+                    <th>Son Güncelleme</th>
+                  </tr>
+                </thead>
+                <tbody id="stockAmountsTable">
+                  <!-- JavaScript ile doldurulacak -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Stok Hareketleri Sekmesi -->
+          <div id="stok-hareketleri" class="tab-content">
+            <div class="table-responsive">
+              <table class="stock-table">
+                <thead>
+                  <tr>
+                    <th>Tarih</th>
+                    <th>İşlem Tipi</th>
+                    <th>Miktar</th>
+                    <th>Birim</th>
+                    <th>Antrepo</th>
+                    <th>Belge No</th>
+                    <th>Açıklama</th>
+                  </tr>
+                </thead>
+                <tbody id="stockMovementsTable">
+                  <!-- JavaScript ile doldurulacak -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <!-- Ürün Varyantları Sekmesi -->
+          <div id="urun-varyantlari" class="tab-content">
+            <div class="table-responsive">
+              <table class="stock-table">
+                <thead>
+                  <tr>
+                    <th>Varyant Kodu</th>
+                    <th>Varyant Adı</th>
+                    <th>Özellikler</th>
+                    <th>Stok Miktarı</th>
+                    <th>Birim</th>
+                  </tr>
+                </thead>
+                <tbody id="productVariantsTable">
+                  <!-- JavaScript ile doldurulacak -->
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </div>
