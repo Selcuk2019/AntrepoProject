@@ -486,22 +486,86 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
     updateSozlesmeDatalist(filtered);
   }
-  inputSozlesme.addEventListener("change", () => {
-    const val = inputSozlesme.value.trim();
-    if (!val) return;
-    const splitted = val.split(" - ");
-    let kod = splitted[0];
-    if (kod === "Kodsuz") kod = "";
-    const found = allSozlesmeler.find(s =>
-      (s.sozlesme_kodu || "").toLowerCase() === kod.toLowerCase()
-    );
-    if (found && found.display_name) {
-      inputAntrepoSirketi.value = found.display_name;
+
+  // İlgili Sözleşme alanı için yeni input eventleri
+  // Her karakter değişimini yakalamak için input event listener kullanıyoruz
+  inputSozlesme.addEventListener("input", function() {
+    const userInput = inputSozlesme.value.trim();
+    
+    // 1. Boş mu kontrol et
+    if (!userInput) {
+      // Sözleşme alanı boş ise, Antrepo Şirketi alanını temizle ve kilidini kaldır
+      inputAntrepoSirketi.value = "";
+      inputAntrepoSirketi.disabled = false;
+      clearSirketBtn.disabled = false;
+      // Tüm sözleşme listesini göster
+      updateSozlesmeDatalist(allSozlesmeler);
+      return;
+    }
+    
+    // 2. Seçilen/yazılan değerin tam olarak veritabanıyla eşleşip eşleşmediğini kontrol et
+    // Tam eşleşme olması için, format "KOD - SÖZLEŞME ADI" şeklinde olmalı
+    let isExactMatch = false;
+    let matchedSozlesme = null;
+    
+    allSozlesmeler.forEach(s => {
+      const kod = s.sozlesme_kodu && s.sozlesme_kodu.trim() !== "" ? s.sozlesme_kodu : "Kodsuz";
+      const fullText = `${kod} - ${s.sozlesme_adi}`;
+      
+      // Tam eşleşme kontrolü
+      if (userInput === fullText) {
+        isExactMatch = true;
+        matchedSozlesme = s;
+      }
+    });
+    
+    // 3. Eğer tam eşleşme varsa, Antrepo Şirketi doldur ve kilitle
+    if (isExactMatch && matchedSozlesme && matchedSozlesme.display_name) {
+      inputAntrepoSirketi.value = matchedSozlesme.display_name;
       inputAntrepoSirketi.disabled = true;
       clearSirketBtn.disabled = true;
-      filterSozlesmelerByCompany(found.display_name);
+      filterSozlesmelerByCompany(matchedSozlesme.display_name);
+    } else {
+      // 4. Tam eşleşme yoksa, Antrepo Şirketi temizle ve kilidi kaldır
+      inputAntrepoSirketi.value = "";
+      inputAntrepoSirketi.disabled = false;
+      clearSirketBtn.disabled = false;
+      
+      // Yazılan metne göre sözleşme listesini filtrele (opsiyonel)
+      const lowercaseInput = userInput.toLowerCase();
+      const filtered = allSozlesmeler.filter(s => {
+        const kod = s.sozlesme_kodu || "Kodsuz";
+        const fullText = `${kod} - ${s.sozlesme_adi}`.toLowerCase();
+        return fullText.includes(lowercaseInput);
+      });
+      updateSozlesmeDatalist(filtered.length > 0 ? filtered : allSozlesmeler);
     }
   });
+  
+  // Şirket değişikliğini izleme
+  inputAntrepoSirketi.addEventListener("change", () => {
+    if (!inputAntrepoSirketi.disabled) {
+      const val = inputAntrepoSirketi.value.trim().toLowerCase();
+      if (val) filterSozlesmelerByCompany(val);
+      else updateSozlesmeDatalist(allSozlesmeler);
+    }
+  });
+  
+  // Clear butonları 
+  clearSozlesmeBtn.addEventListener("click", () => {
+    inputSozlesme.value = "";
+    inputSozlesme.dispatchEvent(new Event("input")); // Input event'ini tetikle
+    inputSozlesme.focus();
+  });
+  
+  clearSirketBtn.addEventListener("click", () => {
+    if (!inputAntrepoSirketi.disabled) {
+      inputAntrepoSirketi.value = "";
+      updateSozlesmeDatalist(allSozlesmeler);
+      inputAntrepoSirketi.focus();
+    }
+  });
+  
   inputAntrepoSirketi.addEventListener("change", () => {
     if (!inputAntrepoSirketi.disabled) {
       const val = inputAntrepoSirketi.value.trim().toLowerCase();
@@ -512,8 +576,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   clearSozlesmeBtn.addEventListener("click", () => {
     inputSozlesme.value = "";
     inputSozlesme.dispatchEvent(new Event("input"));
+    
+    // Antrepo Şirketi alanını da temizle ve kilidini kaldır
+    inputAntrepoSirketi.value = "";
     inputAntrepoSirketi.disabled = false;
     clearSirketBtn.disabled = false;
+    
+    // Tüm sözleşmeleri göster
+    updateSozlesmeDatalist(allSozlesmeler);
   });
   clearSirketBtn.addEventListener("click", () => {
     if (!inputAntrepoSirketi.disabled) {
