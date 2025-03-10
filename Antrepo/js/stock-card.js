@@ -116,7 +116,6 @@ async function loadStockMovements() {
 // Varyantları getir
 async function loadProductVariants() {
   try {
-    // API endpoint'i güncellendi
     const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${productId}`);
     if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
     const variants = await response.json();
@@ -136,6 +135,7 @@ async function loadProductVariants() {
           <th>Paket Hacmi (kg)</th>
           <th>Paketleme Tipi</th>
           <th>Oluşturulma Tarihi</th>
+          <th>İşlemler</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -152,6 +152,22 @@ async function loadProductVariants() {
         { 
           data: 'olusturulma_tarihi',
           render: (data) => data ? new Date(data).toLocaleDateString('tr-TR') : '-'
+        },
+        {
+          data: null,
+          orderable: false,
+          render: function(data) {
+            return `
+              <div class="action-buttons">
+                <button onclick="editVariant(${data.id})" class="btn-icon btn-edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button onclick="deleteVariant(${data.id})" class="btn-icon btn-delete">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            `;
+          }
         }
       ],
       language: {
@@ -187,6 +203,35 @@ async function loadProductVariants() {
         </tr>
       </tbody>
     `);
+  }
+}
+
+// Varyant düzenleme fonksiyonu 
+window.editVariant = function(varyantId) {
+  window.location.href = `product-form.html?mode=edit&varyantId=${varyantId}&urunId=${productId}`;
+};
+
+// Varyant silme fonksiyonu
+window.deleteVariant = async function(varyantId) {
+  if (!confirm('Bu varyantı silmek istediğinizden emin misiniz?')) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/urun_varyantlari/${varyantId}`, {
+      method: 'DELETE'
+    });
+    
+    if (!response.ok) {
+      throw new Error('Varyant silinemedi');
+    }
+    
+    // Tabloyu yenile
+    await loadProductVariants();
+    
+  } catch (error) {
+    console.error('Varyant silme hatası:', error);
+    alert('Varyant silinirken bir hata oluştu');
   }
 }
 

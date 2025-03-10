@@ -2564,4 +2564,81 @@ router.get('/urun_varyantlari', async (req, res) => {
   }
 });
 
+// GET /api/urun_varyantlari/:id - Tekil varyant getir
+router.get('/urun_varyantlari/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `
+      SELECT 
+        v.id,
+        v.urun_id,
+        v.paket_hacmi,
+        v.paketleme_tipi_id,
+        pt.name as paketleme_tipi_adi
+      FROM urun_varyantlari v
+      LEFT JOIN paketleme_tipleri pt ON v.paketleme_tipi_id = pt.id
+      WHERE v.id = ?
+    `;
+    const [rows] = await db.query(sql, [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Varyant bulunamadı' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Varyant getirme hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/urun_varyantlari/:id - Varyant güncelle  
+router.put('/urun_varyantlari/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paket_hacmi, paketleme_tipi_id } = req.body;
+
+    // Validasyon
+    if (!paket_hacmi || !paketleme_tipi_id) {
+      return res.status(400).json({ 
+        error: "paket_hacmi ve paketleme_tipi_id zorunludur" 
+      });
+    }
+
+    const sql = `
+      UPDATE urun_varyantlari 
+      SET paket_hacmi = ?, paketleme_tipi_id = ?
+      WHERE id = ?
+    `;
+
+    const [result] = await db.query(sql, [paket_hacmi, paketleme_tipi_id, id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Varyant bulunamadı' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Varyant güncelleme hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/urun_varyantlari/:id - Varyant sil
+router.delete('/urun_varyantlari/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [result] = await db.query('DELETE FROM urun_varyantlari WHERE id = ?', [id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Varyant bulunamadı' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Varyant silme hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
