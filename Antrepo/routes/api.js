@@ -2402,4 +2402,30 @@ router.delete('/api/contracts/:id', async (req, res) => {
   }
 });
 
+
+// Hareket silme endpoint'ini ekleyelim (eğer yoksa)
+router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => {
+  try {
+    const { girisId, hareketId } = req.params;
+    
+    // Hareketin varlığını ve girişe ait olup olmadığını kontrol et
+    const [hareketRows] = await db.query(
+      'SELECT id FROM antrepo_hareketleri WHERE id = ? AND antrepo_giris_id = ?', 
+      [hareketId, girisId]
+    );
+    
+    if (hareketRows.length === 0) {
+      return res.status(404).json({ success: false, error: 'Hareket bulunamadı' });
+    }
+    
+    // Varlığını kontrol ettikten sonra sil
+    await db.query('DELETE FROM antrepo_hareketleri WHERE id = ?', [hareketId]);
+    
+    res.json({ success: true, message: 'Hareket başarıyla silindi' });
+  } catch (error) {
+    console.error("DELETE /antrepo-giris/:girisId/hareketler/:hareketId hatası:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;

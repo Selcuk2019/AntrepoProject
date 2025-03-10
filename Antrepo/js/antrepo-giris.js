@@ -133,6 +133,66 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
   
+  // Yeni fonksiyon: Antrepo hareketlerini silmek için
+  async function deleteHareket(hareketId) {
+    try {
+      const resp = await fetch(`${baseUrl}/api/antrepo-giris/${activeGirisId}/hareketler/${hareketId}`, {
+        method: "DELETE"
+      });
+      if (!resp.ok) throw new Error(`Silme hatası: ${resp.status}`);
+      
+      // Silme başarılıysa tabloyu güncelle
+      fetchHareketler();
+      alert("Hareket kaydı başarıyla silindi.");
+    } catch (err) {
+      console.error("Hareket silme hatası:", err);
+      alert("Hareket kaydı silinirken hata oluştu: " + err.message);
+    }
+  }
+
+  // Modal işlemleri için global değişkenler
+  let itemToDeleteId = null;
+  let deleteType = ""; // "hareket" veya "ekhizmet"
+  
+  // Onay modalını göster
+  function showConfirmModal(id, type) {
+    itemToDeleteId = id;
+    deleteType = type;
+    
+    const confirmModal = document.getElementById("confirmModal");
+    const confirmHeader = confirmModal.querySelector(".confirm-modal-header");
+    
+    // Modalın başlık metnini güncelle
+    if (type === "hareket") {
+      confirmHeader.textContent = "Hareket kaydı silinecek!";
+    } else if (type === "ekhizmet") {
+      confirmHeader.textContent = "Ek hizmet kaydı silinecek!";
+    }
+    
+    // Modalı göster
+    confirmModal.style.display = "flex";
+  }
+  
+  // Modal butonlarına event listener ekle
+  document.getElementById("confirmNo")?.addEventListener("click", function() {
+    document.getElementById("confirmModal").style.display = "none";
+    itemToDeleteId = null;
+    deleteType = "";
+  });
+  
+  document.getElementById("confirmYes")?.addEventListener("click", function() {
+    document.getElementById("confirmModal").style.display = "none";
+    
+    if (deleteType === "hareket" && itemToDeleteId) {
+      deleteHareket(itemToDeleteId);
+    } else if (deleteType === "ekhizmet" && itemToDeleteId) {
+      deleteEkHizmet(itemToDeleteId);
+    }
+    
+    itemToDeleteId = null;
+    deleteType = "";
+  });
+
   function renderHareketler(list) {
     hareketTableBody.innerHTML = "";
     list.forEach(item => {
@@ -186,7 +246,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       silBtn.textContent = "Sil";
       silBtn.classList.add("btn-secondary");
       silBtn.addEventListener("click", () => {
-        deleteEkHizmet(item.id);
+        // Önce onay modalı göster, onaylanırsa silme işlemini yap
+        showConfirmModal(item.id, "hareket");
       });
       tdIslemler.appendChild(silBtn);
       tr.appendChild(tdIslemler);
@@ -315,9 +376,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!resp.ok) throw new Error(`Silme hatası: ${resp.status}`);
       const updatedList = await fetchEkHizmetler(activeGirisId);
       renderEkHizmetler(updatedList);
+      alert("Ek hizmet başarıyla silindi.");
     } catch (err) {
       console.error("Ek hizmet silme hatası:", err);
-      alert("Ek hizmet silinirken hata oluştu.");
+      alert("Ek hizmet silinirken hata oluştu: " + err.message);
     }
   }
   
@@ -370,7 +432,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       silBtn.textContent = "Sil";
       silBtn.classList.add("btn-secondary");
       silBtn.addEventListener("click", () => {
-        deleteEkHizmet(item.id);
+        // Önce onay modalı göster, onaylanırsa silme işlemini yap
+        showConfirmModal(item.id, "ekhizmet");
       });
       tdIslemler.appendChild(silBtn);
       tr.appendChild(tdIslemler);
