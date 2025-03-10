@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>Yeni Ürün Ekle</title>
+  <title>Ürün ve Varyant Ekle</title>
   <link rel="stylesheet" href="../css/style.css">
   <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
@@ -64,33 +64,45 @@
 
     <div class="content">
       <div class="page-header">
-        <h1>Yeni Ürün Ekle</h1>
+        <h1>Yeni Ürün ve Varyant Ekle</h1>
       </div>
 
       <div class="form-container">
         <form id="productForm">
-          <div class="form-group">
-            <label for="name">Ürün Adı <span class="required">*</span></label>
-            <input type="text" id="name" required>
-          </div>
-          <div class="form-group">
-            <label for="code">Ürün Kodu <span class="required">*</span></label>
-            <input type="text" id="code" required>
-          </div>
-          <div class="form-group">
-            <label for="bagSize">Paket Hacmi (kg) <span class="required">*</span></label>
-            <input type="number" step="0.01" id="bagSize" required>
-          </div>
-          <div class="form-group">
-            <label for="packagingType">Paketleme Tipi <span class="required">*</span></label>
-            <select id="packagingType"></select>
-          </div>
-          <div class="form-group">
-            <label for="description">Açıklama</label>
-            <textarea id="description"></textarea>
+          <!-- Ürün Bilgileri Bölümü -->
+          <div class="form-section">
+            <h2>Ürün Bilgileri</h2>
+            <div class="form-group">
+              <label for="name">Ürün Adı <span class="required">*</span></label>
+              <input type="text" id="name" required>
+            </div>
+            <div class="form-group">
+              <label for="code">Ürün Kodu <span class="required">*</span></label>
+              <input type="text" id="code" required>
+            </div>
+            <div class="form-group">
+              <label for="description">Açıklama</label>
+              <textarea id="description"></textarea>
+            </div>
           </div>
 
-          <!-- Buton yerleşimi: İptal solda, Kaydet sağda - space-between ile -->
+          <!-- Varyant Bilgileri Bölümü -->
+          <div class="form-section">
+            <h2>Varyant Bilgileri</h2>
+            <div class="info-text">
+              <i class="fas fa-info-circle"></i>
+              Bu bilgiler ürünün ilk varyantı olarak kaydedilecektir.
+            </div>
+            <div class="form-group">
+              <label for="bagSize">Paket Hacmi (kg)</label>
+              <input type="number" step="0.01" id="bagSize">
+            </div>
+            <div class="form-group">
+              <label for="packagingType">Paketleme Tipi</label>
+              <select id="packagingType"></select>
+            </div>
+          </div>
+
           <div class="form-actions">
             <button type="button" class="form-button btn-cancel" onclick="history.back()">İptal</button>
             <button type="submit" class="form-button btn-save">Kaydet</button>
@@ -99,11 +111,15 @@
       </div>
     </div>
   </div>
-  <!-- JQuery ve Select2 JS -->
+  <!-- Scriptlerin sıralaması önemli - En alta alıyoruz -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Select2 CSS ve JS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   
+  <!-- Önce template.js -->
   <script src="../js/template.js"></script>
+  <!-- En son bizim JS -->
   <script type="module" src="../js/product-form.js"></script>
 </body>
 </html>

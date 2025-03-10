@@ -95,6 +95,8 @@
       background-color: #f8fafc;
     }
   </style>
+  <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
+  <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css" rel="stylesheet">
 </head>
 <body>
   <header class="topbar">
@@ -172,20 +174,17 @@
           
           <!-- Ürün Varyantları Sekmesi -->
           <div id="urun-varyantlari" class="tab-content">
+            <div class="tab-header">
+              <h3>Ürün Varyantları</h3>
+              <button 
+                class="btn-primary" 
+                id="addVariantButton">
+                <i class="fas fa-plus"></i> Yeni Varyant Ekle
+              </button>
+            </div>
             <div class="table-responsive">
-              <table class="stock-table">
-                <thead>
-                  <tr>
-                    <th>Varyant Kodu</th>
-                    <th>Varyant Adı</th>
-                    <th>Özellikler</th>
-                    <th>Stok Miktarı</th>
-                    <th>Birim</th>
-                  </tr>
-                </thead>
-                <tbody id="productVariantsTable">
-                  <!-- JavaScript ile doldurulacak -->
-                </tbody>
+              <table id="variantsTable" class="display nowrap" style="width:100%">
+                <!-- DataTables JS ile doldurulacak -->
               </table>
             </div>
           </div>
@@ -194,7 +193,30 @@
     </div>
   </div>
 
+  <!-- Önce jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  <!-- Sonra DataTables -->
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+  
+  <!-- En son bizim scriptler -->
   <script src="../js/template.js"></script>
   <script type="module" src="../js/stock-card.js"></script>
+
+  <script>
+    // Varyant ekleme butonuna click handler ekle
+    document.addEventListener('DOMContentLoaded', () => {
+      const addVariantButton = document.getElementById('addVariantButton');
+      addVariantButton.addEventListener('click', () => {
+        const productId = window.productId; // Global değişkenden al
+        if (productId) {
+          window.location.href = `product-form.html?mode=variant&urunId=${productId}`;
+        } else {
+          alert('Ürün ID bulunamadı!');
+        }
+      });
+    });
+  </script>
 </body>
 </html>

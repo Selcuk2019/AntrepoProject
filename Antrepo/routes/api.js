@@ -1546,6 +1546,101 @@ router.post('/antrepo-giris/:girisId/ek-hizmetler', async (req, res) => {
   }
 });
 
+// POST /api/urun - Ürün ve Varyant ekleme endpoint'i
+router.post('/urun', async (req, res) => {
+  const { product, variant } = req.body;
+  const conn = await db.getConnection();
+  
+  try {
+    await conn.beginTransaction();
+
+    // 1. Önce ürünü ekle - paket_hacmi ve paketleme_tipi_id direkt ürün tablosuna eklenecek
+    const sqlProduct = `
+      INSERT INTO urunler (name, code, paket_hacmi, paketleme_tipi_id, description)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    const [productResult] = await conn.query(sqlProduct, [
+      product.name,
+      product.code,
+      variant?.paket_hacmi || 0,  // Varsayılan değer 0
+      variant?.paketleme_tipi_id || null,  // Varsayılan değer null
+      product.description || null
+    ]);
+    
+    const urunId = productResult.insertId;
+
+    // 2. Eğer varyant verileri varsa, varyant tablosuna da ekle
+    if (variant && variant.paket_hacmi && variant.paketleme_tipi_id) {
+      const sqlVariant = `
+        INSERT INTO urun_varyantlari 
+        (urun_id, paket_hacmi, paketleme_tipi_id)
+        VALUES (?, ?, ?)
+      `;
+      await conn.query(sqlVariant, [
+        urunId,
+        variant.paket_hacmi,
+        variant.paketleme_tipi_id
+      ]);
+    }
+
+    await conn.commit();
+    res.json({ 
+      success: true, 
+      message: 'Ürün ve varyant başarıyla eklendi',
+      productId: urunId 
+    });
+
+  } catch (error) {
+    await conn.rollback();
+    
+    // Duplicate key hatalarını kontrol et
+    if (error.code === 'ER_DUP_ENTRY') {
+      if (error.sqlMessage.includes('urunler.code')) {
+        return res.status(400).json({ error: 'Bu ürün kodu zaten kullanımda!' });
+      }
+      if (error.sqlMessage.includes('urunler.name')) {
+        return res.status(400).json({ error: 'Bu ürün adı zaten kullanımda!' });
+      }
+    }
+    
+    console.error('POST /api/urun error:', error);
+    res.status(500).json({ error: error.message });
+  } finally {
+    conn.release();
+  }
+});
+
+// POST /api/urun-varyantlari - Yeni varyant ekle
+router.post('/urun-varyantlari', async (req, res) => {
+  try {
+    const { urun_id, paket_hacmi, paketleme_tipi_id } = req.body;
+
+    // Validasyon
+    if (!urun_id || !paket_hacmi || !paketleme_tipi_id) {
+      return res.status(400).json({ 
+        error: "Tüm alanlar zorunludur: urun_id, paket_hacmi, paketleme_tipi_id" 
+      });
+    }
+
+    const sql = `
+      INSERT INTO urun_varyantlari 
+      (urun_id, paket_hacmi, paketleme_tipi_id) 
+      VALUES (?, ?, ?)
+    `;
+    
+    const [result] = await db.query(sql, [urun_id, paket_hacmi, paketleme_tipi_id]);
+    
+    res.json({ 
+      success: true, 
+      message: 'Varyant başarıyla eklendi',
+      insertedId: result.insertId 
+    });
+
+  } catch (error) {
+    console.error("Varyant ekleme hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 router.put('/api/sozlesme_hizmetler/:id', async (req, res) => {
   const { id } = req.params;
@@ -2425,6 +2520,47 @@ router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) 
   } catch (error) {
     console.error("DELETE /antrepo-giris/:girisId/hareketler/:hareketId hatası:", error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET /api/urun_varyantlari - Ürüne ait varyantları getir
+router.get('/urun_varyantlari', async (req, res) => {
+  try {
+    const urunId = req.query.urunId;
+    
+    if (!urunId) {
+      return res.status(400).json({ error: 'urunId parametresi gerekli' });
+    }
+
+    console.log('Varyant sorgusu başladı:', { urunId }); // Debug log
+
+    const sql = `
+      SELECT 
+        v.id,
+        v.urun_id,
+        COALESCE(v.paket_hacmi, 0) as paket_hacmi,
+        v.paketleme_tipi_id,
+        COALESCE(pt.name, '-') as paketleme_tipi_adi,
+        DATE_FORMAT(v.olusturulma_tarihi, '%Y-%m-%d') as olusturulma_tarihi  
+      FROM urun_varyantlari v
+      LEFT JOIN paketleme_tipleri pt ON v.paketleme_tipi_id = pt.id
+      WHERE v.urun_id = ?
+      ORDER BY v.olusturulma_tarihi DESC
+    `;
+
+    const [rows] = await db.query(sql, [urunId]);
+    
+    console.log('Bulunan varyantlar:', rows); // Debug log
+
+    // Hiç varyant bulunamasa bile boş array dön
+    res.json(rows || []);
+
+  } catch (error) {
+    console.error('Varyant listesi hatası:', error);
+    res.status(500).json({ 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
