@@ -135,19 +135,38 @@
                     <button type="button" class="clear-datalist" id="clearUrunKoduBtn">×</button>
                   </div>
                 </div>
-                <!-- Paketleme Tipi alanını öne alıyoruz -->
+                <!-- Paketleme Tipi alanı -->
                 <div class="form-group">
-                  <label for="paketlemeTipi">Paketleme Tipi</label>
-                  <select id="paketlemeTipi" class="form-control">
-                    <option value="">Seçiniz...</option>
-                  </select>
+                  <div class="input-group-wrapper">
+                    <label for="paketlemeTipi">Paketleme Tipi</label>
+                    <div class="input-group">
+                      <select id="paketlemeTipi" name="paketlemeTipi" class="form-control"></select>
+                      <button id="refreshPaketlemeBtn" type="button" class="btn-refresh" title="Yenile">
+                        <i class="fas fa-sync-alt"></i>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <!-- Paket Boyutu alanı sonra geliyor -->
+
+                <!-- Paket Boyutu alanı -->
                 <div class="form-group">
-                  <label for="paketBoyutu">Paket Boyutu (Kg)</label>
-                  <select id="paketBoyutu" class="form-control">
-                    <option value="">Seçiniz...</option>
-                  </select>
+                  <div class="input-group-wrapper">
+                    <label for="paketBoyutu">Paket Boyutu (Kg)</label>
+                    <div class="input-group">
+                      <select id="paketBoyutu" name="paketBoyutu" class="form-control"></select>
+                      <button id="refreshBoyutBtn" type="button" class="btn-refresh" title="Yenile">
+                        <i class="fas fa-sync-alt"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Varyant Ekle butonu ayrı bir grup olarak -->
+                <div class="form-group variant-actions">
+                  <button id="addVariantBtn" type="button" class="btn-variant">
+                    <i class="fas fa-plus"></i>
+                    Yeni Varyant Ekle
+                  </button>
                 </div>
                 <div class="form-group">
                   <label for="miktar">Miktar</label>

@@ -1839,3 +1839,123 @@ $(document).ready(function() {
         width: '100%'
     });
 });
+
+// Varyant Ekle butonuna tıklama
+document.getElementById('addVariantBtn')?.addEventListener('click', () => {
+  const urunAdi = document.getElementById('urunTanimi').value;
+  const paketlemeTipiId = document.getElementById('paketlemeTipi').value;
+  
+  if (!urunAdi) {
+    alert('Önce ürün seçmelisiniz!');
+    return;
+  }
+
+  // Ürün ID'sini bul
+  const urun = allUrunler.find(u => u.name === urunAdi);
+  if (!urun || !urun.id) {
+    alert('Geçerli bir ürün seçiniz!');
+    return;
+  }
+
+  // URL oluştur
+  let url = `product-form.html?mode=variant&urunId=${urun.id}`;
+  if (paketlemeTipiId) {
+    url += `&paketlemeTipiId=${paketlemeTipiId}`;
+  }
+
+  // Yeni pencerede aç
+  window.open(url, '_blank');
+});
+
+// Yenile butonları için ayrı event listener'lar
+document.getElementById('refreshPaketlemeBtn')?.addEventListener('click', async () => {
+  const urunAdi = document.getElementById('urunTanimi').value;
+  
+  if (!urunAdi) {
+    alert('Önce ürün seçmelisiniz!');
+    return;
+  }
+
+  await refreshPaketlemeTipleri(urunAdi);
+});
+
+document.getElementById('refreshBoyutBtn')?.addEventListener('click', async () => {
+  const urunAdi = document.getElementById('urunTanimi').value;
+  const paketlemeTipiId = document.getElementById('paketlemeTipi').value;
+
+  if (!urunAdi || !paketlemeTipiId) {
+    alert('Ürün ve paketleme tipi seçmelisiniz!');
+    return;
+  }
+
+  await refreshPaketBoyutlari(urunAdi, paketlemeTipiId);
+});
+
+// Yenileme fonksiyonları
+async function refreshPaketlemeTipleri(urunAdi) {
+  try {
+    const urun = allUrunler.find(u => u.name === urunAdi);
+    if (!urun || !urun.id) {
+      alert('Geçerli bir ürün seçiniz!');
+      return;
+    }
+
+    // Mevcut seçimi kaydet
+    const currentPaketlemeTipiId = $('#paketlemeTipi').val();
+
+    const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${urun.id}`);
+    if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
+    
+    const variants = await response.json();
+    updatePaketlemeTipiOptions(variants);
+
+    // Önceki seçimi geri yükle
+    if (currentPaketlemeTipiId) {
+      $('#paketlemeTipi').val(currentPaketlemeTipiId).trigger('change');
+    }
+
+    // Başarılı animasyonu
+    const btn = document.getElementById('refreshPaketlemeBtn');
+    btn.classList.add('success');
+    setTimeout(() => btn.classList.remove('success'), 1000);
+
+  } catch (error) {
+    console.error('Paketleme tipleri yüklenirken hata:', error);
+    alert('Paketleme tipleri yüklenirken bir hata oluştu!');
+  }
+}
+
+async function refreshPaketBoyutlari(urunAdi, paketlemeTipiId) {
+  try {
+    const urun = allUrunler.find(u => u.name === urunAdi);
+    if (!urun || !urun.id) {
+      alert('Geçerli bir ürün seçiniz!');
+      return;
+    }
+
+    // Mevcut seçimi kaydet
+    const currentPaketBoyutu = $('#paketBoyutu').val();
+
+    const response = await fetch(
+      `${baseUrl}/api/urun_varyantlari?urunId=${urun.id}&paketlemeTipiId=${paketlemeTipiId}`
+    );
+    if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
+    
+    const variants = await response.json();
+    updatePaketBoyutuOptions(variants);
+
+    // Önceki seçimi geri yükle
+    if (currentPaketBoyutu) {
+      $('#paketBoyutu').val(currentPaketBoyutu).trigger('change');
+    }
+
+    // Başarılı animasyonu
+    const btn = document.getElementById('refreshBoyutBtn');
+    btn.classList.add('success');
+    setTimeout(() => btn.classList.remove('success'), 1000);
+
+  } catch (error) {
+    console.error('Paket boyutları yüklenirken hata:', error);
+    alert('Paket boyutları yüklenirken bir hata oluştu!');
+  }
+}
