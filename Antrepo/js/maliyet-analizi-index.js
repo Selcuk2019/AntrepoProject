@@ -151,7 +151,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       // 4) Antrepo Giriş Form No - Link olarak
       const tdFormNo = document.createElement("td");
       const formNoLink = document.createElement("a");
-      formNoLink.href = `antrepo-giris-formu.html?id=${encodeURIComponent(item.entryId)}&view=true`;
+      // "&view=true" parametresi yerine "&mode=view" kullanıyoruz
+      formNoLink.href = `antrepo-giris-formu.html?id=${encodeURIComponent(item.entryId)}&mode=view`;
       formNoLink.textContent = item.formNo || "-";
       formNoLink.classList.add("table-link");
       tdFormNo.appendChild(formNoLink);

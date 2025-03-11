@@ -888,6 +888,20 @@ document.addEventListener("DOMContentLoaded", async () => {
           if (field.id !== "cancelBtn") field.disabled = true;
         });
         if (saveBtn) saveBtn.style.display = "none";
+        if (newEntryBtn) newEntryBtn.disabled = true;
+        if (newExitBtn) newExitBtn.disabled = true;
+        if (ekHizmetlerBtn) ekHizmetlerBtn.disabled = true;
+        [newEntryBtn, newExitBtn, ekHizmetlerBtn].forEach(btn => {
+          if (btn) btn.classList.add("disabled");
+        });
+        const sectionHeaders = document.querySelectorAll(".section-header");
+        sectionHeaders.forEach(header => {
+          header.classList.add("view-mode");
+        });
+        const pageHeader = document.querySelector(".page-header h1");
+        if (pageHeader) {
+          pageHeader.textContent = "Antrepo Giriş Formu (Görüntüleme)";
+        }
       }
     } catch (error) {
       console.error("Kayıt yükleme hatası:", error);

@@ -4043,3 +4043,20 @@ div.dataTables_wrapper div.dataTables_length select {
 }
 
 /* ...existing code... */
+
+/* ...existing code... */
+
+/* View Mode Stilleri */
+.section-header.view-mode {
+  background-color: #f8f9fa;
+}
+
+button.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+  color: #6c757d;
+}
+
+/* ...existing code... */

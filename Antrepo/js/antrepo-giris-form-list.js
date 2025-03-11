@@ -18,7 +18,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         columns: [
-            { data: 'beyanname_no' },
+            // Beyanname No sütununu link olarak düzenliyoruz
+            { 
+                data: 'beyanname_no',
+                render: function(data, type, row) {
+                    if (type === 'display') {
+                        // Link oluşturuyoruz
+                        return `<a href="antrepo-giris-formu.html?id=${row.id}&mode=view" class="form-link">${data || ''}</a>`;
+                    }
+                    return data || '';
+                }
+            },
             { 
                 data: 'beyanname_form_tarihi',
                 render: function(data) {
@@ -103,6 +113,21 @@ document.addEventListener('DOMContentLoaded', function() {
         autoWidth: false,
         searching: true
     });
+
+    // Stil ekleme - CSS sınıfı
+    const style = document.createElement('style');
+    style.textContent = `
+        .form-link {
+            color: #0066cc;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .form-link:hover {
+            text-decoration: underline;
+            color: #004499;
+        }
+    `;
+    document.head.appendChild(style);
 
     // Mevcut işlevselliği koru
     window.editEntry = function(id) {
