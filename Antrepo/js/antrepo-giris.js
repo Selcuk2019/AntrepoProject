@@ -709,111 +709,125 @@ document.addEventListener("DOMContentLoaded", async () => {
    ************************************************************/
   antrepoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const chosenDate = inputAntrepoGirisTarihi.value;
-    const todayDate = new Date().toISOString().split('T')[0];
-    if (chosenDate && chosenDate > todayDate) {
-      alert("Antrepo Giriş Tarihi gelecekte olamaz!");
-      return;
+    
+    // Kaydet butonunu devre dışı bırak (çift gönderimi engeller)
+    const saveBtn = document.getElementById("saveBtn");
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Kaydediliyor...";
     }
-    let sozlesmeId = null;
-    const sozVal = inputSozlesme.value.trim();
-    if (sozVal) {
-      const splitted = sozVal.split(" - ");
-      let kod = splitted[0] === "Kodsuz" ? "" : splitted[0];
-      const foundSoz = allSozlesmeler.find(s => (s.sozlesme_kodu || "").toLowerCase() === kod.toLowerCase());
-      if (foundSoz) sozlesmeId = foundSoz.id;
-    }
-    let antrepo_id = null;
-    const adVal = inputAntrepoAd.value.trim().toLowerCase();
-    let foundAntrepo = allAntrepolar.find(a => a.antrepoAdi.toLowerCase() === adVal);
-    if (foundAntrepo) {
-      antrepo_id = parseInt(foundAntrepo.id, 10);
-    } else {
-      const kodVal = inputAntrepoKodu.value.trim().toLowerCase();
-      foundAntrepo = allAntrepolar.find(a => a.antrepoKodu.toLowerCase() === kodVal);
-      if (foundAntrepo) antrepo_id = parseInt(foundAntrepo.id, 10);
-    }
-    const payload = {
-      beyanname_form_tarihi: inputBeyannameFormTarihi.value,
-      beyanname_no: inputBeyannameNo.value,
-      antrepo_sirket_adi: inputAntrepoSirketi.value,
-      sozlesme_id: sozlesmeId,
-      gumruk: inputGumruk.value,
-      antrepo_id: antrepo_id,
-      antrepo_kodu: inputAntrepoKodu.value,
-      adres: inputAdres.value,
-      sehir: inputSehir.value,
-      urun_tanimi: inputUrunTanimi.value,
-      urun_kodu: inputUrunKodu.value,
-      paket_boyutu: inputPaketBoyutu.value,
-      paketleme_tipi: inputPaketlemeTipi.value,
-      miktar: inputMiktar.value,
-      kap_adeti: inputKapAdeti.value,
-      brut_agirlik: inputBrutAgirlik.value,
-      net_agirlik: inputNetAgirlik.value,
-      antrepo_giris_tarihi: inputAntrepoGirisTarihi.value,
-      gonderici_sirket: inputGondericiSirket.value,
-      alici_sirket: inputAliciSirket.value,
-      proforma_no: inputProformaNo.value,
-      proforma_tarihi: inputProformaTarihi.value,
-      ticari_fatura_no: inputTicariFaturaNo.value,
-      ticari_fatura_tarihi: inputTicariFaturaTarihi.value,
-      depolama_suresi: inputDepolamaSuresi.value,
-      fatura_meblagi: inputFaturaMeblagi.value,
-      urun_birim_fiyat: inputUrunBirimFiyat.value,
-      para_birimi: selectParaBirimi.value,
-      fatura_aciklama: inputFaturaAciklama.value,
-      ekHizmetler: ekHizmetlerData
-    };
-    let method = "POST";
-    let finalUrl = `${baseUrl}/api/antrepo-giris`;
-    const urlParams = new URLSearchParams(window.location.search);
-    const editId = urlParams.get("id");
-    if (editId) {
-      method = "PUT";
-      finalUrl = `${baseUrl}/api/antrepo-giris/${editId}`;
-    }
+  
     try {
+      const chosenDate = inputAntrepoGirisTarihi.value;
+      const todayDate = new Date().toISOString().split('T')[0];
+      if (chosenDate && chosenDate > todayDate) {
+        alert("Antrepo Giriş Tarihi gelecekte olamaz!");
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Kaydet";
+        }
+        return;
+      }
+      
+      let sozlesmeId = null;
+      const sozVal = inputSozlesme.value.trim();
+      if (sozVal) {
+        const splitted = sozVal.split(" - ");
+        let kod = splitted[0] === "Kodsuz" ? "" : splitted[0];
+        const foundSoz = allSozlesmeler.find(s => (s.sozlesme_kodu || "").toLowerCase() === kod.toLowerCase());
+        if (foundSoz) {
+          sozlesmeId = parseInt(foundSoz.id, 10);
+        }
+      }
+      
+      let antrepo_id = null;
+      const adVal = inputAntrepoAd.value.trim().toLowerCase();
+      let foundAntrepo = allAntrepolar.find(a => a.antrepoAdi.toLowerCase() === adVal);
+      if (foundAntrepo) {
+        antrepo_id = parseInt(foundAntrepo.id, 10);
+      } else {
+        const kodVal = inputAntrepoKodu.value.trim().toLowerCase();
+        foundAntrepo = allAntrepolar.find(a => a.antrepoKodu.toLowerCase() === kodVal);
+        if (foundAntrepo) {
+          antrepo_id = parseInt(foundAntrepo.id, 10);
+        }
+      }
+      
+      const payload = {
+        beyanname_form_tarihi: inputBeyannameFormTarihi.value,
+        beyanname_no: inputBeyannameNo.value,
+        antrepo_sirket_adi: inputAntrepoSirketi.value,
+        sozlesme_id: sozlesmeId,
+        gumruk: inputGumruk.value,
+        antrepo_id: antrepo_id,
+        antrepo_kodu: inputAntrepoKodu.value,
+        adres: inputAdres.value,
+        sehir: inputSehir.value,
+        urun_tanimi: inputUrunTanimi.value,
+        urun_kodu: inputUrunKodu.value,
+        paket_boyutu: inputPaketBoyutu.value,
+        paketleme_tipi: inputPaketlemeTipi.value,
+        miktar: parseFloat(inputMiktar.value) || 0,
+        kap_adeti: parseInt(inputKapAdeti.value) || 0,
+        brut_agirlik: parseFloat(inputBrutAgirlik.value) || 0,
+        net_agirlik: parseFloat(inputNetAgirlik.value) || 0,
+        antrepo_giris_tarihi: inputAntrepoGirisTarihi.value,
+        gonderici_sirket: inputGondericiSirket.value,
+        alici_sirket: inputAliciSirket.value,
+        proforma_no: inputProformaNo.value,
+        proforma_tarihi: inputProformaTarihi.value,
+        ticari_fatura_no: inputTicariFaturaNo.value,
+        ticari_fatura_tarihi: inputTicariFaturaTarihi.value,
+        depolama_suresi: inputDepolamaSuresi.value,
+        fatura_meblagi: parseFloat(inputFaturaMeblagi.value) || 0,
+        urun_birim_fiyat: parseFloat(inputUrunBirimFiyat.value) || 0,
+        para_birimi: selectParaBirimi.value,
+        fatura_aciklama: inputFaturaAciklama.value,
+        // checkboxIlkGiris değerini kontrol ederek ekle, eğer yoksa varsayılan değeri kullan
+        ilk_giris: checkboxIlkGiris && checkboxIlkGiris.checked ? true : false
+      };
+      
+      let method = "POST";
+      let finalUrl = `${baseUrl}/api/antrepo-giris`;
+      const urlParams = new URLSearchParams(window.location.search);
+      const editId = urlParams.get("id");
+      if (editId) {
+        method = "PUT";
+        finalUrl = `${baseUrl}/api/antrepo-giris/${editId}`;
+      }
+      
       const resp = await fetch(finalUrl, {
-        method: method,
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
+      
+      if (!resp.ok) {
+        throw new Error(`Sunucu hatası: ${resp.status}`);
+      }
+      
       const result = await resp.json();
+      
       if (result.success) {
-        activeGirisId = editId ? editId : result.insertedId;
-        if (checkboxIlkGiris.checked) {
-          const entryTarih = document.getElementById("modalAntrepoGirisTarihi")?.value;
-          const entryMiktar = document.getElementById("modalMiktar")?.value;
-          const entryBrutAgirlik = parseFloat(document.getElementById("modalBrutAgirlik")?.value) || 0;
-          const entryNetAgirlik = parseFloat(document.getElementById("modalNetAgirlik")?.value) || 0;
-          const entryKapAdeti = parseInt(document.getElementById("modalKapAdeti")?.value) || 0;
-          const entryAciklama = document.getElementById("modalAciklama")?.value || "Yeni Giriş";
-          const toplam = (entryBrutAgirlik + entryNetAgirlik).toFixed(2);
-          const hareketPayload = {
-            islem_tarihi: entryTarih,
-            islem_tipi: "Giriş",
-            miktar: parseFloat(entryMiktar) || 0,
-            brut_agirlik: entryBrutAgirlik,
-            net_agirlik: entryNetAgirlik,
-            kap_adeti: entryKapAdeti,
-            toplam: toplam,
-            aciklama: entryAciklama
-          };
-          await fetch(`${baseUrl}/api/antrepo-giris/${activeGirisId}/hareketler`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(hareketPayload)
-          });
-        }
-        alert("Kayıt başarılı!");
-        window.location.href = "antrepo-giris-form-list.html";
+        alert(editId ? "Antrepo giriş kaydı başarıyla güncellendi" : "Antrepo giriş kaydı başarıyla eklendi");
+        // Başarılı kayıt sonrası liste sayfasına yönlendir
+        window.location.href = "antrepo-list.html";
       } else {
-        alert("Kayıt başarısız: " + JSON.stringify(result));
+        alert(`Kayıt hatası: ${result.message || "Bilinmeyen hata"}`);
+        // Hata durumunda butonu tekrar etkinleştir
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Kaydet";
+        }
       }
     } catch (error) {
-      console.error("Kayıt sırasında hata:", error);
-      alert("Hata: " + error.message);
+      console.error("Form gönderimi sırasında hata:", error);
+      alert(`Hata: ${error.message}`);
+      // Hata durumunda butonu tekrar etkinleştir
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = "Kaydet";
+      }
     }
   });
 
@@ -1077,18 +1091,44 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       selectedUrunId = urun.id;
       $('#urunKodu').val(urun.code || "");
+      
+      // Kontrol ekleyelim
+      console.log("Varyantları getiriyorum:", `${baseUrl}/api/urun_varyantlari?urunId=${urun.id}`);
+      
       const variantsResponse = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${urun.id}`);
+      if (!variantsResponse.ok) {
+        const errorText = await variantsResponse.text();
+        console.error("API hata yanıtı:", errorText);
+        throw new Error(`API hatası: ${variantsResponse.status} ${variantsResponse.statusText}`);
+      }
+      
       const variants = await variantsResponse.json();
+      console.log("API'den dönen varyantlar:", variants);
+      
+      // variants'ın bir dizi olduğundan emin olalım
+      if (!Array.isArray(variants)) {
+        console.warn("API beklenen bir dizi döndürmedi:", variants);
+        resetPaketlemeTipi();
+        resetPaketBoyutu();
+        return;
+      }
+      
+      // Sonraki işlemler
       const uniqueTypes = [...new Set(variants.map(v => JSON.stringify({ id: v.paketleme_tipi_id, text: v.paketleme_tipi_adi })))]
         .map(str => JSON.parse(str));
+      
       resetPaketlemeTipi();
       uniqueTypes.forEach(type => {
         $('#paketlemeTipi').append(new Option(type.text, type.id));
       });
+      
       resetPaketBoyutu();
+      
     } catch (error) {
       console.error('Ürün seçilirken hata:', error);
-      alert('Ürün bilgileri yüklenirken hata oluştu!');
+      resetPaketlemeTipi();
+      resetPaketBoyutu();
+      // Burada alert kaldırıldı - kullanıcıya daha az rahatsız edici bir deneyim için
     }
   });
 
