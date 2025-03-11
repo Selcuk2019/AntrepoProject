@@ -815,7 +815,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (result.success) {
         alert(editId ? "Antrepo giriş kaydı başarıyla güncellendi" : "Antrepo giriş kaydı başarıyla eklendi");
         // Başarılı kayıt sonrası liste sayfasına yönlendir
-        window.location.href = "antrepo-list.html";
+        window.location.href = "antrepo-giris-form-list.html";
       } else {
         alert(`Kayıt hatası: ${result.message || "Bilinmeyen hata"}`);
         // Hata durumunda butonu tekrar etkinleştir
@@ -867,7 +867,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (data.ticari_fatura_tarihi) inputTicariFaturaTarihi.value = data.ticari_fatura_tarihi.substring(0,10);
       inputDepolamaSuresi.value = data.depolama_suresi || "";
       inputFaturaMeblagi.value = data.fatura_meblagi || "";
-      inputUrunBirimFiyat.value = data.urun_birim_fiyati || "";
+      // API'deki alan adı ile form alanı adı eşleşmiyor, düzeltiyoruz
+      inputUrunBirimFiyat.value = data.urun_birim_fiyat || ""; // 'urun_birim_fiyati' yerine 'urun_birim_fiyat'
       if (data.para_birimi) selectParaBirimi.value = data.para_birimi.toString();
       if (inputFaturaAciklama) inputFaturaAciklama.value = data.fatura_aciklama || "";
       if (data.sozlesme_id) {

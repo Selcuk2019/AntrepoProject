@@ -76,15 +76,34 @@ async function loadCurrentStock() {
     if (!response.ok) throw new Error('Stok bilgisi alınamadı');
     const data = await response.json();
     
+    // Debugging için API yanıtını yazdır
+    console.log('API yanıtı:', data);
+    
+    // currentStock değerini güvenli bir şekilde sayıya dönüştür
+    let stockValue = 0;
+    if (data && data.currentStock !== null && data.currentStock !== undefined) {
+      // İlk önce sayıya dönüştür, sonra toFixed kullan
+      stockValue = parseFloat(data.currentStock) || 0;
+    }
+    
     const stockDisplay = document.getElementById('currentStockDisplay');
     if (stockDisplay) {
       stockDisplay.innerHTML = `
         <strong>Güncel Stok:</strong> 
-        <span>${data.currentStock.toFixed(2)} Ton</span>
+        <span>${stockValue.toFixed(2)} Ton</span>
       `;
     }
   } catch (error) {
     console.error('Stok bilgisi yükleme hatası:', error);
+    
+    // Hata durumunda kullanıcıya bilgi ver ve 0 değerini göster
+    const stockDisplay = document.getElementById('currentStockDisplay');
+    if (stockDisplay) {
+      stockDisplay.innerHTML = `
+        <strong>Güncel Stok:</strong> 
+        <span>0.00 Ton</span>
+      `;
+    }
   }
 }
 
