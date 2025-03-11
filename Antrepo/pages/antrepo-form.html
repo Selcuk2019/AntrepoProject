@@ -10,6 +10,143 @@
   <!-- DataTables CSS -->
   <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
   <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+  
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  
+  <style>
+    /* Form container styling */
+    .form-container {
+      background: #fff;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    /* Custom styling for form elements */
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #333;
+    }
+    
+    .form-group input[type="text"],
+    .form-group input[type="number"],
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+    
+    .form-group input[type="text"]:focus,
+    .form-group input[type="number"]:focus,
+    .form-group textarea:focus {
+      border-color: #408dfb;
+      box-shadow: 0 0 0 3px rgba(64, 141, 251, 0.15);
+      outline: none;
+    }
+    
+    .form-group textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    /* Select2 custom styling */
+    .select2-container {
+      width: 100% !important;
+    }
+    
+    .select2-container--default .select2-selection--single {
+      height: 46px;
+      padding: 0.5rem;
+      font-size: 1rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+      height: 44px;
+    }
+    
+    .select2-dropdown {
+      border-color: #e2e8f0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+    
+    .select2-container--default .select2-search--dropdown .select2-search__field {
+      padding: 0.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+    }
+    
+    /* Button styles */
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    
+    .btn-primary {
+      background-color: #408dfb;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary:hover {
+      background-color: #2c66dd;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(44, 102, 221, 0.15);
+    }
+    
+    .btn-secondary {
+      background-color: #f3f4f6;
+      color: #4b5563;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      border: 1.5px solid #e5e7eb;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #e5e7eb;
+    }
+    
+    /* Required field asterisk */
+    .required {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+    
+    /* Page header styling */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+    
+    .page-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e293b;
+    }
+  </style>
 </head>
 <body>
   <!-- Üst kısım: Topbar (template.js tarafından doldurulacak) -->
@@ -41,35 +178,35 @@
             <label for="antrepoAdi">Antrepo Adı <span class="required">*</span></label>
             <input type="text" id="antrepoAdi" placeholder="Antrepo Adı" required>
           </div>
-          <!-- Antrepo Tipi -->
+          <!-- Antrepo Tipi - Select2 -->
           <div class="form-group">
             <label for="antrepoTipi">Antrepo Tipi <span class="required">*</span></label>
-            <select id="antrepoTipi" required></select>
+            <select id="antrepoTipi" class="select2" required></select>
           </div>
-          <!-- Bulunduğu Gümrük -->
+          <!-- Bulunduğu Gümrük - Select2 -->
           <div class="form-group">
             <label for="gumruk">Bulunduğu Gümrük <span class="required">*</span></label>
-            <select id="gumruk" required></select>
+            <select id="gumruk" class="select2" required></select>
           </div>
           <!-- İlgili Gümrük Müdürlüğü -->
           <div class="form-group">
             <label for="gumrukMudurlugu">İlgili Gümrük Müdürlüğü <span class="required">*</span></label>
-            <select id="gumrukMudurlugu" required></select>
+            <select id="gumrukMudurlugu" class="select2" required></select>
           </div>
-          <!-- Şehir -->
+          <!-- Şehir - Select2 -->
           <div class="form-group">
             <label for="sehir">Şehir <span class="required">*</span></label>
-            <select id="sehir" required></select>
+            <select id="sehir" class="select2" required></select>
           </div>
           <!-- Açık Adres -->
           <div class="form-group">
             <label for="acikAdres">Açık Adres <span class="required">*</span></label>
             <textarea id="acikAdres" placeholder="Antrepo adresini giriniz" required></textarea>
           </div>
-          <!-- Antrepo Şirketi -->
+          <!-- Antrepo Şirketi - Select2 -->
           <div class="form-group">
             <label for="antrepoSirketi">Antrepo Şirketi <span class="required">*</span></label>
-            <select id="antrepoSirketi" required></select>
+            <select id="antrepoSirketi" class="select2" required></select>
           </div>
           <!-- Kapasite -->
           <div class="form-group">
@@ -83,8 +220,9 @@
           </div>
           <!-- Aktiflik Durumu -->
           <div class="form-group">
-            <label>
-              <input type="checkbox" id="aktif" checked> Aktif
+            <label class="checkbox-label">
+              <input type="checkbox" id="aktif" checked> 
+              <span class="checkbox-text">Aktif</span>
             </label>
           </div>
           <!-- Form Butonları -->
@@ -97,6 +235,12 @@
     </div>
   </div>
 
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
+  <!-- Select2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  
   <!-- JS Dosyalarını Modül Olarak Yükleyin -->
   <script type="module" src="../js/template.js"></script>
   <script type="module" src="../js/antrepo-form.js"></script>

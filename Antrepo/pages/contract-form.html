@@ -8,93 +8,235 @@
   <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
-  <!-- Ayrı bir .css dosyası kullanacaksanız <link rel="stylesheet" href="../css/style.css"> -->
+  
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
   <style>
-    /* ========== BASİT MODAL STİLLERİ ========== */
-    .modal {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: none; /* JS ile block/flex yapacağız */
-      justify-content: center;
-      align-items: center;
-      z-index: 9999;
-    }
-    .modal-content {
+    /* Modern Sözleşme Form Stilleri */
+    .form-container {
       background: #fff;
-      padding: 20px;
-      border-radius: 8px;
-      width: 80%;
-      max-width: 1200px;
-      max-height: 90vh;
-      overflow-y: auto;
-      position: relative;
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     }
-    .modal-actions {
-      margin-top: 1rem;
-      text-align: right;
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
     }
-    .modal-actions button {
-      margin-left: 0.5rem;
+    
+    .form-section {
+      background: #f8fafc;
+      border-radius: 10px;
+      padding: 1.5rem;
+      border: 1px solid #e5e7eb;
     }
-
-    /* ========== FORM VE TABLO ========== */
+    
+    .form-section h2 {
+      color: #2563eb;
+      font-size: 1.2rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
     .form-group {
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
+    
     .form-group label {
       display: block;
       font-weight: 600;
-      margin-bottom: 0.3rem;
+      margin-bottom: 0.5rem;
+      color: #374151;
+      font-size: 0.95rem;
     }
+    
+    .form-group input[type="text"],
+    .form-group input[type="date"],
+    .form-group input[type="number"],
     .form-group select,
-    .form-group input,
     .form-group textarea {
       width: 100%;
-      padding: 0.5rem;
-      box-sizing: border-box;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background-color: #fff;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
-
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: #2563eb;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    
+    /* Select2 Custom Styles */
+    .select2-container--default .select2-selection--single {
+      height: 45px;
+      padding: 0.5rem;
+      font-size: 0.95rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 8px;
+    }
+    
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+      height: 43px;
+    }
+    
+    .select2-dropdown {
+      border-color: #e2e8f0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+    
+    .select2-container--default .select2-search--dropdown .select2-search__field {
+      padding: 0.5rem;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+    }
+    
+    .select2-results__option {
+      padding: 8px 12px;
+    }
+    
+    .select2-container--default .select2-results__option--highlighted[aria-selected] {
+      background-color: #2563eb;
+    }
+    
+    /* Button styles */
+    .btn-primary {
+      background-color: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary:hover {
+      background-color: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+    }
+    
+    .btn-secondary {
+      background-color: #f3f4f6;
+      color: #4b5563;
+      border: 1.5px solid #e5e7eb;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #e5e7eb;
+    }
+    
+    .btn-danger {
+      background-color: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-danger:hover {
+      background-color: #dc2626;
+    }
+    
+    .required {
+      color: #ef4444;
+      margin-left: 2px;
+    }
+    
+    /* Table styles */
     table.datatable {
       width: 100%;
       border-collapse: collapse;
       margin-top: 1rem;
+      border-radius: 6px;
+      overflow: hidden;
     }
-    table.datatable th,
-    table.datatable td {
-      border: 1px solid #ccc;
-      padding: 0.5rem;
+    
+    table.datatable th {
+      background-color: #f8fafc;
+      color: #334155;
+      font-weight: 600;
       text-align: left;
+      padding: 1rem;
+      border-bottom: 2px solid #e2e8f0;
     }
-
-    .btn-primary {
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      padding: 0.6rem 1.2rem;
-      cursor: pointer;
-      border-radius: 4px;
+    
+    table.datatable td {
+      padding: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      color: #4b5563;
     }
-    .btn-secondary {
-      background-color: #6c757d;
-      color: #fff;
-      border: none;
-      padding: 0.6rem 1.2rem;
-      cursor: pointer;
-      border-radius: 4px;
+    
+    /* Modal styles */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
     }
-    .btn-danger {
-      background-color: #dc3545;
-      color: #fff;
-      border: none;
-      padding: 0.4rem 0.8rem;
-      cursor: pointer;
-      border-radius: 4px;
+    
+    .modal-content {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 12px;
+      width: 80%;
+      max-width: 1000px;
+      max-height: 85vh;
+      overflow-y: auto;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
     }
-    .required {
-      color: red;
+    
+    .modal-content h2 {
+      color: #1f2937;
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .modal-actions {
+      margin-top: 1.5rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+    
+    /* Gün Çarpanı ve Mesai table inputs */
+    #gunCarpanTable input[type="number"],
+    #gunCarpanTable select,
+    #mesaiSaatTable input[type="number"],
+    #mesaiSaatTable select {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 0.9rem;
     }
   </style>
 </head>
@@ -116,7 +258,7 @@
             <h2>Temel Bilgiler</h2>
             <div class="form-group">
               <label for="companyName">Şirket Adı <span class="required">*</span></label>
-              <select id="companyName" name="companyName" required>
+              <select id="companyName" name="companyName" class="select2-control" required>
                 <option value="">Seçiniz...</option>
                 <!-- /api/companies ile doldurulacak -->
               </select>
@@ -156,7 +298,7 @@
             </div>
             <div class="form-group">
               <label for="paraBirimi">Para Birimi <span class="required">*</span></label>
-              <select id="paraBirimi" required>
+              <select id="paraBirimi" class="select2-control" required>
                 <option value="">Seçiniz...</option>
                 <!-- /api/para-birimleri ile doldurulacak -->
               </select>
@@ -189,7 +331,7 @@
 
             <!-- Gün Çarpanı Parametreleri -->
             <div style="margin-bottom: 1rem;">
-              <p style="color: red;">
+              <p style="color: #ef4444; font-size: 0.9rem; font-weight: 500;">
                 *Gün Çarpan Parametrelerinin doldurulması zorunludur.
               </p>
             
@@ -197,20 +339,20 @@
               <button
                 type="button"
                 id="openGunCarpanModalBtn"
-                class="btn btn-primary"
-                style="display: block; width: 100%; margin-bottom: 0.5rem;"
+                class="btn-primary"
+                style="display: block; width: 100%; margin-bottom: 0.75rem;"
               >
-                Gün Çarpanı Parametreleri Ekle
+                <i class="fas fa-calendar-day"></i> Gün Çarpanı Parametreleri Ekle
               </button>
             
               <!-- İkinci buton (Aynı sınıf, aynı stil) -->
               <button
                 type="button"
                 id="openMesaiModalBtn"
-                class="btn btn-primary"
+                class="btn-primary"
                 style="display: block; width: 100%;"
               >
-                Mesai Saat Ücretlerini Ekle
+                <i class="fas fa-clock"></i> Mesai Saat Ücretlerini Ekle
               </button>
             </div>
           </div>
@@ -219,32 +361,40 @@
 
       <!-- Hizmet Kalemleri -->
       <div class="form-container">
-        <h2>Hizmet Kalemleri</h2>
-        <button type="button" class="btn-primary" id="openHizmetModalBtn">Hizmet Ekle</button>
-        <table class="datatable" id="hizmetListTable">
-          <thead>
-            <tr>
-              <th>Hizmet Adı</th>
-              <th>Hizmet Tipi</th>
-              <th>Birim</th>
-              <th>Temel Ücret</th>
-              <th>Çarpan</th>
-              <th>Min Ücret</th>
-              <th>Mesai Uygulanır mı?</th>
-              <th>Mesai Saatleri</th>
-              <th>Sil</th>
-            </tr>
-          </thead>
-          <tbody id="hizmetListBody">
-            <!-- JS ile eklenecek -->
-          </tbody>
-        </table>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+          <h2 style="margin: 0; font-size: 1.25rem; color: #1f2937;">Hizmet Kalemleri</h2>
+          <button type="button" class="btn-primary" id="openHizmetModalBtn">
+            <i class="fas fa-plus"></i> Hizmet Ekle
+          </button>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="datatable" id="hizmetListTable">
+            <thead>
+              <tr>
+                <th>Hizmet Adı</th>
+                <th>Hizmet Tipi</th>
+                <th>Birim</th>
+                <th>Temel Ücret</th>
+                <th>Çarpan</th>
+                <th>Min Ücret</th>
+                <th>Mesai Uygulanır mı?</th>
+                <th>Mesai Saatleri</th>
+                <th>Sil</th>
+              </tr>
+            </thead>
+            <tbody id="hizmetListBody">
+              <!-- JS ile eklenecek -->
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- Form Actions -->
-      <div class="form-actions" style="margin-top:1rem;">
+      <div class="form-actions" style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 1rem;">
         <button type="button" class="btn-secondary" id="cancelBtn">İptal</button>
-        <button type="submit" class="btn-primary" form="contractForm" id="saveContractBtn">Kaydet</button>
+        <button type="submit" class="btn-primary" form="contractForm" id="saveContractBtn">
+          <i class="fas fa-save"></i> Kaydet
+        </button>
       </div>
     </div>
   </div>
@@ -252,64 +402,68 @@
   <!-- ========== GÜN ÇARPANI MODAL ========== -->
   <div class="modal" id="gunCarpanModal" style="display: none;">
     <div class="modal-content">
-      <!-- Kapatma ikonu veya butonu isterseniz:
-      <span class="close" id="gunCarpanCloseBtn">&times;</span> -->
-  
       <h2>Gün Çarpanı Parametreleri</h2>
-      <p style="color: red; font-weight: bold;">
+      <p style="color: #ef4444; font-size: 0.9rem; font-weight: 500; margin-bottom: 1rem;">
         *Bu alanın doldurulması zorunludur.
       </p>
   
-      <table class="datatable" id="gunCarpanTable">
-        <thead>
-          <tr>
-            <th>Başlangıç Günü</th>
-            <th>Bitiş Günü</th>
-            <th>Base Fee</th>
-            <th>Kg Başına Ücret</th>
-            <th>Kargo Tipi</th>
-            <th>Para Birimi</th>
-            <th>Sil</th>
-          </tr>
-        </thead>
-        <tbody id="gunCarpanTbody"></tbody>
-      </table>
+      <div style="overflow-x: auto;">
+        <table class="datatable" id="gunCarpanTable">
+          <thead>
+            <tr>
+              <th>Başlangıç Günü</th>
+              <th>Bitiş Günü</th>
+              <th>Base Fee</th>
+              <th>Kg Başına Ücret</th>
+              <th>Kargo Tipi</th>
+              <th>Para Birimi</th>
+              <th>Sil</th>
+            </tr>
+          </thead>
+          <tbody id="gunCarpanTbody"></tbody>
+        </table>
+      </div>
   
-      <button type="button" id="addGunCarpanRowBtn" class="btn-secondary" style="margin-top: 0.5rem;">
-        + Ekle
+      <button type="button" id="addGunCarpanRowBtn" class="btn-secondary" style="margin-top: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+        <i class="fas fa-plus"></i> Yeni Satır Ekle
       </button>
   
-      <!-- Modal’ın alt tarafındaki aksiyon butonları -->
-      <div class="modal-actions" style="margin-top: 1rem;">
+      <!-- Modal'ın alt tarafındaki aksiyon butonları -->
+      <div class="modal-actions">
         <button type="button" id="gunCarpanCloseBtn" class="btn-secondary">Kapat</button>
-        <button type="button" id="gunCarpanSaveBtn" class="btn-primary">Kaydet</button>
+        <button type="button" id="gunCarpanSaveBtn" class="btn-primary">
+          <i class="fas fa-save"></i> Kaydet
+        </button>
       </div>
     </div>
   </div>
-  
 
   <!-- ========== MESAI SAAT ÜCRETLERİ MODAL ========== -->
   <div class="modal" id="mesaiModal">
     <div class="modal-content">
       <h2>Mesai Saat Ücretleri</h2>
-      <p style="margin-bottom:1rem;">Sözleşme Para Birimi: <span id="mesaiModalParaBirimiLabel"></span></p>
+      <p style="margin-bottom: 1.5rem; color: #4b5563;">Sözleşme Para Birimi: <span id="mesaiModalParaBirimiLabel" style="font-weight: 600; color: #2563eb;"></span></p>
 
-      <table class="datatable" id="mesaiSaatTable">
-        <thead>
-          <tr>
-            <th>Mesai Zaman Dilimi</th>
-            <th>Mesai Ücreti/Saat</th>
-            <th>Para Birimi</th>
-          </tr>
-        </thead>
-        <tbody id="mesaiSaatTbody">
-          <!-- JS ile eklenecek satırlar (10 sabit zaman dilimi) -->
-        </tbody>
-      </table>
+      <div style="overflow-x: auto;">
+        <table class="datatable" id="mesaiSaatTable">
+          <thead>
+            <tr>
+              <th>Mesai Zaman Dilimi</th>
+              <th>Mesai Ücreti/Saat</th>
+              <th>Para Birimi</th>
+            </tr>
+          </thead>
+          <tbody id="mesaiSaatTbody">
+            <!-- JS ile eklenecek satırlar (10 sabit zaman dilimi) -->
+          </tbody>
+        </table>
+      </div>
 
       <div class="modal-actions">
         <button type="button" id="mesaiCancelBtn" class="btn-secondary">İptal</button>
-        <button type="button" id="mesaiSaveBtn" class="btn-primary">Kaydet</button>
+        <button type="button" id="mesaiSaveBtn" class="btn-primary">
+          <i class="fas fa-save"></i> Kaydet
+        </button>
       </div>
     </div>
   </div>
@@ -365,12 +519,18 @@
         </div>
         <div class="modal-actions">
           <button type="button" id="hizmetCancelBtn" class="btn-secondary">İptal</button>
-          <button type="submit" id="hizmetSaveBtn" class="btn-primary">Kaydet</button>
+          <button type="submit" id="hizmetSaveBtn" class="btn-primary">
+            <i class="fas fa-save"></i> Kaydet
+          </button>
         </div>
       </form>
     </div>
   </div>
 
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Select2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <script type="module" src="../js/template.js"></script>
   <script type="module" src="../js/contract-form.js"></script>
 </body>

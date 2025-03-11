@@ -2,32 +2,38 @@
 import { baseUrl } from './config.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
+  // Select2'yi başlat
+  initializeSelect2();
+  
   // Dropdown'ları doldurmak için API çağrıları yapılıyor
   try {
     // Gümrükler: /api/customs
     const respGumruk = await fetch(`${baseUrl}/api/customs`);
     const gumrukData = await respGumruk.json();
-    populateDropdown("gumruk", gumrukData, "gumruk_id", "gumruk_adi", "Seçiniz");
+    populateDropdown("gumruk", gumrukData, "gumruk_id", "gumruk_adi", "Gümrük Seçiniz");
 
     // Bölge Müdürlükleri: /api/regions
     const respRegions = await fetch(`${baseUrl}/api/regions`);
     const regionData = await respRegions.json();
-    populateDropdown("gumrukMudurlugu", regionData, "bolge_id", "bolge_mudurlugu", "Seçiniz");
+    populateDropdown("gumrukMudurlugu", regionData, "bolge_id", "bolge_mudurlugu", "Gümrük Müdürlüğü Seçiniz");
 
     // Şehirler: /api/cities
     const respCities = await fetch(`${baseUrl}/api/cities`);
     const cityData = await respCities.json();
-    populateDropdown("sehir", cityData, "id", "sehir_ad", "Seçiniz");
+    populateDropdown("sehir", cityData, "id", "sehir_ad", "Şehir Seçiniz");
 
     // Şirketler: /api/companies
     const respCompanies = await fetch(`${baseUrl}/api/companies`);
     const companyData = await respCompanies.json();
-    populateDropdown("antrepoSirketi", companyData, "sirket_id", "company_name", "Seçiniz");
+    populateDropdown("antrepoSirketi", companyData, "sirket_id", "company_name", "Şirket Seçiniz");
 
     // Antrepo Tipleri: /api/antrepo-types
     const respTypes = await fetch(`${baseUrl}/api/antrepo-types`);
     const typeData = await respTypes.json();
-    populateDropdown("antrepoTipi", typeData, "id", "name", "Seçiniz");
+    populateDropdown("antrepoTipi", typeData, "id", "name", "Antrepo Tipi Seçiniz");
+    
+    // Select2 triggerlayarak select içeriklerini güncelleyelim
+    $('.select2').trigger('change');
 
   } catch (err) {
     console.error("Veri çekilirken hata:", err);
@@ -93,6 +99,25 @@ document.addEventListener('DOMContentLoaded', async function() {
   });
 });
 
+// Select2'yi başlatma fonksiyonu
+function initializeSelect2() {
+  $('.select2').select2({
+    placeholder: "Seçiniz...",
+    allowClear: true,
+    width: '100%',
+    language: {
+      noResults: function() {
+        return "Sonuç bulunamadı";
+      },
+      searching: function() {
+        return "Aranıyor...";
+      }
+    },
+    minimumInputLength: 0, // Hiç karakter girmeden de sonuç göster
+    theme: "classic"
+  });
+}
+
 // Dropdown'ları doldurmak için ortak fonksiyon
 function populateDropdown(selectId, data, valueField, textField, defaultText) {
   const selectElem = document.getElementById(selectId);
@@ -102,7 +127,6 @@ function populateDropdown(selectId, data, valueField, textField, defaultText) {
   const defaultOption = document.createElement("option");
   defaultOption.value = "";
   defaultOption.textContent = defaultText;
-  defaultOption.disabled = true;
   defaultOption.selected = true;
   selectElem.appendChild(defaultOption);
 

@@ -101,6 +101,87 @@ document.addEventListener("DOMContentLoaded", async function () {
     "Dini bayram ve resmi tatiller"
   ];
 
+  /* ========== SELECT2 BAŞLATMA ========== */
+  function initializeSelect2() {
+    // Şirket Adı ve Para Birimi select2 kontrolleri
+    $('.select2-control').select2({
+      placeholder: "Seçiniz...",
+      allowClear: true,
+      width: '100%',
+      language: {
+        noResults: function() {
+          return "Sonuç bulunamadı";
+        },
+        searching: function() {
+          return "Aranıyor...";
+        }
+      }
+    });
+    
+    // Yeni bir select2 oluştur fonksiyonu - Gün Çarpanı modalı içindeki Para Birimi için
+    function createSelect2InModal(selectElement) {
+      if (!selectElement) return;
+      
+      $(selectElement).select2({
+        placeholder: "Para birimi seçin",
+        dropdownParent: $('#gunCarpanModal'),
+        width: '100%',
+        language: {
+          noResults: function() {
+            return "Sonuç bulunamadı";
+          }
+        }
+      });
+    }
+    
+    // Modal içindeki para birimi selectlerini Select2'ye dönüştür
+    $('#gunCarpanModal').on('select2:open', function() {
+      // Select2'yi yeniden başlatmak gerekebilir
+      $('#gunCarpanModal select').each(function() {
+        if (!$(this).hasClass('select2-hidden-accessible')) {
+          createSelect2InModal(this);
+        }
+      });
+    });
+
+    // Gün Çarpanı modalındaki para birimi selectleri için Select2 oluşturucu
+    function createGunCarpanSelect2() {
+      // Önceki Select2 instance'ları varsa temizle
+      $('#gunCarpanModal select').each(function() {
+        if ($(this).hasClass('select2-hidden-accessible')) {
+          $(this).select2('destroy');
+        }
+        
+        // Yeni Select2 uygula
+        $(this).select2({
+          placeholder: "Para birimi seçin",
+          allowClear: true,
+          width: '100%',
+          dropdownParent: $('#gunCarpanModal'),
+          language: {
+            noResults: function() {
+              return "Sonuç bulunamadı";
+            },
+            searching: function() {
+              return "Aranıyor...";
+            }
+          }
+        });
+      });
+    }
+    
+    // Gün Çarpanı Modal açıldığında Select2'yi başlat
+    openGunCarpanModalBtn.addEventListener("click", function() {
+      // Modal gösterildikten sonra Select2'yi başlat
+      setTimeout(() => {
+        createGunCarpanSelect2();
+      }, 100);
+    });
+    
+    // GunCarpanTable güncellendiğinde Select2'yi yeniden başlat
+    window.refreshGunCarpanSelect2 = createGunCarpanSelect2;
+  }
+
   /* ========== 3) SAYFA KAPANMA UYARISI ========== */
   function setFormDegisik() {
     formDegisik = true;
@@ -125,13 +206,16 @@ document.addEventListener("DOMContentLoaded", async function () {
       const resp = await fetch(`${baseUrl}/api/companies`);
       if (!resp.ok) throw new Error(`Companies error: ${resp.status}`);
       const data = await resp.json();
-      companyName.innerHTML = `<option value="">Seçiniz...</option>`;
+      
+      const companySelect = $('#companyName');
+      companySelect.empty().append(`<option value="">Seçiniz...</option>`);
+      
       data.forEach(c => {
-        const opt = document.createElement("option");
-        opt.value = c.sirket_id;
-        opt.textContent = c.company_name;
-        companyName.appendChild(opt);
+        const option = new Option(c.company_name, c.sirket_id);
+        companySelect.append(option);
       });
+      
+      companySelect.trigger('change');
     } catch (error) {
       console.error("Şirketler yüklenemedi:", error);
     }
@@ -142,13 +226,16 @@ document.addEventListener("DOMContentLoaded", async function () {
       const resp = await fetch(`${baseUrl}/api/para-birimleri`);
       if (!resp.ok) throw new Error(`Para birimi hatası: ${resp.status}`);
       const data = await resp.json();
-      paraBirimiSelect.innerHTML = `<option value="">Seçiniz...</option>`;
+      
+      const paraBirimiSelect = $('#paraBirimi');
+      paraBirimiSelect.empty().append(`<option value="">Seçiniz...</option>`);
+      
       data.forEach(pb => {
-        const opt = document.createElement("option");
-        opt.value = pb.iso_kodu;
-        opt.textContent = `${pb.para_birimi_adi} (${pb.iso_kodu})`;
-        paraBirimiSelect.appendChild(opt);
+        const option = new Option(`${pb.para_birimi_adi} (${pb.iso_kodu})`, pb.iso_kodu);
+        paraBirimiSelect.append(option);
       });
+      
+      paraBirimiSelect.trigger('change');
     } catch (error) {
       console.error("Para birimleri yüklenemedi:", error);
     }
@@ -429,14 +516,32 @@ document.addEventListener("DOMContentLoaded", async function () {
       // Para Birimi
       const tdPara = document.createElement("td");
       const selectPara = document.createElement("select");
+      selectPara.className = "gun-carpan-para-birimi"; // Sınıf ekleyerek daha kolay hedefleme
+      
+      // Seçenekleri oluştur
+      const emptyOption = document.createElement("option");
+      emptyOption.value = "";
+      emptyOption.textContent = "Seçiniz...";
+      selectPara.appendChild(emptyOption);
+      
+      // Para birimlerini ekle
       paraBirimiSelect.querySelectorAll("option").forEach(opt => {
-        const cloneOpt = opt.cloneNode(true);
-        selectPara.appendChild(cloneOpt);
+        if (opt.value) { // Boş seçeneği eklemiyoruz, zaten yukarıda ekledik
+          const cloneOpt = document.createElement("option");
+          cloneOpt.value = opt.value;
+          cloneOpt.textContent = opt.textContent;
+          selectPara.appendChild(cloneOpt);
+        }
       });
+      
+      // Mevcut değeri seç
       selectPara.value = item.paraBirimi || "";
+      
+      // Değişiklik olayını dinle
       selectPara.addEventListener("change", e => {
         gunCarpanParametreleri[idx].paraBirimi = e.target.value;
       });
+      
       tdPara.appendChild(selectPara);
       tr.appendChild(tdPara);
 
@@ -454,6 +559,13 @@ document.addEventListener("DOMContentLoaded", async function () {
 
       gunCarpanTbody.appendChild(tr);
     });
+    
+    // Tablo güncellendikten sonra Select2'yi başlat
+    if (typeof window.refreshGunCarpanSelect2 === 'function') {
+      setTimeout(() => {
+        window.refreshGunCarpanSelect2();
+      }, 0);
+    }
   }
 
   /* ========== 7) MESAI SAAT ÜCRETLERİ MODAL ========== */
@@ -676,4 +788,6 @@ document.addEventListener("DOMContentLoaded", async function () {
   if (editId) {
     await loadContractData(editId);
   }
+
+  initializeSelect2();
 });
