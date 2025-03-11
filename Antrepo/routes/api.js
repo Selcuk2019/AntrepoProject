@@ -2524,25 +2524,22 @@ router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) 
 });
 
 // GET /api/urun_varyantlari - Ürüne ait varyantları getir
-// GET /api/urun_varyantlari?urunId=5&paketlemeTipi=2
 router.get('/urun_varyantlari', async (req, res) => {
   try {
     const { urunId, paketlemeTipi } = req.query;
     if (!urunId) {
       return res.status(400).json({ error: 'urunId parametresi gerekli' });
     }
-
-    // paketlemeTipi gönderilmişse sorguya ekleyeceğiz
-    // "paketlemeTipi" parametresini zorunlu yapmak istiyorsanız 
-    // ek bir if kontrolüyle 400 dönebilirsiniz.
     
+    // created_at kolonu yok - tamamen kaldırıyoruz
     let baseSql = `
       SELECT 
         v.id,
         v.urun_id,
         v.paketleme_tipi_id,
         COALESCE(v.paket_hacmi, 0) as paket_hacmi,
-        COALESCE(pt.name, '-') as paketleme_tipi_adi
+        COALESCE(pt.name, '-') as paketleme_tipi_adi,
+        NOW() as created_at  /* DB'de created_at olmadığı için şu anki zamanı kullanıyoruz */
       FROM urun_varyantlari v
       LEFT JOIN paketleme_tipleri pt ON v.paketleme_tipi_id = pt.id
       WHERE v.urun_id = ?
@@ -2555,18 +2552,28 @@ router.get('/urun_varyantlari', async (req, res) => {
     }
 
     baseSql += ` ORDER BY v.id DESC`;
+    
+    // Debug için SQL'i yazdır
+    console.log('Varyant SQL:', baseSql, 'Parametreler:', params);
 
     const [rows] = await db.query(baseSql, params);
-    res.json(rows || []);
+    console.log(`${rows.length} varyant bulundu`);
+    
+    // Sonucu mutlaka dizi olarak döndürdüğümüzden emin olalım
+    const result = Array.isArray(rows) ? rows : [];
+    res.json(result);
 
   } catch (error) {
+    // Daha detaylı hata günlüğü
     console.error('Varyant listesi hatası:', error);
+    console.error('Hata stack:', error.stack);
+    
     res.status(500).json({ 
-      error: error.message
+      error: error.message,
+      detail: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
-
 
 // GET /api/urun_varyantlari/:id - Tekil varyant getir
 router.get('/urun_varyantlari/:id', async (req, res) => {

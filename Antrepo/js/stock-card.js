@@ -116,11 +116,22 @@ async function loadStockMovements() {
 // Varyantları getir
 async function loadProductVariants() {
   try {
-    const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${productId}`);
-    if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
-    const variants = await response.json();
+    console.log(`Varyantları getiriyorum: ${baseUrl}/api/urun_varyantlari?urunId=${productId}`);
     
-    console.log('Yüklenen varyantlar:', variants); // Debug log
+    const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${productId}`);
+    
+    // Yanıt detaylarını logla
+    console.log('API Yanıt Durumu:', response.status);
+    
+    if (!response.ok) {
+      // Hata durumunda yanıtın içeriğini de göster
+      const errorText = await response.text();
+      console.error('API Hata Yanıtı:', errorText);
+      throw new Error('Varyant bilgileri alınamadı');
+    }
+    
+    const variants = await response.json();
+    console.log('Yüklenen varyantlar:', variants);
 
     // Önce mevcut DataTable'ı güvenli bir şekilde yok et
     if ($.fn.DataTable.isDataTable('#variantsTable')) {
@@ -142,6 +153,12 @@ async function loadProductVariants() {
     `;
     $('#variantsTable').html(tableHtml);
     
+    // Hata ayıklama için veri yapısını kontrol et
+    if (variants.length > 0) {
+      console.log('İlk varyant:', variants[0]);
+      console.log('created_at değeri:', variants[0].created_at);
+    }
+    
     // DataTables'ı başlat
     const dataTable = $('#variantsTable').DataTable({
       data: variants,
@@ -150,8 +167,17 @@ async function loadProductVariants() {
         { data: 'paket_hacmi' },
         { data: 'paketleme_tipi_adi' },
         { 
-          data: 'olusturulma_tarihi',
-          render: (data) => data ? new Date(data).toLocaleDateString('tr-TR') : '-'
+          data: 'created_at',
+          render: function(data) {
+            // Null veya undefined kontrolü
+            if (!data) return '-';
+            try {
+              return new Date(data).toLocaleDateString('tr-TR');
+            } catch (e) {
+              console.error('Tarih dönüştürme hatası:', e);
+              return data || '-'; 
+            }
+          }
         },
         {
           data: null,
