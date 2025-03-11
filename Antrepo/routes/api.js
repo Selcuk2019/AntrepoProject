@@ -77,7 +77,7 @@ router.get('/companies', async (req, res) => {
 router.get('/antrepolar', async (req, res) => {
   try {
     // Debug log ekleyelim
-    console.log('GET /antrepolar endpoint çalıştı');
+    
     
     const sql = `
       SELECT 
@@ -2524,45 +2524,49 @@ router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) 
 });
 
 // GET /api/urun_varyantlari - Ürüne ait varyantları getir
+// GET /api/urun_varyantlari?urunId=5&paketlemeTipi=2
 router.get('/urun_varyantlari', async (req, res) => {
   try {
-    const urunId = req.query.urunId;
-    
+    const { urunId, paketlemeTipi } = req.query;
     if (!urunId) {
       return res.status(400).json({ error: 'urunId parametresi gerekli' });
     }
 
-    console.log('Varyant sorgusu başladı:', { urunId }); // Debug log
-
-    const sql = `
+    // paketlemeTipi gönderilmişse sorguya ekleyeceğiz
+    // "paketlemeTipi" parametresini zorunlu yapmak istiyorsanız 
+    // ek bir if kontrolüyle 400 dönebilirsiniz.
+    
+    let baseSql = `
       SELECT 
         v.id,
         v.urun_id,
-        COALESCE(v.paket_hacmi, 0) as paket_hacmi,
         v.paketleme_tipi_id,
-        COALESCE(pt.name, '-') as paketleme_tipi_adi,
-        DATE_FORMAT(v.olusturulma_tarihi, '%Y-%m-%d') as olusturulma_tarihi  
+        COALESCE(v.paket_hacmi, 0) as paket_hacmi,
+        COALESCE(pt.name, '-') as paketleme_tipi_adi
       FROM urun_varyantlari v
       LEFT JOIN paketleme_tipleri pt ON v.paketleme_tipi_id = pt.id
       WHERE v.urun_id = ?
-      ORDER BY v.olusturulma_tarihi DESC
     `;
+    const params = [urunId];
 
-    const [rows] = await db.query(sql, [urunId]);
-    
-    console.log('Bulunan varyantlar:', rows); // Debug log
+    if (paketlemeTipi) {
+      baseSql += ` AND v.paketleme_tipi_id = ?`;
+      params.push(paketlemeTipi);
+    }
 
-    // Hiç varyant bulunamasa bile boş array dön
+    baseSql += ` ORDER BY v.id DESC`;
+
+    const [rows] = await db.query(baseSql, params);
     res.json(rows || []);
 
   } catch (error) {
     console.error('Varyant listesi hatası:', error);
     res.status(500).json({ 
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message
     });
   }
 });
+
 
 // GET /api/urun_varyantlari/:id - Tekil varyant getir
 router.get('/urun_varyantlari/:id', async (req, res) => {

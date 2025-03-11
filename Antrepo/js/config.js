@@ -1,4 +1,4 @@
 // config.js
-export const baseUrl = 'http://localhost:51206'; // Port numarasının doğru olduğundan emin olun
+export const baseUrl = 'http://localhost:55820'; // Port numarasının doğru olduğundan emin olun
 
 // Burada select2 veya form elementleriyle ilgili global ayarlar olabilir
