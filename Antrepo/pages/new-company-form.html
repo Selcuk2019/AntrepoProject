@@ -9,6 +9,8 @@
   <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
   <!-- Font Awesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+  <!-- Select2 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   
   <!-- Örnek: Zorunlu alanların kırmızı yıldızını renklendirmek isterseniz -->
   <style>
@@ -93,7 +95,7 @@
             <label for="addressCity">
               İl <span class="required">*</span>
             </label>
-            <select id="addressCity" required>
+            <select id="addressCity" class="select2-control" required>
               <option value="">Seçiniz</option>
               <!-- JS ile doldurulacak -->
             </select>
@@ -160,11 +162,9 @@
             <label for="currency">
               Para Birimi <span class="required">*</span>
             </label>
-            <select id="currency" required>
+            <select id="currency" class="select2-control" required>
               <option value="">Seçiniz</option>
-              <option value="TRY">TRY - Türk Lirası</option>
-              <option value="USD">USD - United States Dollar</option>
-              <option value="EUR">EUR - Euro</option>
+              <!-- JS ile para birimleri doldurulacak -->
             </select>
           </div>
           <div class="form-group">
@@ -187,41 +187,37 @@
         </div>
 
         <!-- Hizmet Verdiği Gümrükler (Dropdown + Chips) -->
-        <div class="form-section dropdown-wrapper">
+        <div class="form-section">
           <h2>Hizmet Verdiği Gümrükler</h2>
 
-          <div class="search-row">
-            <input 
-              type="text" 
-              id="customsSearchInput" 
-              placeholder="Gümrük ara..." 
-            />
-            <button 
-              type="button" 
-              id="refreshCustomsBtn" 
-              class="btn-secondary" 
-              title="Listeyi Yenile"
-            >
-              &#x21bb;
-            </button>
-            <button 
-              type="button" 
-              id="createCustomsBtn" 
-              class="btn-secondary" 
-              style="margin-left:auto;"
-            >
-              Yeni Gümrük Oluştur
-            </button>
+          <div class="form-group">
+            <label for="serviceCustoms">Gümrükler</label>
+            <!-- Select2 için maksimum yükseklik ekleyelim -->
+            <select id="serviceCustoms" class="select2-control" multiple style="max-height: 100px; overflow-y: auto;">
+              <!-- JS ile doldurulacak -->
+            </select>
+            
+            <!-- Butonların daha belirgin olması için stil düzenlemeleri -->
+            <div class="customs-actions" style="margin-top: 20px; display: flex; gap: 10px; padding: 10px 0;">
+              <button 
+                type="button" 
+                id="refreshCustomsBtn" 
+                class="btn-secondary" 
+                title="Listeyi Yenile"
+                style="flex: 0 0 auto; padding: 10px 12px; min-width: 120px; z-index: 10;"
+              >
+                <i class="fas fa-sync-alt"></i> Yenile
+              </button>
+              <button 
+                type="button" 
+                id="createCustomsBtn" 
+                class="btn-secondary" 
+                style="flex: 1; margin-left:auto; min-width: 200px; z-index: 10;"
+              >
+                <i class="fas fa-plus"></i> Yeni Gümrük Oluştur
+              </button>
+            </div>
           </div>
-
-          <div 
-            id="searchResults" 
-            class="dropdown-list" 
-            style="display: none;"
-          ></div>
-
-          <label>Seçilen Gümrükler</label>
-          <div id="selectedCustoms" class="chips-container"></div>
         </div>
 
         <!-- Kaydet / İptal Butonları -->
@@ -237,6 +233,9 @@
     </div>
   </div>
 
+  <!-- jQuery ve diğer JS kütüphaneleri -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   <script src="../js/template.js"></script>
   <script type="module" src="../js/new-company-form.js"></script>
 </body>
