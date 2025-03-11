@@ -534,7 +534,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       populateModalHizmetParaBirimi();
       populateModalHizmetSelect(allHizmetler);
       clearEkHizmetModalFields();
-      ekHizmetModal.style.display = "block";
+      ekHizmetModal.style.display = "flex";
+      ekHizmetModal.classList.add("active");
     });
   }
   function populateModalHizmetParaBirimi() {
@@ -589,6 +590,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
   btnEkHizmetCancel.addEventListener("click", () => {
     ekHizmetModal.style.display = "none";
+    ekHizmetModal.classList.remove("active");
   });
   btnEkHizmetSave.addEventListener("click", async () => {
     const tarihVal = inputEkHizmetTarih.value.trim();
@@ -646,7 +648,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (mirrorInput) mirrorInput.value = "";
   }
   btnNewHizmet.addEventListener("click", () => {
-    newHizmetModal.style.display = "block";
+    newHizmetModal.style.display = "flex";
+    newHizmetModal.classList.add("active");
     populateNewHizmetBirimDropdown();
     populateNewHizmetParaBirimi();
     clearNewHizmetForm();
@@ -701,6 +704,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
   btnNewHizmetCancel?.addEventListener("click", () => {
     newHizmetModal.style.display = "none";
+    newHizmetModal.classList.remove("active");
     clearNewHizmetForm();
   });
 
@@ -863,7 +867,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (data.ticari_fatura_tarihi) inputTicariFaturaTarihi.value = data.ticari_fatura_tarihi.substring(0,10);
       inputDepolamaSuresi.value = data.depolama_suresi || "";
       inputFaturaMeblagi.value = data.fatura_meblagi || "";
-      inputUrunBirimFiyat.value = data.urun_birim_fiyat || "";
+      inputUrunBirimFiyat.value = data.urun_birim_fiyati || "";
       if (data.para_birimi) selectParaBirimi.value = data.para_birimi.toString();
       if (inputFaturaAciklama) inputFaturaAciklama.value = data.fatura_aciklama || "";
       if (data.sozlesme_id) {
