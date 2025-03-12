@@ -757,6 +757,27 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
       
+      // Varyant ID'sini bulma
+      let urunVaryantId = null;
+      const urunKodu = inputUrunKodu.value;
+      const paketlemeTipiId = document.getElementById('paketlemeTipi')?.value;
+      const paketBoyutu = document.getElementById('paketBoyutu')?.value;
+      
+      if (urunKodu && paketlemeTipiId && paketBoyutu) {
+        try {
+          const variantResponse = await fetch(
+            `${baseUrl}/api/find-variant?urunKodu=${encodeURIComponent(urunKodu)}&paketlemeTipiId=${paketlemeTipiId}&paketBoyutu=${paketBoyutu}`
+          );
+          
+          if (variantResponse.ok) {
+            const variantData = await variantResponse.json();
+            urunVaryantId = variantData.variantId;
+          }
+        } catch (variantError) {
+          console.error("Varyant ID bulunamadı:", variantError);
+        }
+      }
+      
       const payload = {
         beyanname_form_tarihi: inputBeyannameFormTarihi.value,
         beyanname_no: inputBeyannameNo.value,
@@ -788,7 +809,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         para_birimi: selectParaBirimi.value,
         fatura_aciklama: inputFaturaAciklama.value,
         // checkboxIlkGiris değerini kontrol ederek ekle, eğer yoksa varsayılan değeri kullan
-        ilk_giris: checkboxIlkGiris && checkboxIlkGiris.checked ? true : false
+        ilk_giris: checkboxIlkGiris && checkboxIlkGiris.checked ? true : false,
+        urun_varyant_id: urunVaryantId // Yeni eklenen varyant ID'si
       };
       
       let method = "POST";
@@ -845,6 +867,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         `${baseUrl}/api/antrepo-giris/${id}`,
         "Veri çekme hatası"
       );
+      
+      // Form alanlarını doldur
       inputBeyannameFormTarihi.value = data.beyanname_form_tarihi ? data.beyanname_form_tarihi.substring(0,10) : "";
       inputBeyannameNo.value = data.beyanname_no || "";
       inputAntrepoAd.value = data.antrepo_adi || "";
@@ -854,8 +878,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       inputGumruk.value = data.gumruk || "";
       inputUrunTanimi.value = data.urun_tanimi || "";
       inputUrunKodu.value = data.urun_kodu || "";
-      inputPaketBoyutu.value = data.paket_boyutu || "";
-      inputPaketlemeTipi.value = data.paketleme_tipi || "";
+      
+      // Ürün ID'sini bul
+      const urun = allUrunler.find(u => u.name === data.urun_tanimi || u.code === data.urun_kodu);
+      if (urun) {
+        selectedUrunId = urun.id;
+        console.log(`Ürün bulundu: ${urun.name, urun.id}`);
+      } else {
+        console.warn("Ürün bulunamadı:", data.urun_tanimi, data.urun_kodu);
+      }
+
       inputMiktar.value = data.miktar || "";
       inputKapAdeti.value = data.kap_adeti || "";
       inputBrutAgirlik.value = data.brut_agirlik || "";
@@ -867,10 +899,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (data.ticari_fatura_tarihi) inputTicariFaturaTarihi.value = data.ticari_fatura_tarihi.substring(0,10);
       inputDepolamaSuresi.value = data.depolama_suresi || "";
       inputFaturaMeblagi.value = data.fatura_meblagi || "";
-      // API'deki alan adı ile form alanı adı eşleşmiyor, düzeltiyoruz
-      inputUrunBirimFiyat.value = data.urun_birim_fiyat || ""; // 'urun_birim_fiyati' yerine 'urun_birim_fiyat'
-      if (data.para_birimi) selectParaBirimi.value = data.para_birimi.toString();
+      inputUrunBirimFiyat.value = data.urun_birim_fiyat || "";
+      if (data.para_birimi) {
+        selectParaBirimi.value = data.para_birimi.toString();
+        $(selectParaBirimi).trigger('change'); // Select2 güncelleme
+      }
       if (inputFaturaAciklama) inputFaturaAciklama.value = data.fatura_aciklama || "";
+      
+      // Sözleşme ve şirket bilgilerini doldur
       if (data.sozlesme_id) {
         const foundSoz = allSozlesmeler.find(s => s.id === data.sozlesme_id);
         if (foundSoz) {
@@ -881,6 +917,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (data.antrepo_sirket_adi) {
         inputAntrepoSirketi.value = data.antrepo_sirket_adi;
       }
+      
+      // Görüntüleme modu kontrolü
       const urlParams = new URLSearchParams(window.location.search);
       const mode = urlParams.get("mode");
       if (mode === "view") {
@@ -903,18 +941,241 @@ document.addEventListener("DOMContentLoaded", async () => {
           pageHeader.textContent = "Antrepo Giriş Formu (Görüntüleme)";
         }
       }
+
+      // Paketleme tipi ve paket boyutu seçeneklerini yükleme ve seçme işlemi
+      try {
+        // Önce paketleme tipi için tüm seçenekleri yükle
+        if (selectedUrunId) {
+          // Paketleme tiplerini getir ve select2'yu doldur
+          await loadPackagingTypes(selectedUrunId);
+          
+          // Veritabanında kayıtlı değerleri seç
+          if (data.paketleme_tipi && $('#paketlemeTipi').length > 0) {
+            // Mevcut paketleme tipini bul
+            const packagingType = Array.from($('#paketlemeTipi')[0].options).find(option => 
+              option.text.toLowerCase() === data.paketleme_tipi.toLowerCase()
+            );
+            
+            if (packagingType) {
+              console.log(`Paketleme tipi eşleşti: ${packagingType.text}, value: ${packagingType.value}`);
+              $('#paketlemeTipi').val(packagingType.value);
+              $('#paketlemeTipi').trigger('change');
+              
+              // Paketleme tipi seçildikten sonra paket boyutlarını yükle
+              setTimeout(async () => {
+                await loadPackageSizes(selectedUrunId, packagingType.value);
+                
+                if (data.paket_boyutu) {
+                  // Paket boyutunu temizle ve sayısal değeri al
+                  let boyut = data.paket_boyutu.replace(/[^\d.]/g, '');
+                  console.log(`Paket boyutu aranıyor: ${boyut}`);
+                  
+                  // Seçenekleri kontrol et ve varsa seç
+                  if ($('#paketBoyutu').length > 0) {
+                    const sizeOption = Array.from($('#paketBoyutu')[0].options).find(option => 
+                      option.value === boyut || option.text.includes(boyut)
+                    );
+                    
+                    if (sizeOption) {
+                      console.log(`Paket boyutu eşleşti: ${sizeOption.text}, value: ${sizeOption.value}`);
+                      $('#paketBoyutu').val(sizeOption.value).trigger('change');
+                    } else {
+                      console.warn(`Paket boyutu eşleşmedi: ${boyut}`);
+                      // Veri tabanındaki değere en yakın boyutu bul
+                      $('#paketBoyutu').append(new Option(`${boyut} Kg (Özel)`, boyut));
+                      $('#paketBoyutu').val(boyut).trigger('change');
+                    }
+                  }
+                }
+              }, 500);
+            } else {
+              console.warn(`Paketleme tipi eşleşmedi: ${data.paketleme_tipi}`);
+              // Eğer veri tabanında kaydedilen değer Select2'de yoksa, yeni bir seçenek olarak ekle
+              $('#paketlemeTipi').append(new Option(data.paketleme_tipi, 'custom_type'));
+              $('#paketlemeTipi').val('custom_type').trigger('change');
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Paketleme tipi/boyutu yüklenirken hata:", error);
+      }
+      
     } catch (error) {
       console.error("Kayıt yükleme hatası:", error);
+      alert("Kayıt yüklenirken bir hata oluştu! Lütfen daha sonra tekrar deneyiniz.");
     }
   }
-  const urlParams = new URLSearchParams(window.location.search);
-  const editId = urlParams.get("id");
-  if (editId) {
-    await loadExistingData(editId);
-    const ekList = await fetchEkHizmetler(editId);
-    renderEkHizmetler(ekList);
+
+  // Yeni yardımcı fonksiyonlar: Paketleme tiplerini ve paket boyutlarını yükle
+  async function loadPackagingTypes(urunId) {
+    try {
+      console.log(`Paketleme tiplerini yüklüyorum, ürün ID: ${urunId}`);
+      const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${urunId}`);
+      if (!response.ok) {
+        throw new Error(`API yanıtı başarısız: ${response.status}`);
+      }
+      
+      const variants = await response.json();
+      console.log("Paketleme tipleri yüklendi:", variants);
+      
+      // Select2 dropdown'ı temizle ve doldur
+      $('#paketlemeTipi').empty().append('<option value="">Seçiniz...</option>');
+      
+      // Benzersiz paketleme tiplerini çıkar
+      const uniqueTypes = [];
+      variants.forEach(variant => {
+        if (!uniqueTypes.some(t => t.id === variant.paketleme_tipi_id)) {
+          uniqueTypes.push({
+            id: variant.paketleme_tipi_id,
+            name: variant.paketleme_tipi_name
+          });
+        }
+      });
+      
+      // Paketleme tiplerini dropdown'a ekle
+      uniqueTypes.forEach(type => {
+        $('#paketlemeTipi').append(new Option(type.name, type.id));
+      });
+      
+      return uniqueTypes;
+    } catch (error) {
+      console.error("Paketleme tipleri yüklenirken hata:", error);
+      return [];
+    }
   }
-  cancelBtn?.addEventListener("click", () => history.back());
+
+  async function loadPackageSizes(urunId, paketlemeTipiId) {
+    try {
+      console.log("DEBUG: Parametre değerleri - urunId:", urunId, "paketlemeTipiId:", paketlemeTipiId);
+
+      // Parametre eşleşmesi sorunu için düzeltme:
+      // 1. Parametrelerin sayı olduğundan emin olalım
+      const numericUrunId = typeof urunId === 'string' ? parseInt(urunId, 10) : urunId;
+      const numericTipId = typeof paketlemeTipiId === 'string' ? parseInt(paketlemeTipiId, 10) : paketlemeTipiId;
+      
+      // 2. Parametre ismini API beklentilerine göre düzeltelim
+      // API dokümanlarından veya Network tabından doğru parametre ismini kontrol edin
+      const url = `${baseUrl}/api/urun_varyantlari?urunId=${numericUrunId}&paketlemeTipiId=${numericTipId}`;
+      console.log("API İstek URL (düzeltilmiş):", url);
+      
+      // Alternatif URL formatları (eğer yukarıdaki çalışmazsa bunları deneyin)
+      const altUrls = [
+        `${baseUrl}/api/urun_varyantlari?urunId=${numericUrunId}&paketlemeTipi=${numericTipId}`,
+        `${baseUrl}/api/urun_varyantlari?urunId=${numericUrunId}&paketleme_tipi_id=${numericTipId}`
+      ];
+      
+      console.log("Deneniyor: ", url);
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`API yanıtı başarısız: ${response.status}, ${response.statusText}`);
+      }
+      
+      const responseText = await response.text();
+      console.log("API ham yanıt:", responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log("Veri türü:", Array.isArray(data) ? "Array" : typeof data);
+      } catch (jsonError) {
+        console.error("JSON parse hatası:", jsonError);
+        throw new Error("API yanıtı geçerli JSON değil");
+      }
+
+      // Yanıt boş ise alternatif URL'leri deneyelim
+      if (Array.isArray(data) && data.length === 0) {
+        console.log("İlk URL boş sonuç döndürdü, alternatif URL'leri deniyorum...");
+        
+        for (const altUrl of altUrls) {
+          try {
+            console.log("Alternatif deneniyor:", altUrl);
+            const altResponse = await fetch(altUrl);
+            if (!altResponse.ok) continue;
+            
+            const altText = await altResponse.text();
+            if (!altText || altText === "[]") continue;
+            
+            const altData = JSON.parse(altText);
+            if (Array.isArray(altData) && altData.length > 0) {
+              console.log("Alternatif URL başarılı:", altUrl);
+              data = altData;
+              break;
+            }
+          } catch (e) {
+            console.log("Bu alternatif başarısız:", e.message);
+          }
+        }
+      }
+      
+      // Select2 dropdown'ını temizle ve hazırla
+      $('#paketBoyutu').empty();
+      $('#paketBoyutu').append(new Option("Seçiniz...", ""));
+      
+      // Veri hâlâ boş mu kontrol et
+      if (!data || (Array.isArray(data) && data.length === 0)) {
+        console.warn("Bu ürün ve paketleme tipi kombinasyonu için paket boyutu bulunamadı");
+        $('#paketBoyutu').trigger('change.select2');
+        return [];
+      }
+      
+      // Veri işleme - farklı JSON formatlarını destekle
+      try {
+        if (Array.isArray(data)) {
+          data.forEach(item => {
+            // Format 1: { paket_hacmi: "5.0" }
+            if (item && typeof item.paket_hacmi !== 'undefined') {
+              const hacim = item.paket_hacmi;
+              console.log(`Paket boyutu ekleniyor: ${hacim} Kg`);
+              $('#paketBoyutu').append(new Option(`${hacim} Kg`, hacim));
+            }
+            // Format 2: { hacim: "5.0" } 
+            else if (item && typeof item.hacim !== 'undefined') {
+              const hacim = item.hacim;
+              console.log(`Format 2 - Paket boyutu ekleniyor: ${hacim} Kg`);
+              $('#paketBoyutu').append(new Option(`${hacim} Kg`, hacim));
+            }
+            // Format 3: Direk string dizisi ["5.0", "10.0"]
+            else if (typeof item === 'string' || typeof item === 'number') {
+              const hacim = item;
+              console.log(`Format 3 - Paket boyutu ekleniyor: ${hacim} Kg`);
+              $('#paketBoyutu').append(new Option(`${hacim} Kg`, hacim));
+            }
+          });
+        } else if (typeof data === 'object') {
+          // Format 4: Obje formatı (erişim yöntemi değişebilir)
+          if (data.results && Array.isArray(data.results)) {
+            data.results.forEach(item => {
+              const hacim = item.paket_hacmi || item.hacim || item;
+              console.log(`Format 4 - Paket boyutu ekleniyor: ${hacim} Kg`);
+              $('#paketBoyutu').append(new Option(`${hacim} Kg`, hacim));
+            });
+          }
+        }
+      } catch (processError) {
+        console.error("Veri işleme hatası:", processError);
+      }
+      
+      // Select2'yi yenile
+      try {
+        $('#paketBoyutu').select2('destroy').select2({
+          placeholder: 'Paket Boyutu Seçin',
+          allowClear: true,
+          width: '100%'
+        });
+      } catch (select2Error) {
+        console.error("Select2 yenileme hatası:", select2Error);
+        $('#paketBoyutu').trigger('change');
+      }
+      
+      console.log("Eklenen paket boyutları:", Array.from($('#paketBoyutu option')).map(o => o.value));
+      
+      return data;
+    } catch (error) {
+      console.error("Paket boyutları yüklenirken hata:", error);
+      return [];
+    }
+  }
 
   /************************************************************
    * 10) Yeni Giriş / Çıkış Modal Açma
@@ -1099,79 +1360,59 @@ document.addEventListener("DOMContentLoaded", async () => {
       resetPaketBoyutu();
       return;
     }
+    
     try {
-      const response = await fetch(`${baseUrl}/api/urunler?name=${encodeURIComponent(urunAdi)}`);
-      const urunler = await response.json();
-      const urun = urunler.find(u => u.name === urunAdi);
+      // Ürün verilerini getir
+      const urun = allUrunler.find(u => u.name === urunAdi);
       if (!urun) {
         resetPaketlemeTipi();
         resetPaketBoyutu();
         return;
       }
+      
       selectedUrunId = urun.id;
       $('#urunKodu').val(urun.code || "");
       
-      // Kontrol ekleyelim
-      console.log("Varyantları getiriyorum:", `${baseUrl}/api/urun_varyantlari?urunId=${urun.id}`);
-      
-      const variantsResponse = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${urun.id}`);
-      if (!variantsResponse.ok) {
-        const errorText = await variantsResponse.text();
-        console.error("API hata yanıtı:", errorText);
-        throw new Error(`API hatası: ${variantsResponse.status} ${variantsResponse.statusText}`);
-      }
-      
-      const variants = await variantsResponse.json();
-      console.log("API'den dönen varyantlar:", variants);
-      
-      // variants'ın bir dizi olduğundan emin olalım
-      if (!Array.isArray(variants)) {
-        console.warn("API beklenen bir dizi döndürmedi:", variants);
-        resetPaketlemeTipi();
-        resetPaketBoyutu();
-        return;
-      }
-      
-      // Sonraki işlemler
-      const uniqueTypes = [...new Set(variants.map(v => JSON.stringify({ id: v.paketleme_tipi_id, text: v.paketleme_tipi_adi })))]
-        .map(str => JSON.parse(str));
-      
-      resetPaketlemeTipi();
-      uniqueTypes.forEach(type => {
-        $('#paketlemeTipi').append(new Option(type.text, type.id));
-      });
-      
-      resetPaketBoyutu();
+      // Paketleme tiplerini yükle
+      await loadPackagingTypes(urun.id);
       
     } catch (error) {
       console.error('Ürün seçilirken hata:', error);
       resetPaketlemeTipi();
       resetPaketBoyutu();
-      // Burada alert kaldırıldı - kullanıcıya daha az rahatsız edici bir deneyim için
     }
   });
 
-  // Paketleme Tipi seçildiğinde paket boyutlarını çek
-  $('#paketlemeTipi').on('change', async function () {
+  // Paketleme Tipi seçildiğinde paket boyutlarını çek (düzeltilmiş)
+  $('#paketlemeTipi').on('change', function() {
     const paketlemeTipiId = $(this).val();
-    const urunAdi = $('#urunTanimi').val();
-    if (!paketlemeTipiId || !urunAdi) {
-      resetPaketBoyutu();
+    
+    // Detaylı loglama ekleyelim
+    console.log("DEBUG: Paketleme Tipi changed to:", paketlemeTipiId);
+    console.log("DEBUG: Current selectedUrunId:", selectedUrunId);
+    console.log("DEBUG: Typeof paketlemeTipiId:", typeof paketlemeTipiId);
+    console.log("DEBUG: Typeof selectedUrunId:", typeof selectedUrunId);
+    
+    // Önce paket boyutu seçeneğini sıfırla
+    resetPaketBoyutu();
+    
+    // Seçim yapılmadıysa veya ürün ID'si yoksa işlem yapma
+    if (!paketlemeTipiId || !selectedUrunId) {
+      console.log("Paketleme tipi veya ürün seçilmedi", {paketlemeTipiId, selectedUrunId});
       return;
     }
-    try {
-      const urun = allUrunler.find(u => u.name === urunAdi);
-      if (!urun) return;
-      const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${urun.id}&paketlemeTipi=${paketlemeTipiId}`);
-      const variants = await response.json();
-      $('#paketBoyutu').empty().append('<option value="">Seçiniz...</option>');
-      variants.forEach(variant => {
-        $('#paketBoyutu').append(new Option(`${variant.paket_hacmi} Kg`, variant.paket_hacmi));
-      });
-    } catch (error) {
-      console.error('Paket boyutları yüklenirken hata:', error);
-      alert('Paket boyutları yüklenirken bir hata oluştu!');
-    }
+    
+    console.log(`Paketleme tipi değişti: ${paketlemeTipiId}, ürün ID: ${selectedUrunId}`);
+    
+    // API çağrısı için async IIFE kullan
+    (async function() {
+      try {
+        await loadPackageSizes(selectedUrunId, paketlemeTipiId);
+      } catch (error) {
+        console.error('Paket boyutları yüklenirken hata:', error);
+        alert('Paket boyutları yüklenirken bir hata oluştu. Lütfen tekrar deneyin.');
+      }
+    })();
   });
 
   // Tüm searchable datalist'ler için arama ve temizleme
@@ -1275,10 +1516,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
       const currentPaketBoyutu = $('#paketBoyutu').val();
-      const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${urun.id}&paketlemeTipi=${paketlemeTipiId}`);
-      const variants = await response.json();
-      updatePaketBoyutuOptions(variants);
-      if (currentPaketBoyutu) $('#paketBoyutu').val(currentPaketBoyutu).trigger('change');
+      console.log(`paketBoyutları yenileniyor - ürün ID: ${urun.id}, tip ID: ${paketlemeTipiId}`);
+      const variants = await loadPackageSizes(urun.id, paketlemeTipiId);
+      if (currentPaketBoyutu) {
+        $('#paketBoyutu').val(currentPaketBoyutu).trigger('change');
+      }
       const btn = document.getElementById('refreshBoyutBtn');
       btn.classList.add('success');
       setTimeout(() => btn.classList.remove('success'), 1000);
@@ -1301,7 +1543,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       $('#paketBoyutu').append(new Option(`${variant.paket_hacmi} Kg`, variant.paket_hacmi));
     });
   }
-
-  // Sayfa açılışında hareketleri getir
+  // Sayfa açılışında hareketleri getir 
   fetchHareketler();
 });

@@ -2737,4 +2737,37 @@ router.get('/stock-amounts/:urunKodu', async (req, res) => {
   }
 });
 
+// Varyant bulan endpoint - paketleme tipi ve paket boyutuna göre varyant ID'sini döndürür
+router.get('/find-variant', async (req, res) => {
+  try {
+    const { urunKodu, paketlemeTipiId, paketBoyutu } = req.query;
+    
+    if (!urunKodu || !paketlemeTipiId || !paketBoyutu) {
+      return res.status(400).json({ error: 'Tüm parametreler gereklidir' });
+    }
+    
+    const sql = `
+      SELECT uv.id as variantId
+      FROM urun_varyantlari uv
+      JOIN urunler u ON uv.urun_id = u.id
+      WHERE 
+        u.code = ?
+        AND uv.paketleme_tipi_id = ?
+        AND uv.paket_hacmi = ?
+      LIMIT 1
+    `;
+    
+    const [rows] = await db.query(sql, [urunKodu, paketlemeTipiId, paketBoyutu]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Varyant bulunamadı' });
+    }
+    
+    res.json({ variantId: rows[0].variantId });
+  } catch (error) {
+    console.error('Varyant bulma hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
