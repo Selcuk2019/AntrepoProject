@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Güncel stok miktarını getir
     await loadCurrentStock();
     
+    // Antrepo bazlı stok miktarlarını getir
+    await loadStockAmounts(product.code);
+    
     // Varyantları getir
     await loadProductVariants();
     
@@ -76,34 +79,20 @@ async function loadCurrentStock() {
     if (!response.ok) throw new Error('Stok bilgisi alınamadı');
     const data = await response.json();
     
-    // Debugging için API yanıtını yazdır
-    console.log('API yanıtı:', data);
-    
-    // currentStock değerini güvenli bir şekilde sayıya dönüştür
-    let stockValue = 0;
-    if (data && data.currentStock !== null && data.currentStock !== undefined) {
-      // İlk önce sayıya dönüştür, sonra toFixed kullan
-      stockValue = parseFloat(data.currentStock) || 0;
-    }
-    
     const stockDisplay = document.getElementById('currentStockDisplay');
     if (stockDisplay) {
+      // Sayısal değer kontrolü yapalım ve sonra toFixed kullanalım
+      const stockValue = typeof data.currentStock === 'number' 
+        ? data.currentStock.toFixed(2) 
+        : parseFloat(data.currentStock || 0).toFixed(2);
+        
       stockDisplay.innerHTML = `
         <strong>Güncel Stok:</strong> 
-        <span>${stockValue.toFixed(2)} Ton</span>
+        <span>${stockValue} Ton</span>
       `;
     }
   } catch (error) {
     console.error('Stok bilgisi yükleme hatası:', error);
-    
-    // Hata durumunda kullanıcıya bilgi ver ve 0 değerini göster
-    const stockDisplay = document.getElementById('currentStockDisplay');
-    if (stockDisplay) {
-      stockDisplay.innerHTML = `
-        <strong>Güncel Stok:</strong> 
-        <span>0.00 Ton</span>
-      `;
-    }
   }
 }
 
@@ -135,22 +124,11 @@ async function loadStockMovements() {
 // Varyantları getir
 async function loadProductVariants() {
   try {
-    console.log(`Varyantları getiriyorum: ${baseUrl}/api/urun_varyantlari?urunId=${productId}`);
-    
     const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${productId}`);
-    
-    // Yanıt detaylarını logla
-    console.log('API Yanıt Durumu:', response.status);
-    
-    if (!response.ok) {
-      // Hata durumunda yanıtın içeriğini de göster
-      const errorText = await response.text();
-      console.error('API Hata Yanıtı:', errorText);
-      throw new Error('Varyant bilgileri alınamadı');
-    }
-    
+    if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
     const variants = await response.json();
-    console.log('Yüklenen varyantlar:', variants);
+    
+    console.log('Yüklenen varyantlar:', variants); // Debug log
 
     // Önce mevcut DataTable'ı güvenli bir şekilde yok et
     if ($.fn.DataTable.isDataTable('#variantsTable')) {
@@ -172,42 +150,33 @@ async function loadProductVariants() {
     `;
     $('#variantsTable').html(tableHtml);
     
-    // Hata ayıklama için veri yapısını kontrol et
-    if (variants.length > 0) {
-      console.log('İlk varyant:', variants[0]);
-      console.log('created_at değeri:', variants[0].created_at);
-    }
-    
     // DataTables'ı başlat
     const dataTable = $('#variantsTable').DataTable({
       data: variants,
       columns: [
-        { data: 'id' },
-        { data: 'paket_hacmi' },
-        { data: 'paketleme_tipi_adi' },
+        // id alanı yoksa veya variantlar farklı yapıdaysa düzeltin
+        { data: 'id', defaultContent: '-' }, // defaultContent ekleyerek null değerleri ele alıyoruz
+        { data: 'paket_hacmi', defaultContent: '-' },
+        { data: 'paketleme_tipi_adi', defaultContent: '-' },
         { 
-          data: 'created_at',
+          data: 'olusturulma_tarihi',
           render: function(data) {
-            // Null veya undefined kontrolü
-            if (!data) return '-';
-            try {
-              return new Date(data).toLocaleDateString('tr-TR');
-            } catch (e) {
-              console.error('Tarih dönüştürme hatası:', e);
-              return data || '-'; 
-            }
-          }
+            return data ? new Date(data).toLocaleDateString('tr-TR') : '-';
+          },
+          defaultContent: '-'
         },
         {
           data: null,
           orderable: false,
-          render: function(data) {
+          render: function(data, type, row) {
+            // id kontrolü ekleyelim
+            const variantId = row.id || '';
             return `
               <div class="action-buttons">
-                <button onclick="editVariant(${data.id})" class="btn-icon btn-edit">
+                <button onclick="editVariant('${variantId}')" class="btn-icon btn-edit">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteVariant(${data.id})" class="btn-icon btn-delete">
+                <button onclick="deleteVariant('${variantId}')" class="btn-icon btn-delete">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -277,6 +246,55 @@ window.deleteVariant = async function(varyantId) {
   } catch (error) {
     console.error('Varyant silme hatası:', error);
     alert('Varyant silinirken bir hata oluştu');
+  }
+}
+
+// Antrepo bazlı stok miktarları
+async function loadStockAmounts(productCode) {
+  if (!productCode) return;
+  
+  try {
+    const response = await fetch(`${baseUrl}/api/stock-amounts/${encodeURIComponent(productCode)}`);
+    if (!response.ok) throw new Error('Stok miktarları alınamadı');
+    const data = await response.json();
+    
+    // Verileri tabloya doldur
+    const tbody = document.getElementById('stockAmountsTable');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (data.length === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td colspan="4" class="text-center">Bu ürün için stok bulunamadı.</td>';
+      tbody.appendChild(tr);
+      return;
+    }
+    
+    // Her antrepo için bir satır oluştur
+    data.forEach(item => {
+      const tr = document.createElement('tr');
+      
+      // Değerlerin sayı kontrolünü yaparak ekliyoruz
+      const miktar = typeof item.Miktar === 'number' ? item.Miktar.toFixed(2) : parseFloat(item.Miktar || 0).toFixed(2);
+      const kapAdeti = item.KapAdeti || '0';
+      const formAdeti = item.FormAdeti || '0';
+      
+      tr.innerHTML = `
+        <td>${item.Antrepo || '-'}</td>
+        <td>${miktar}</td>
+        <td>${kapAdeti}</td>
+        <td>${formAdeti}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+    
+  } catch (error) {
+    console.error('Stok miktarları yükleme hatası:', error);
+    const tbody = document.getElementById('stockAmountsTable');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center">Hata: ${error.message}</td></tr>`;
+    }
   }
 }
 

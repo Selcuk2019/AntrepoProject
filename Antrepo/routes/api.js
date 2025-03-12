@@ -77,7 +77,7 @@ router.get('/companies', async (req, res) => {
 router.get('/antrepolar', async (req, res) => {
   try {
     // Debug log ekleyelim
-    
+    console.log('GET /antrepolar endpoint çalıştı');
     
     const sql = `
       SELECT 
@@ -2523,57 +2523,43 @@ router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) 
   }
 });
 
-// GET /api/urun_varyantlari - Ürüne ait varyantları getir
+// /api/urun_varyantlari
 router.get('/urun_varyantlari', async (req, res) => {
   try {
-    const { urunId, paketlemeTipi } = req.query;
+    const { urunId, paketlemeTipiId } = req.query;
     if (!urunId) {
-      return res.status(400).json({ error: 'urunId parametresi gerekli' });
-    }
-    
-    // created_at kolonu yok - tamamen kaldırıyoruz
-    let baseSql = `
-      SELECT 
-        v.id,
-        v.urun_id,
-        v.paketleme_tipi_id,
-        COALESCE(v.paket_hacmi, 0) as paket_hacmi,
-        COALESCE(pt.name, '-') as paketleme_tipi_adi,
-        NOW() as created_at  /* DB'de created_at olmadığı için şu anki zamanı kullanıyoruz */
-      FROM urun_varyantlari v
-      LEFT JOIN paketleme_tipleri pt ON v.paketleme_tipi_id = pt.id
-      WHERE v.urun_id = ?
-    `;
-    const params = [urunId];
-
-    if (paketlemeTipi) {
-      baseSql += ` AND v.paketleme_tipi_id = ?`;
-      params.push(paketlemeTipi);
+      return res.status(400).json({ error: 'urunId parametresi zorunlu' });
     }
 
-    baseSql += ` ORDER BY v.id DESC`;
-    
-    // Debug için SQL'i yazdır
-    console.log('Varyant SQL:', baseSql, 'Parametreler:', params);
+    if (paketlemeTipiId) {
+      // Paket boyutlarını getir
+      const sql = `
+        SELECT paket_hacmi 
+        FROM urun_varyantlari
+        WHERE urun_id = ? AND paketleme_tipi_id = ?
+      `;
+      const [rows] = await db.query(sql, [urunId, paketlemeTipiId]);
+      return res.json(rows);
 
-    const [rows] = await db.query(baseSql, params);
-    console.log(`${rows.length} varyant bulundu`);
-    
-    // Sonucu mutlaka dizi olarak döndürdüğümüzden emin olalım
-    const result = Array.isArray(rows) ? rows : [];
-    res.json(result);
+    } else {
+      // Paketleme tiplerini getir
+      const sql = `
+        SELECT uv.paketleme_tipi_id, pt.name AS paketleme_tipi_name
+        FROM urun_varyantlari uv
+        LEFT JOIN paketleme_tipleri pt ON uv.paketleme_tipi_id = pt.id
+        WHERE uv.urun_id = ?
+        GROUP BY uv.paketleme_tipi_id
+      `;
+      const [rows] = await db.query(sql, [urunId]);
+      return res.json(rows);
+    }
 
   } catch (error) {
-    // Daha detaylı hata günlüğü
-    console.error('Varyant listesi hatası:', error);
-    console.error('Hata stack:', error.stack);
-    
-    res.status(500).json({ 
-      error: error.message,
-      detail: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error('GET /urun_varyantlari hata:', error);
+    return res.status(500).json({ error: error.message });
   }
 });
+
 
 // GET /api/urun_varyantlari/:id - Tekil varyant getir
 router.get('/urun_varyantlari/:id', async (req, res) => {
@@ -2651,6 +2637,102 @@ router.delete('/urun_varyantlari/:id', async (req, res) => {
     res.json({ success: true });
   } catch (error) {
     console.error('Varyant silme hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/urun_varyantlari', async (req, res) => {
+  try {
+    const { urunId, paketlemeTipi } = req.query;
+    if (!urunId) {
+      return res.status(400).json({ error: 'urunId parametresi gerekli.' });
+    }
+
+    // Paketleme tiplerini döndür (paketlemeTipi parametresi boşsa)
+    if (!paketlemeTipi) {
+      const sqlTips = `
+        SELECT DISTINCT uv.paketleme_tipi_id, pt.name as paketleme_tipi_name
+        FROM urun_varyantlari uv
+        JOIN paketleme_tipleri pt ON pt.id = uv.paketleme_tipi_id
+        WHERE uv.urun_id = ?
+      `;
+      const [rows] = await db.query(sqlTips, [urunId]);
+      return res.json(rows);
+    }
+
+    // Paket boyutlarını döndür
+    const sqlBoyut = `
+      SELECT DISTINCT paket_hacmi
+      FROM urun_varyantlari
+      WHERE urun_id = ? AND paketleme_tipi_id = ?
+    `;
+    const [rows] = await db.query(sqlBoyut, [urunId, paketlemeTipi]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Varyant bulunamadı.' });
+    }
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stok Kartı - Antrepo Bazlı Stok Miktarları
+router.get('/stock-amounts/:urunKodu', async (req, res) => {
+  try {
+    const { urunKodu } = req.params;
+    
+    // 1. Her giriş formu için net miktar ve kap adetlerini hesapla
+    const sql = `
+      SELECT 
+        a.antrepoAdi,
+        a.id as antrepo_id,
+        g.id as giris_id,
+        SUM(CASE WHEN h.islem_tipi = 'Giriş' THEN h.miktar ELSE -h.miktar END) AS net_miktar,
+        SUM(CASE WHEN h.islem_tipi = 'Giriş' THEN h.kap_adeti ELSE -h.kap_adeti END) AS net_kap_adeti
+      FROM antrepo_hareketleri h
+      JOIN antrepo_giris g ON h.antrepo_giris_id = g.id
+      JOIN antrepolar a ON g.antrepo_id = a.id
+      WHERE g.urun_kodu = ?
+      GROUP BY a.antrepoAdi, a.id, g.id
+    `;
+    
+    const [rows] = await db.query(sql, [urunKodu]);
+    
+    // 2. JavaScript ile her antrepo için toplam hesapla
+    const antrepoMap = {};
+    
+    rows.forEach(row => {
+      const { antrepoAdi, antrepo_id, giris_id, net_miktar, net_kap_adeti } = row;
+      
+      // Eğer bu antrepo ilk defa görülüyorsa initialize et
+      if (!antrepoMap[antrepo_id]) {
+        antrepoMap[antrepo_id] = {
+          Antrepo: antrepoAdi,
+          Miktar: 0,
+          KapAdeti: 0,
+          FormAdeti: 0
+        };
+      }
+      
+      // Toplam miktarları ekle
+      antrepoMap[antrepo_id].Miktar += parseFloat(net_miktar) || 0;
+      antrepoMap[antrepo_id].KapAdeti += parseInt(net_kap_adeti) || 0;
+      
+      // Net miktarı pozitif olan formları say
+      if (parseFloat(net_miktar) > 0) {
+        antrepoMap[antrepo_id].FormAdeti += 1;
+      }
+    });
+    
+    // 3. Sadece pozitif stokları içeren sonuç listesi oluştur ve miktar bazında sırala
+    const result = Object.values(antrepoMap)
+      .filter(item => item.Miktar > 0)
+      .sort((a, b) => b.Miktar - a.Miktar);
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error("Antrepo stok miktarları hesaplama hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
