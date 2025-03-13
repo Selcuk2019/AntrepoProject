@@ -67,10 +67,9 @@ function addClearEvent(btn, inputs, focusInput, additionalCallback) {
 /* YENİ YARDIMCI FONKSİYON: Ürüne ait varyantları çekip, 
    paketlemeTipi <select> alanını urun_varyantlari tablosundaki 
    description verileriyle doldurur.
-   -- Güncelleme: Select2 ile doldurulurken value olarak item.name (yani description) kullanılıyor. */
+   -- Güncelleme: Select2 kullanılırken value olarak item.description kullanılmaktadır. */
 async function loadVariantDataForProduct(urunId) {
   try {
-    // Varyant detaylarını çekiyoruz:
     const response = await fetch(`${baseUrl}/api/urun_varyantlari/details?urunId=${urunId}`);
     if (!response.ok) {
       throw new Error("Varyant verisi alınamadı");
@@ -83,11 +82,11 @@ async function loadVariantDataForProduct(urunId) {
       console.warn('Element "paketlemeTipi" bulunamadı.');
       return;
     }
-    // Select2 kullanacağımız için önce içeriği temizleyip, default option ekliyoruz:
+    // Select2 kullanımı için önce içeriği temizleyip, default option ekliyoruz:
     $(paketlemeTipiSelect).empty();
     $(paketlemeTipiSelect).append(new Option('Seçiniz...', '', true, true));
 
-    // Select2 ile doldururken value olarak description (yani item.name) kullanılıyor
+    // Select2 ile doldururken value olarak description kullanılıyor
     const optionsData = uniqueDescriptions.map(desc => ({
       id: desc,
       text: desc
@@ -135,8 +134,8 @@ async function loadPaketBoyutuForProduct(urunId) {
     paketBoyutuSelect.innerHTML = '<option value="">Seçiniz...</option>';
     uniqueSizes.forEach(size => {
       const opt = document.createElement("option");
-      opt.value = size;                 // DB'ye kaydedilecek değer
-      opt.textContent = size + " Kg";   // Ekranda gözükecek metin
+      opt.value = size;
+      opt.textContent = size + " Kg";
       paketBoyutuSelect.appendChild(opt);
     });
   } catch (error) {
@@ -151,6 +150,15 @@ function resetPaketBoyutu() {
   if (select) {
     select.innerHTML = '<option value="">Seçiniz...</option>';
   }
+}
+
+/* Fonksiyon: View modunda tüm form alanlarını devre dışı bırak */
+function disableFormFields() {
+  document.querySelectorAll("input, select, textarea, button").forEach(el => {
+    if (el.id !== "cancelBtn") {
+      el.disabled = true;
+    }
+  });
 }
 
 /* DOMContentLoaded */
@@ -187,7 +195,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const urunTanimiList = document.getElementById("urunTanimiList");
   const inputUrunKodu = document.getElementById("urunKodu");
   const urunKoduList = document.getElementById("urunKoduList");
-  // Artık paketlemeTipi select'i varyantların description değeriyle doldurulacak
+  // Paketleme Tipi ve Boyutu – artık paketleme_tipi_id kullanılmıyor, bunun yerine "description" gönderilecek
   const inputPaketBoyutu = document.getElementById("paketBoyutu");
   const inputPaketlemeTipi = document.getElementById("paketlemeTipi");
   const inputMiktar = document.getElementById("miktar");
@@ -1015,7 +1023,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         urun_tanimi: inputUrunTanimi.value,
         urun_kodu: inputUrunKodu.value,
         paket_boyutu: paketBoyutu,
-        // Eski paketleme_tipi alanı yerine description olarak gönderiliyor:
+        // Eski paketleme_tipi_id referansı kaldırıldı; bunun yerine description gönderiliyor:
         description: inputPaketlemeTipi.value.trim() || null,
         miktar: parseFloat(inputMiktar.value) || 0,
         kap_adeti: parseInt(inputKapAdeti.value) || 0,
@@ -1081,132 +1089,186 @@ document.addEventListener("DOMContentLoaded", async () => {
   /************************************************************
    * 9) Edit Mode - Mevcut Kaydın Yüklenmesi
    ************************************************************/
-  async function loadExistingData(id) {
-    try {
-      activeGirisId = id;
-      const data = await fetchData(
-        `${baseUrl}/api/antrepo-giris/${id}`,
-        "Veri çekme hatası"
-      );
-      
-      // Form alanlarını doldur
-      inputBeyannameFormTarihi.value = data.beyanname_form_tarihi ? data.beyanname_form_tarihi.substring(0,10) : "";
-      inputBeyannameNo.value = data.beyanname_no || "";
-      inputAntrepoAd.value = data.antrepo_adi || "";
-      inputAntrepoKodu.value = data.antrepo_kodu || "";
-      inputAdres.value = data.adres || "";
-      inputSehir.value = data.sehir || "";
-      inputGumruk.value = data.gumruk || "";
-      inputUrunTanimi.value = data.urun_tanimi || "";
-      inputUrunKodu.value = data.urun_kodu || "";
-      
-      // Ürün ID'sini bul
-      const urun = allUrunler.find(u => u.name === data.urun_tanimi || u.code === data.urun_kodu);
-      if (urun) {
-        selectedUrunId = urun.id;
-        console.log(`Ürün bulundu: ${urun.name}, ID: ${urun.id}`);
-      } else {
-        console.warn("Ürün bulunamadı:", data.urun_tanimi, data.urun_kodu);
-      }
-
-      inputMiktar.value = data.miktar || "";
-      inputKapAdeti.value = data.kap_adeti || "";
-      inputBrutAgirlik.value = data.brut_agirlik || "";
-      inputNetAgirlik.value = data.net_agirlik || "";
-      if (data.antrepo_giris_tarihi) inputAntrepoGirisTarihi.value = data.antrepo_giris_tarihi.substring(0,10);
-      inputProformaNo.value = data.proforma_no || "";
-      if (data.proforma_tarihi) inputProformaTarihi.value = data.proforma_tarihi.substring(0,10);
-      inputTicariFaturaNo.value = data.ticari_fatura_no || "";
-      if (data.ticari_fatura_tarihi) inputTicariFaturaTarihi.value = data.ticari_fatura_tarihi.substring(0,10);
-      inputDepolamaSuresi.value = data.depolama_suresi || "";
-      inputFaturaMeblagi.value = data.fatura_meblagi || "";
-      inputUrunBirimFiyat.value = data.urun_birim_fiyat || "";
-      if (data.para_birimi) {
-        selectParaBirimi.value = data.para_birimi.toString();
-        $(selectParaBirimi).trigger('change');
-      }
-      if (inputFaturaAciklama) inputFaturaAciklama.value = data.fatura_aciklama || "";
-      
-      // Sözleşme ve şirket bilgilerini doldur
-      if (data.sozlesme_id) {
-        const foundSoz = allSozlesmeler.find(s => s.id === data.sozlesme_id);
-        if (foundSoz) {
-          const code = foundSoz.sozlesme_kodu && foundSoz.sozlesme_kodu.trim() !== "" ? foundSoz.sozlesme_kodu : "Kodsuz";
-          inputSozlesme.value = `${code} - ${foundSoz.sozlesme_adi}`;
-        }
-      }
-      if (data.antrepo_sirket_adi) {
-        inputAntrepoSirketi.value = data.antrepo_sirket_adi;
-      }
-      
-      // Görüntüleme modu kontrolü
-      const urlParams = new URLSearchParams(window.location.search);
-      const mode = urlParams.get("mode");
-      if (mode === "view") {
-        antrepoForm.querySelectorAll("input, select, textarea, button").forEach(field => {
-          if (field.id !== "cancelBtn") field.disabled = true;
-        });
-        if (saveBtn) saveBtn.style.display = "none";
-        if (newEntryBtn) newEntryBtn.disabled = true;
-        if (newExitBtn) newExitBtn.disabled = true;
-        if (ekHizmetlerBtn) ekHizmetlerBtn.disabled = true;
-        [newEntryBtn, newExitBtn, ekHizmetlerBtn].forEach(btn => {
-          if (btn) btn.classList.add("disabled");
-        });
-        document.querySelectorAll(".section-header").forEach(header => header.classList.add("view-mode"));
-        const pageHeader = document.querySelector(".page-header h1");
-        if (pageHeader) {
-          pageHeader.textContent = "Antrepo Giriş Formu (Görüntüleme)";
-        }
-      }
-
-      // Paketleme tipi ve paket boyutu seçeneklerini, yeni varyant verilerine göre yükle
-      try {
-        if (selectedUrunId) {
-          await loadVariantDataForProduct(selectedUrunId);
-          await loadPaketBoyutuForProduct(selectedUrunId);
-          
-          if (data.description) {
-            const paketSelect = document.getElementById("paketlemeTipi");
-            if (paketSelect) {
-              const matchingOption = Array.from(paketSelect.options).find(option => 
-                option.text.toLowerCase() === data.description.toLowerCase()
-              );
-              if (matchingOption) {
-                console.log(`Paketleme tipi eşleşti: ${matchingOption.text}, value: ${matchingOption.value}`);
-                paketSelect.value = matchingOption.value;
-                $(paketSelect).trigger('change');
-              } else {
-                console.warn(`Paketleme tipi eşleşmedi: ${data.description}`);
-                const newOpt = new Option(data.description, data.description);
-                paketSelect.appendChild(newOpt);
-                paketSelect.value = data.description;
-                $(paketSelect).trigger('change');
-              }
-            }
-          }
-          if (data.paket_boyutu) {
-            const boyutSelect = document.getElementById("paketBoyutu");
-            if (boyutSelect) {
-              const matchingOption = Array.from(boyutSelect.options).find(option =>
-                option.value === data.paket_boyutu
-              );
-              if (matchingOption) {
-                boyutSelect.value = matchingOption.value;
-                $(boyutSelect).trigger('change');
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Paketleme tipi veya paket boyutu yüklenirken hata:", error);
-      }
-      
-    } catch (error) {
-      console.error("Kayıt yükleme hatası:", error);
-      alert("Kayıt yüklenirken bir hata oluştu! Lütfen daha sonra tekrar deneyiniz.");
+async function loadExistingData(id) {
+  try {
+    console.log("loadExistingData çağrıldı, id:", id);
+    activeGirisId = id;
+    
+    // API yanıtını doğrudan fetch kullanarak almayı deneyelim
+    const response = await fetch(`${baseUrl}/api/antrepo-giris/${id}`);
+    
+    if (!response.ok) {
+      throw new Error(`API yanıt hatası: ${response.status} ${response.statusText}`);
     }
+    
+    const data = await response.json();
+    console.log("API'den gelen veri:", data);
+    
+    // Veri kontrolü - ya bir dizi ya da tek bir nesne olabilir
+    let formData;
+    if (Array.isArray(data)) {
+      if (data.length === 0) {
+        throw new Error("API boş bir dizi döndürdü, kayıt bulunamadı");
+      }
+      formData = data[0]; // Dizi ise ilk elemanı al
+      console.log("Dizi yanıtı, ilk eleman kullanılıyor:", formData);
+    } else if (typeof data === 'object' && data !== null) {
+      formData = data; // Nesne ise direkt kullan
+      console.log("Nesne yanıtı kullanılıyor");
+    } else {
+      throw new Error("API beklenmeyen bir veri formatı döndürdü");
+    }
+    
+    if (!formData) {
+      throw new Error("Veri yok veya boş");
+    }
+    
+    // Form alanlarını doldur
+    console.log("Doldurulan alanlar:", {
+      beyanname_form_tarihi: formData.beyanname_form_tarihi,
+      beyanname_no: formData.beyanname_no,
+      antrepo_adi: formData.antrepo_adi,
+      // diğer alanlar için de loglamayı ekleyebilirsiniz
+    });
+    
+    inputBeyannameFormTarihi.value = formData.beyanname_form_tarihi ? formData.beyanname_form_tarihi.substring(0,10) : "";
+    inputBeyannameNo.value = formData.beyanname_no || "";
+    inputAntrepoAd.value = formData.antrepo_adi || "";
+    inputAntrepoKodu.value = formData.antrepo_kodu || "";
+    inputAdres.value = formData.adres || "";
+    inputSehir.value = formData.sehir || "";
+    inputGumruk.value = formData.gumruk || "";
+    inputUrunTanimi.value = formData.urun_tanimi || "";
+    inputUrunKodu.value = formData.urun_kodu || "";
+    
+    // Ürün ID'sini bul
+    const urun = allUrunler.find(u => u.name === formData.urun_tanimi || u.code === formData.urun_kodu);
+    if (urun) {
+      selectedUrunId = urun.id;
+      console.log(`Ürün bulundu: ${urun.name}, ID: ${urun.id}`);
+    } else {
+      console.warn("Ürün bulunamadı:", formData.urun_tanimi, formData.urun_kodu);
+    }
+
+    inputMiktar.value = formData.miktar || "";
+    inputKapAdeti.value = formData.kap_adeti || "";
+    inputBrutAgirlik.value = formData.brut_agirlik || "";
+    inputNetAgirlik.value = formData.net_agirlik || "";
+    if (formData.antrepo_giris_tarihi) inputAntrepoGirisTarihi.value = formData.antrepo_giris_tarihi.substring(0,10);
+    inputProformaNo.value = formData.proforma_no || "";
+    if (formData.proforma_tarihi) inputProformaTarihi.value = formData.proforma_tarihi.substring(0,10);
+    inputTicariFaturaNo.value = formData.ticari_fatura_no || "";
+    if (formData.ticari_fatura_tarihi) inputTicariFaturaTarihi.value = formData.ticari_fatura_tarihi.substring(0,10);
+    inputDepolamaSuresi.value = formData.depolama_suresi || "";
+    inputFaturaMeblagi.value = formData.fatura_meblagi || "";
+    inputUrunBirimFiyat.value = formData.urun_birim_fiyat || "";
+    if (formData.para_birimi) {
+      selectParaBirimi.value = formData.para_birimi.toString();
+      try {
+        $(selectParaBirimi).trigger('change');
+      } catch (e) {
+        console.warn("Select2 trigger error:", e);
+      }
+    }
+    if (inputFaturaAciklama) inputFaturaAciklama.value = formData.fatura_aciklama || "";
+    
+    // Sözleşme ve şirket bilgilerini doldur
+    if (formData.sozlesme_id) {
+      const foundSoz = allSozlesmeler.find(s => s.id === formData.sozlesme_id);
+      if (foundSoz) {
+        const code = foundSoz.sozlesme_kodu && foundSoz.sozlesme_kodu.trim() !== "" ? foundSoz.sozlesme_kodu : "Kodsuz";
+        inputSozlesme.value = `${code} - ${foundSoz.sozlesme_adi}`;
+      }
+    }
+    if (formData.antrepo_sirket_adi) {
+      inputAntrepoSirketi.value = formData.antrepo_sirket_adi;
+    }
+    
+    // Görüntüleme modu kontrolü
+    const urlParams = new URLSearchParams(window.location.search);
+    const mode = urlParams.get("mode");
+    console.log("Form modu:", mode);
+    if (mode === "view") {
+      console.log("View modu aktif, form disabled edilecek");
+      // Tüm form elemanlarını disable et
+      disableFormFields();
+      if (saveBtn) {
+        saveBtn.style.display = "none";
+        console.log("Kaydet butonu gizlendi");
+      }
+      if (newEntryBtn) newEntryBtn.disabled = true;
+      if (newExitBtn) newExitBtn.disabled = true;
+      if (ekHizmetlerBtn) ekHizmetlerBtn.disabled = true;
+      [newEntryBtn, newExitBtn, ekHizmetlerBtn].forEach(btn => {
+        if (btn) btn.classList.add("disabled");
+      });
+      document.querySelectorAll(".section-header").forEach(header => header.classList.add("view-mode"));
+      const pageHeader = document.querySelector(".page-header h1");
+      if (pageHeader) {
+        pageHeader.textContent = "Antrepo Giriş Formu (Görüntüleme)";
+      }
+    }
+
+    // Paketleme tipi ve paket boyutu seçeneklerini, yeni varyant verilerine göre yükle
+    try {
+      if (selectedUrunId) {
+        console.log("Varyant verileri yükleniyor, urunId:", selectedUrunId);
+        await loadVariantDataForProduct(selectedUrunId);
+        await loadPaketBoyutuForProduct(selectedUrunId);
+        
+        console.log("Paketleme tipi ve boyutu verileri:", {
+          description: formData.description,
+          paket_boyutu: formData.paket_boyutu
+        });
+        
+        if (formData.description || formData.paketleme_tipi) {
+          const description = formData.description || formData.paketleme_tipi;
+          console.log("Paketleme tipi ayarlanıyor:", description);
+          const paketSelect = document.getElementById("paketlemeTipi");
+          if (paketSelect) {
+            // Select2 için değeri ayarla
+            setTimeout(() => {
+              try {
+                // Select2 için yeni bir seçenek oluştur ve seç
+                const newOption = new Option(description, description, true, true);
+                $(paketSelect).append(newOption).trigger('change');
+                console.log("Paketleme tipi seçeneği eklendi ve seçildi");
+              } catch (e) {
+                console.error("Select2 paketleme tipi ayarlama hatası:", e);
+              }
+            }, 500); // Select2'nin hazır olması için biraz bekle
+          }
+        }
+        
+        if (formData.paket_boyutu) {
+          const boyutSelect = document.getElementById("paketBoyutu");
+          if (boyutSelect) {
+            console.log("Paket boyutu ayarlanıyor:", formData.paket_boyutu);
+            setTimeout(() => {
+              try {
+                boyutSelect.value = formData.paket_boyutu;
+                $(boyutSelect).trigger('change');
+                console.log("Paket boyutu seçildi");
+              } catch (e) {
+                console.error("Paket boyutu ayarlama hatası:", e);
+              }
+            }, 500);
+          }
+        }
+      } else {
+        console.warn("selectedUrunId bulunmadı, varyant verileri yüklenemiyor");
+      }
+    } catch (error) {
+      console.error("Paketleme tipi veya paket boyutu yüklenirken hata:", error);
+    }
+    
+    console.log("Form başarıyla dolduruldu");
+
+  } catch (error) {
+    console.error("Kayıt yükleme hatası:", error);
+    alert("Kayıt yüklenirken bir hata oluştu! Detay: " + error.message);
   }
+}
 
   /************************************************************
    * 10) Yeni Giriş / Çıkış Modal Açma
@@ -1377,6 +1439,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
+  /************************************************************
+   * 13) URL Parametrelerini Kontrol Et ve Edit Mode İşlemi
+   ************************************************************/
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get("id");
+  const mode = urlParams.get("mode");
+  console.log("Form loaded with parameters: id =", editId, "mode =", mode);
+  if (editId) {
+    await loadExistingData(editId);
+  }
+  
   // Sayfa açılışında hareketleri getir 
   fetchHareketler();
 });

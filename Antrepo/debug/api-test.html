@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>API Test Tool</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    input { padding: 8px; width: 100%; margin-bottom: 10px; }
+    button { padding: 10px 15px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+    pre { background: #f5f5f5; padding: 15px; overflow: auto; max-height: 500px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>API Test Tool</h1>
+    <input id="apiUrl" type="text" placeholder="API URL" value="http://localhost:62798/api/antrepo-giris/8">
+    <button onclick="testApi()">Test API</button>
+    <h3>Response:</h3>
+    <pre id="response"></pre>
+  </div>
+
+  <script>
+    async function testApi() {
+      const url = document.getElementById('apiUrl').value;
+      const responseElem = document.getElementById('response');
+      
+      try {
+        responseElem.textContent = "Fetching...";
+        const response = await fetch(url);
+        const data = await response.json();
+        responseElem.textContent = JSON.stringify(data, null, 2);
+        console.log("API Response:", data);
+      } catch (error) {
+        responseElem.textContent = "Error: " + error.message;
+        console.error("API Error:", error);
+      }
+    }
+  </script>
+</body>
+</html>

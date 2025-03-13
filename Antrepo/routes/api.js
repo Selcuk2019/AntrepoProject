@@ -485,6 +485,8 @@ router.get('/antrepo-giris', async (req, res) => {
 router.get('/antrepo-giris/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`Antrepo giriş ID=${id} için veri istendi`);
+    
     const sql = `
       SELECT
         ag.id,
@@ -503,18 +505,18 @@ router.get('/antrepo-giris/:id', async (req, res) => {
         ag.urun_tanimi,
         ag.urun_kodu,
         ag.paket_boyutu,
-        ag.paketleme_tipi,   -- Varyantın paketleme tipi metni (description olarak kullanılacak)
+        ag.paketleme_tipi,   -- Varyantın paketleme tipi metni
         ag.paket_hacmi,
         ag.miktar,
         ag.kap_adeti,
         ag.birim_id,
         ag.brut_agirlik,
         ag.net_agirlik,
-        ag.antrepo_giris_tarihi,
+        DATE_FORMAT(ag.antrepo_giris_tarihi, '%Y-%m-%d') AS antrepo_giris_tarihi,
         ag.proforma_no,
-        ag.proforma_tarihi,
+        DATE_FORMAT(ag.proforma_tarihi, '%Y-%m-%d') AS proforma_tarihi,
         ag.ticari_fatura_no,
-        ag.ticari_fatura_tarihi,
+        DATE_FORMAT(ag.ticari_fatura_tarihi, '%Y-%m-%d') AS ticari_fatura_tarihi,
         ag.fatura_meblagi,
         ag.urun_birim_fiyat,
         ag.para_birimi,
@@ -523,15 +525,26 @@ router.get('/antrepo-giris/:id', async (req, res) => {
         ag.urun_varyant_id,
         ag.description,       -- Ek açıklama (varsa)
         uv.description AS varyant_description,
-        ag.created_at,
-        ag.updated_at
+        DATE_FORMAT(ag.created_at, '%Y-%m-%d %H:%i:%s') AS created_at,
+        DATE_FORMAT(ag.updated_at, '%Y-%m-%d %H:%i:%s') AS updated_at
       FROM antrepo_giris ag
       LEFT JOIN antrepolar a ON ag.antrepo_id = a.id
       LEFT JOIN urun_varyantlari uv ON ag.urun_varyant_id = uv.id
       WHERE ag.id = ?
     `;
+    
     const [rows] = await db.query(sql, [id]);
-    res.json(rows);
+    
+    // Veri bulunamazsa 404 hatası döndür
+    if (rows.length === 0) {
+      console.log(`ID=${id} için kayıt bulunamadı`);
+      return res.status(404).json({ error: 'Antrepo giriş kaydı bulunamadı.' });
+    }
+    
+    console.log(`ID=${id} için veri başarıyla alındı:`, rows[0].beyanname_no);
+    
+    // Daha iyi bir yanıt yapısı için tekil nesne döndürelim
+    res.json(rows[0]);
   } catch (error) {
     console.error("GET /antrepo-giris/:id hatası:", error);
     res.status(500).json({ error: error.message });
@@ -1415,25 +1428,24 @@ router.get('/antrepo-giris/:girisId/hareketler', async (req, res) => {
     const { girisId } = req.params;
     const sql = `
       SELECT
-        id,
-        antrepo_giris_id,
-        islem_tarihi,
-        islem_tipi,
-        miktar,
-        birim_id,
-        paketleme_tipi_id,
-        paket_hacmi,
-        aciklama,
-        description,
-        created_at,
-        updated_at,
-        kap_adeti,
-        brut_agirlik,
-        net_agirlik,
-        urun_varyant_id
-      FROM antrepo_hareketleri
-      WHERE antrepo_giris_id = ?
-      ORDER BY islem_tarihi DESC, created_at DESC
+        h.id,
+        h.antrepo_giris_id,
+        h.islem_tarihi,
+        h.islem_tipi,
+        h.miktar,
+        h.birim_id,
+        h.paket_hacmi,
+        h.aciklama,
+        h.kap_adeti,
+        h.brut_agirlik,
+        h.net_agirlik,
+        h.urun_varyant_id,
+        h.description,    -- Mesela ek bir açıklama sütunu
+        h.created_at,
+        h.updated_at
+      FROM antrepo_hareketleri h
+      WHERE h.antrepo_giris_id = ?
+      ORDER BY h.islem_tarihi DESC, h.created_at DESC
     `;
     const [rows] = await db.query(sql, [girisId]);
     res.json(rows);
@@ -1442,6 +1454,7 @@ router.get('/antrepo-giris/:girisId/hareketler', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 
 
