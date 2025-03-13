@@ -921,7 +921,6 @@ router.get('/antrepo-giris/:girisId/ek-hizmetler', async (req, res) => {
     const { girisId } = req.params;
     const sql = `
       SELECT 
-
         agh.id,
         agh.antrepo_giris_id,
         agh.hizmet_id,
@@ -934,7 +933,7 @@ router.get('/antrepo-giris/:girisId/ek-hizmetler', async (req, res) => {
         agh.toplam,
         agh.aciklama,
         agh.created_at,
-+       DATE_FORMAT(agh.ek_hizmet_tarihi, '%Y-%m-%d') AS ek_hizmet_tarihi
+        DATE_FORMAT(agh.ek_hizmet_tarihi, '%Y-%m-%d') AS ek_hizmet_tarihi
       FROM antrepo_giris_hizmetler agh
       LEFT JOIN hizmetler h ON agh.hizmet_id = h.id
       LEFT JOIN para_birimleri pb ON agh.para_birimi_id = pb.id
@@ -1381,7 +1380,6 @@ router.post('/antrepo-giris/:girisId/hareketler', async (req, res) => {
       brut_agirlik, 
       net_agirlik, 
       birim_id, 
-      paketleme_tipi_id, 
       paket_hacmi,       
       aciklama,
       description  // Yeni: description alanı
@@ -1394,8 +1392,8 @@ router.post('/antrepo-giris/:girisId/hareketler', async (req, res) => {
     
     const sql = `
       INSERT INTO antrepo_hareketleri
-      (antrepo_giris_id, islem_tarihi, islem_tipi, miktar, kap_adeti, brut_agirlik, net_agirlik, birim_id, paketleme_tipi_id, paket_hacmi, aciklama, description)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (antrepo_giris_id, islem_tarihi, islem_tipi, miktar, kap_adeti, brut_agirlik, net_agirlik, birim_id, paket_hacmi, aciklama, description)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
     const params = [
@@ -1407,7 +1405,6 @@ router.post('/antrepo-giris/:girisId/hareketler', async (req, res) => {
       brut_agirlik || 0, 
       net_agirlik || 0, 
       birim_id || 1, 
-      paketleme_tipi_id || null, 
       paket_hacmi || null,       
       aciklama || "",
       description || ""
@@ -1680,7 +1677,6 @@ router.put('/antrepo-giris/:id', async (req, res) => {
       alici_sirket,
       urun_tanimi,
       urun_kodu,
-      paketleme_tipi_id,
       paket_boyutu,
       paketleme_tipi,
       paket_hacmi,
@@ -1718,7 +1714,6 @@ router.put('/antrepo-giris/:id', async (req, res) => {
         alici_sirket = ?,
         urun_tanimi = ?,
         urun_kodu = ?,
-        paketleme_tipi_id = ?,
         paket_boyutu = ?,
         paketleme_tipi = ?,
         paket_hacmi = ?,
@@ -1757,7 +1752,6 @@ router.put('/antrepo-giris/:id', async (req, res) => {
       alici_sirket || null,
       urun_tanimi || null,
       urun_kodu || null,
-      paketleme_tipi_id || null,
       paket_boyutu || null,
       paketleme_tipi || null,
       paket_hacmi || null,
@@ -1801,7 +1795,6 @@ router.put('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => 
       islem_tipi, 
       miktar, 
       birim_id, 
-      paketleme_tipi_id,  
       paket_hacmi,        
       aciklama,
       kap_adeti,
@@ -1822,7 +1815,6 @@ router.put('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => 
         islem_tipi = ?,
         miktar = ?,
         birim_id = ?,
-        paketleme_tipi_id = ?,
         paket_hacmi = ?,
         aciklama = ?,
         kap_adeti = ?,
@@ -1839,7 +1831,6 @@ router.put('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => 
       islem_tipi,
       miktar,
       birim_id || null,
-      paketleme_tipi_id || null,
       paket_hacmi || null,
       aciklama || null,
       kap_adeti || 0,
@@ -2464,7 +2455,6 @@ router.put('/hareketler/:id', async (req, res) => {
       islem_tipi,
       miktar,
       birim_id,
-      paketleme_tipi_id,
       paket_hacmi,
       aciklama,
       kap_adeti,
@@ -2485,7 +2475,6 @@ router.put('/hareketler/:id', async (req, res) => {
         islem_tipi = ?,
         miktar = ?,
         birim_id = ?,
-        paketleme_tipi_id = ?,
         paket_hacmi = ?,
         aciklama = ?,
         kap_adeti = ?,
@@ -2502,7 +2491,6 @@ router.put('/hareketler/:id', async (req, res) => {
       islem_tipi,
       miktar,
       birim_id || null,
-      paketleme_tipi_id || null,
       paket_hacmi || null,
       aciklama || null,
       kap_adeti || 0,
@@ -2532,22 +2520,22 @@ router.put('/hareketler/:id', async (req, res) => {
 router.put('/urun_varyantlari/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { paket_hacmi, paketleme_tipi_id } = req.body;
+    const { paket_hacmi, description } = req.body;
 
     // Validasyon
-    if (!paket_hacmi || !paketleme_tipi_id) {
+    if (!paket_hacmi || !description) {
       return res.status(400).json({ 
-        error: "paket_hacmi ve paketleme_tipi_id zorunludur" 
+        error: "paket_hacmi ve description zorunludur" 
       });
     }
 
     const sql = `
       UPDATE urun_varyantlari 
-      SET paket_hacmi = ?, paketleme_tipi_id = ?
+      SET paket_hacmi = ?, description = ?
       WHERE id = ?
     `;
 
-    const [result] = await db.query(sql, [paket_hacmi, paketleme_tipi_id, id]);
+    const [result] = await db.query(sql, [paket_hacmi, description, id]);
     
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Varyant bulunamadı' });

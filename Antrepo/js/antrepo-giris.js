@@ -1262,6 +1262,16 @@ async function loadExistingData(id) {
       console.error("Paketleme tipi veya paket boyutu yüklenirken hata:", error);
     }
     
+    // Ek Hizmetler tablosunu doldur (Yeni eklenen kod)
+    try {
+      console.log("Ek Hizmetler yükleniyor...");
+      const ekHizmetlerData = await fetchEkHizmetler(activeGirisId);
+      renderEkHizmetler(ekHizmetlerData);
+      console.log(`${ekHizmetlerData.length} adet ek hizmet yüklendi.`);
+    } catch (error) {
+      console.error("Ek Hizmetler yüklenirken hata:", error);
+    }
+
     console.log("Form başarıyla dolduruldu");
 
   } catch (error) {
