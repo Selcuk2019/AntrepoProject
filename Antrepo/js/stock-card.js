@@ -168,13 +168,14 @@ async function loadCurrentStock(productId) {
 // Stok hareketlerini getir
 async function loadStockMovements() {
   try {
-    const response = await fetch(`${baseUrl}/api/antrepo-giris/${productId}/hareketler`);
+    // Yeni endpoint'i kullan - ürün ID'sine göre hareket getir
+    const response = await fetch(`${baseUrl}/api/product-movements/${productId}`);
     if (!response.ok) throw new Error('Stok hareketleri alınamadı');
     const movements = await response.json();
     
     // Verileri tabloya doldur
     const tbody = document.getElementById('stockMovementsTable');
-    if (tbody) { // Add null check
+    if (tbody) {
       tbody.innerHTML = movements.map(m => `
         <tr>
           <td>${new Date(m.islem_tarihi).toLocaleDateString()}</td>
@@ -187,7 +188,7 @@ async function loadStockMovements() {
         </tr>
       `).join('');
     } else {
-      console.warn("Element with ID 'stockMovementsTable' not found in the DOM");
+      console.warn("Element with ID 'stockMovementsTable' not found");
     }
   } catch (error) {
     console.error('Stok hareketleri yükleme hatası:', error);

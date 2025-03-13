@@ -3023,4 +3023,51 @@ router.put('/urun_varyantlari/:id', async (req, res) => {
   }
 });
 
+// GET /api/product-movements/:productId - Ürün ID'sine göre ilgili hareketleri getirir
+router.get('/product-movements/:productId', async (req, res) => {
+  try {
+    const { productId } = req.params;
+    
+    // Önce ürünün kodunu bul
+    const [productRows] = await db.query('SELECT code FROM urunler WHERE id = ?', [productId]);
+    
+    if (productRows.length === 0) {
+      return res.status(404).json({ error: 'Ürün bulunamadı' });
+    }
+    
+    const productCode = productRows[0].code;
+    
+    // Bu ürün koduna bağlı tüm antrepo_giris kayıtlarını bul
+    const [girisRows] = await db.query('SELECT id FROM antrepo_giris WHERE urun_kodu = ?', [productCode]);
+    
+    if (girisRows.length === 0) {
+      return res.json([]); // Bu ürün için kayıt bulunamadı
+    }
+    
+    // Tüm antrepo_giris ID'lerini al
+    const girisIds = girisRows.map(row => row.id);
+    
+    // Bu ID'lere bağlı tüm hareketleri getir
+    const sqlHareketler = `
+      SELECT
+        h.*,
+        a.antrepoAdi as antrepo_adi,
+        b.birim_adi
+      FROM antrepo_hareketleri h
+      LEFT JOIN antrepo_giris ag ON h.antrepo_giris_id = ag.id
+      LEFT JOIN antrepolar a ON ag.antrepo_id = a.id
+      LEFT JOIN birimler b ON h.birim_id = b.id
+      WHERE h.antrepo_giris_id IN (?)
+      ORDER BY h.islem_tarihi DESC, h.created_at DESC
+    `;
+    
+    const [movementRows] = await db.query(sqlHareketler, [girisIds]);
+    
+    res.json(movementRows);
+  } catch (error) {
+    console.error("GET /api/product-movements/:productId hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
