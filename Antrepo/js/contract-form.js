@@ -404,12 +404,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     gunCarpanModal.style.display = "flex";
     refreshGunCarpanTable();
   });
-  // ...
+
   gunCarpanCloseBtn.addEventListener("click", () => {
     gunCarpanModal.style.display = "none";
   });
 
-  // Gün Çarpanı Modal Kaydetme Fonksiyonu (Örnek)
+  // Gün Çarpanı Modal Kaydetme Fonksiyonu
   gunCarpanSaveBtn.addEventListener("click", () => {
     // Öncelikle tüm satırları kontrol edelim
     for (let i = 0; i < gunCarpanParametreleri.length; i++) {
@@ -424,26 +424,46 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
     }
     
+    // Konsola mevcut parametreleri yazdır (debug için)
+    console.log("Güncel gün çarpan parametreleri:", JSON.parse(JSON.stringify(gunCarpanParametreleri)));
+    
     // Tüm zorunlu alanlar doluysa modalı kapatalım
     gunCarpanModal.style.display = "none";
   });
 
   addGunCarpanRowBtn.addEventListener("click", () => {
+    // Seçili para birimini al
+    const selectedCurrency = paraBirimiSelect.value || "";
+    
     gunCarpanParametreleri.push({
       startDay: "",
       endDay: "",
       baseFee: "",
       perKgRate: "",
       cargoType: "Genel Kargo",
-      paraBirimi: paraBirimiSelect.value || ""
+      paraBirimi: selectedCurrency
     });
     refreshGunCarpanTable();
   });
-  // ...
-
 
   function refreshGunCarpanTable() {
     gunCarpanTbody.innerHTML = "";
+    
+    // Debug için mevcut parametreleri logla
+    console.log("Refreshing table with parameters:", JSON.parse(JSON.stringify(gunCarpanParametreleri)));
+    
+    // Eğer hiç parametre yoksa, en azından bir satır ekleyelim
+    if (gunCarpanParametreleri.length === 0) {
+      gunCarpanParametreleri.push({
+        startDay: "",
+        endDay: "",
+        baseFee: "",
+        perKgRate: "",
+        cargoType: "Genel Kargo",
+        paraBirimi: paraBirimiSelect.value || ""
+      });
+    }
+    
     gunCarpanParametreleri.forEach((item, idx) => {
       const tr = document.createElement("tr");
 
@@ -466,7 +486,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       inputEnd.type = "number";
       inputEnd.min = "1";
       inputEnd.placeholder = "Bitiş";
-      inputEnd.value = item.endDay;
+      inputEnd.value = item.endDay || "";
       inputEnd.addEventListener("change", e => {
         gunCarpanParametreleri[idx].endDay = e.target.value;
       });
@@ -478,7 +498,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       const inputBaseFee = document.createElement("input");
       inputBaseFee.type = "number";
       inputBaseFee.step = "0.01";
-      inputBaseFee.value = item.baseFee;
+      inputBaseFee.value = item.baseFee || "";
       inputBaseFee.addEventListener("change", e => {
         gunCarpanParametreleri[idx].baseFee = parseFloat(e.target.value) || 0;
       });
@@ -490,7 +510,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       const inputPerKg = document.createElement("input");
       inputPerKg.type = "number";
       inputPerKg.step = "0.0001";
-      inputPerKg.value = item.perKgRate;
+      inputPerKg.value = item.perKgRate || "";
       inputPerKg.addEventListener("change", e => {
         gunCarpanParametreleri[idx].perKgRate = parseFloat(e.target.value) || 0;
       });
@@ -635,51 +655,70 @@ document.addEventListener("DOMContentLoaded", async function () {
   contractForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // a) Zorunlu alan kontrolleri
-    if (!faturaPeriyodu.value || !girisGunuKural.value || !kismiGunYontemi.value || !paraBirimiSelect.value) {
-      alert("Lütfen zorunlu alanları (Fatura Periyodu, Giriş Günü, Kısmi Gün, Para Birimi) doldurun!");
-      return;
-    }
-    // b) Gün Çarpanı Parametreleri zorunlu
-    if (gunCarpanParametreleri.length === 0) {
-      alert("Gün Çarpanı Parametreleri doldurulmalıdır!");
-      return;
-    }
-
-    // c) Sözleşme verileri
-    const sozlesmeData = {
-      sozlesme_sirket_id: companyName.value || null,
-      sozlesme_kodu: sozlesmeKodu.value,
-      sozlesme_adi:  sozlesmeAdi.value,
-      baslangic_tarihi: baslangicTarihi.value || null,
-      bitis_tarihi: bitisTarihi.value || null,
-      fatura_periyodu: faturaPeriyodu.value,
-      min_fatura: parseFloat(minFatura.value) || 0,
-      para_birimi: paraBirimiSelect.value,
-      giris_gunu_kural: girisGunuKural.value,
-      kismi_gun_yontemi: kismiGunYontemi.value,
-      hafta_sonu_carpani: parseFloat(haftaSonuCarpani.value) || 1,
-      doviz_kuru: parseFloat(dovizKuru.value) || null
-    };
-
-    const payload = {
-      sozlesme: sozlesmeData,
-      hizmetler: hizmetlerData,
-      ek_hizmet_parametreleri: {
-        mesaiSaatUcretleri: mesaiSaatUcretleriParam
-      },
-      gun_carpan_parametreleri: gunCarpanParametreleri
-    };
-
     try {
+      // a) Zorunlu alan kontrolleri
+      if (!faturaPeriyodu.value || !girisGunuKural.value || !kismiGunYontemi.value || !paraBirimiSelect.value) {
+        alert("Lütfen zorunlu alanları (Fatura Periyodu, Giriş Günü, Kısmi Gün, Para Birimi) doldurun!");
+        return;
+      }
+      
+      // b) Gün Çarpanı Parametreleri zorunlu
+      if (gunCarpanParametreleri.length === 0) {
+        alert("Gün Çarpanı Parametreleri doldurulmalıdır!");
+        return;
+      }
+      
+      // Gün çarpanı parametrelerinden boş veya geçersiz olanları kaldır
+      const filteredGunCarpanParams = gunCarpanParametreleri.filter(gc => 
+        gc.startDay && !isNaN(parseFloat(gc.baseFee))
+      );
+      
+      if (filteredGunCarpanParams.length === 0) {
+        alert("En az bir geçerli Gün Çarpanı Parametresi olmalıdır!");
+        return;
+      }
+
+      // c) Sözleşme verileri
+      const sozlesmeData = {
+        sozlesme_sirket_id: companyName.value || null,
+        sozlesme_kodu: sozlesmeKodu.value,
+        sozlesme_adi:  sozlesmeAdi.value,
+        baslangic_tarihi: baslangicTarihi.value || null,
+        bitis_tarihi: bitisTarihi.value || null,
+        fatura_periyodu: faturaPeriyodu.value,
+        min_fatura: parseFloat(minFatura.value) || 0,
+        para_birimi: paraBirimiSelect.value,
+        giris_gunu_kural: girisGunuKural.value,
+        kismi_gun_yontemi: kismiGunYontemi.value,
+        hafta_sonu_carpani: parseFloat(haftaSonuCarpani.value) || 1,
+        doviz_kuru: parseFloat(dovizKuru.value) || null
+      };
+
+      const payload = {
+        sozlesme: sozlesmeData,
+        hizmetler: hizmetlerData,
+        gun_carpan_parametreleri: filteredGunCarpanParams,
+        ek_hizmet_parametreleri: {
+          mesaiSaatUcretleri: mesaiSaatUcretleriParam
+        }
+      };
+
+      console.log("Submitting payload:", JSON.stringify(payload, null, 2));
+
       const url = editId ? `${baseUrl}/api/sozlesmeler/${editId}` : `${baseUrl}/api/sozlesmeler`;
       const method = editId ? "PUT" : "POST";
+      
       const resp = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-      if (!resp.ok) throw new Error(`Sunucu hatası: ${resp.status}`);
+      
+      if (!resp.ok) {
+        const errorData = await resp.json();
+        throw new Error(`Sunucu hatası: ${resp.status} - ${errorData.error || errorData.details || "Unknown error"}`);
+      }
+      
       const result = await resp.json();
       if (result.success) {
         alert(editId ? "Sözleşme başarıyla güncellendi!" : "Sözleşme kaydı başarılı!");
@@ -706,6 +745,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         throw new Error(`Sözleşme verisi alınamadı: ${resp.status}`);
       }
       const contract = await resp.json();
+      console.log("Loaded contract data:", contract);
       fillForm(contract);
     } catch (err) {
       console.error("Sözleşme verisi yüklenirken hata:", err);
@@ -732,17 +772,29 @@ document.addEventListener("DOMContentLoaded", async function () {
     haftaSonuCarpani.value = contract.hafta_sonu_carpani || 1;
     dovizKuru.value        = contract.doviz_kuru || "";
 
+    // Trigger the select2 update
+    try {
+      $(companyName).trigger('change');
+      $(paraBirimiSelect).trigger('change');  
+    } catch (e) {
+      console.warn('Select2 trigger failed:', e);
+    }
+
     // Gün Çarpanı Parametreleri
     if (contract.gun_carpan_parametreleri && Array.isArray(contract.gun_carpan_parametreleri)) {
+      console.log("Loading gun_carpan_parametreleri:", contract.gun_carpan_parametreleri);
+      
+      // Make sure we're working with a clean deep copy
       gunCarpanParametreleri = contract.gun_carpan_parametreleri.map(gc => ({
-        startDay:   gc.startDay || "",
-        endDay:     gc.endDay || "",
-        baseFee:    gc.baseFee || 0,
-        perKgRate:  gc.perKgRate || 0,
-        cargoType:  gc.cargoType || "Genel Kargo",
-        paraBirimi: gc.paraBirimi || paraBirimiSelect.value || ""
+        startDay: gc.startDay || "",
+        endDay: gc.endDay || null,
+        baseFee: parseFloat(gc.baseFee) || 0,
+        perKgRate: parseFloat(gc.perKgRate) || 0,
+        cargoType: gc.cargoType || "Genel Kargo",
+        paraBirimi: gc.paraBirimi || contract.para_birimi || ""
       }));
     } else {
+      console.warn("No gun_carpan_parametreleri found in contract data");
       gunCarpanParametreleri = [];
     }
     refreshGunCarpanTable();
@@ -769,12 +821,11 @@ document.addEventListener("DOMContentLoaded", async function () {
       mesaiSaatUcretleriParam = contract.ek_hizmet_parametreleri.mesaiSaatUcretleri.map(item => ({
         zamanDilimi: item.zamanDilimi || "",
         ucretSaat:   parseFloat(item.ucretSaat) || 0,
-        paraBirimi:  item.paraBirimi || paraBirimiSelect.value || ""
+        paraBirimi:  item.paraBirimi || contract.para_birimi || ""
       }));
     } else {
       mesaiSaatUcretleriParam = [];
     }
-    // Eğer mesai modal otomatik açılıyorsa refreshMesaiSaatTable(); çağrılabilir.
   }
 
   /* ========== SAYFA YÜKLENİRKEN ========== */

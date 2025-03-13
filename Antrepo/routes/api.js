@@ -316,6 +316,8 @@ router.get('/sozlesmeler', async (req, res) => {
 router.get('/sozlesmeler/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`Fetching contract details for ID: ${id}`);
+    
     // 1) Sözleşme ana kaydını al
     const [contractRows] = await db.query('SELECT * FROM sozlesmeler WHERE id = ?', [id]);
     if (contractRows.length === 0) {
@@ -343,6 +345,7 @@ router.get('/sozlesmeler/:id', async (req, res) => {
     // 3) gun_carpan_parametreleri tablosundan bu sözleşmeye ait gün çarpanı parametrelerini al
     const [gunCarpanRows] = await db.query(`
       SELECT 
+        id,
         start_day AS startDay,
         end_day AS endDay,
         base_fee AS baseFee,
@@ -351,10 +354,11 @@ router.get('/sozlesmeler/:id', async (req, res) => {
         para_birimi AS paraBirimi
       FROM gun_carpan_parametreleri
       WHERE sozlesme_id = ?
+      ORDER BY start_day ASC
     `, [id]);
+    
+    console.log(`Retrieved ${gunCarpanRows.length} gun_carpan_parametreleri records`);
     contract.gun_carpan_parametreleri = gunCarpanRows;
-
-    // Eğer başka parametreler (ör. mesai saat ücretleri) da varsa, onlar da eklenebilir
 
     res.json(contract);
   } catch (error) {
@@ -1861,6 +1865,8 @@ router.put('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => 
 // ============== 2) SÖZLEŞME GÜNCELLEME (PUT) ==============
 router.put('/sozlesmeler/:id', async (req, res) => {
   const { id } = req.params;
+  console.log(`Updating contract ${id} with data:`, JSON.stringify(req.body, null, 2));
+  
   // Payload'da sözleşme, hizmetler ve gun_carpan_parametreleri ayrı gönderiliyor.
   const { sozlesme, hizmetler, gun_carpan_parametreleri, ek_hizmet_parametreleri } = req.body;
 
@@ -1876,7 +1882,7 @@ router.put('/sozlesmeler/:id', async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    // 1) Sözleşme ana kaydını güncelle (gun_carpan_parametreleri ve ek_hizmet_parametreleri JSON sütunu kullanmıyoruz)
+    // 1) Sözleşme ana kaydını güncelle
     const sqlSozlesme = `
       UPDATE sozlesmeler
       SET
@@ -1931,43 +1937,56 @@ router.put('/sozlesmeler/:id', async (req, res) => {
           id,
           h.hizmet_tipi,
           h.birim || '',
-          h.temel_ucret || 0,
-          h.carpan || 0,
-          h.min_ucret || 0
+          parseFloat(h.temel_ucret) || 0,
+          parseFloat(h.carpan) || 0,
+          parseFloat(h.min_ucret) || 0
         ];
         await conn.query(sqlHizmet, valsHizmet);
       }
     }
 
     // 3) Gün Çarpanı Parametreleri işlemleri:
-    // Öncelikle, gun_carpan_parametreleri tablosunda bu sözleşmeye ait mevcut kayıtları silin
+    console.log('Received gun_carpan_parametreleri:', JSON.stringify(gun_carpan_parametreleri, null, 2));
+    
+    // Öncelikle, gun_carpan_parametreleri tablosunda bu sözleşmeye ait mevcut kayıtları sil
     await conn.query('DELETE FROM gun_carpan_parametreleri WHERE sozlesme_id = ?', [id]);
+    
     if (Array.isArray(gun_carpan_parametreleri) && gun_carpan_parametreleri.length > 0) {
       for (const gc of gun_carpan_parametreleri) {
+        if (!gc.startDay) {
+          console.warn('Skipping invalid gun_carpan_parametresi (missing startDay):', gc);
+          continue;
+        }
+        
         const sqlGunCarpan = `
           INSERT INTO gun_carpan_parametreleri 
             (sozlesme_id, start_day, end_day, base_fee, per_kg_rate, cargo_type, para_birimi, created_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
         `;
+        
         const valsGunCarpan = [
           id,
           gc.startDay,
           gc.endDay || null,
-          gc.baseFee,
-          gc.perKgRate,
+          parseFloat(gc.baseFee) || 0,
+          parseFloat(gc.perKgRate) || 0,
           gc.cargoType || "Genel Kargo",
-          gc.paraBirimi || "USD"
+          gc.paraBirimi || sozlesme.para_birimi || "USD"
         ];
-        await conn.query(sqlGunCarpan, valsGunCarpan);
+        
+        try {
+          await conn.query(sqlGunCarpan, valsGunCarpan);
+          console.log(`Added gün çarpan parametresi with startDay: ${gc.startDay}, endDay: ${gc.endDay}`);
+        } catch (err) {
+          console.error('Failed to insert gun_carpan_parametresi:', err.message);
+          // Continue with other parameters rather than failing completely
+        }
       }
     } else {
-      // Eğer gun_carpan_parametreleri boş ise, isteğe bağlı olarak hata dönebilirsiniz:
-      // return res.status(400).json({ error: "Gün Çarpanı Parametreleri doldurulmalıdır!" });
+      console.log('No gün çarpan parametreleri provided or empty array');
     }
 
     // 4) Ek Hizmet Parametreleri:
-    // Eğer ek hizmet parametreleri için ayrı bir tablo yoksa, bu alanı JSON olarak saklayabilirsiniz.
-    // Aksi halde, benzer şekilde DELETE-INSERT yapabilirsiniz. Bu örnekte JSON olarak saklıyoruz.
     const ekHizmetJSON = ek_hizmet_parametreleri
       ? JSON.stringify(ek_hizmet_parametreleri)
       : null;
@@ -1975,11 +1994,16 @@ router.put('/sozlesmeler/:id', async (req, res) => {
 
     await conn.commit();
     conn.release();
+    console.log(`Contract ${id} updated successfully`);
     res.json({ success: true });
   } catch (error) {
     await conn.rollback();
     conn.release();
-    res.status(500).json({ error: error.message });
+    console.error('Error updating contract:', error);
+    res.status(500).json({ 
+      error: error.message,
+      details: "Sözleşme güncellenirken bir hata oluştu."
+    });
   }
 });
 
