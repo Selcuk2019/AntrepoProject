@@ -66,60 +66,64 @@
       <div class="page-header">
         <h1>Yeni Ürün ve Varyant Ekle</h1>
       </div>
-
-      <div class="form-container">
-        <form id="productForm" novalidate>
-          <!-- Ürün Bilgileri Bölümü -->
-          <div class="form-section">
-            <h2>Ürün Bilgileri</h2>
-            <div class="form-group">
-              <label for="productName">Ürün Adı <span class="required">*</span></label>
-              <input type="text" id="productName" name="productName" required>
+      <div class="page-content">
+        <div class="form-container">
+          <form id="productForm" novalidate>
+            <!-- Ürün Bilgileri Bölümü -->
+            <div class="form-section">
+              <h2>Ürün Bilgileri</h2>
+              <div class="form-group">
+                <label for="productName">Ürün Adı <span class="required">*</span></label>
+                <input type="text" id="productName" name="productName" required />
+              </div>
+              <div class="form-group">
+                <label for="productCode">Ürün Kodu <span class="required">*</span></label>
+                <input type="text" id="productCode" name="productCode" required />
+              </div>
+              <div class="form-group">
+                <label for="description">Açıklama</label>
+                <textarea id="description" name="description"></textarea>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="productCode">Ürün Kodu <span class="required">*</span></label>
-              <input type="text" id="productCode" name="productCode" required>
+  
+            <!-- Varyant Bilgileri Bölümü -->
+            <div class="form-section">
+              <h2>Varyant Bilgileri</h2>
+              <div class="info-text">
+                <i class="fas fa-info-circle"></i>
+                Bu bilgiler ürünün ilk varyantı olarak kaydedilecektir.
+              </div>
+              <div class="form-group">
+                <label for="bagSize">Paket Hacmi (kg)</label>
+                <input type="number" step="0.01" id="bagSize" name="bagSize" />
+              </div>
+              <div class="form-group">
+                <label for="packagingType">Paketleme Tipi</label>
+                <select id="packagingType" name="packagingType"></select>
+              </div>
             </div>
-            <div class="form-group">
-              <label for="description">Açıklama</label>
-              <textarea id="description" name="description"></textarea>
+  
+            <div class="form-actions">
+              <button type="button" class="form-button btn-cancel" onclick="history.back()">İptal</button>
+              <button type="submit" class="form-button btn-save">Kaydet</button>
             </div>
-          </div>
-
-          <!-- Varyant Bilgileri Bölümü -->
-          <div class="form-section">
-            <h2>Varyant Bilgileri</h2>
-            <div class="info-text">
-              <i class="fas fa-info-circle"></i>
-              Bu bilgiler ürünün ilk varyantı olarak kaydedilecektir.
-            </div>
-            <div class="form-group">
-              <label for="bagSize">Paket Hacmi (kg)</label>
-              <input type="number" step="0.01" id="bagSize" name="bagSize">
-            </div>
-            <div class="form-group">
-              <label for="packagingType">Paketleme Tipi</label>
-              <select id="packagingType" name="packagingType"></select>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button type="button" class="form-button btn-cancel" onclick="history.back()">İptal</button>
-            <button type="submit" class="form-button btn-save">Kaydet</button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
     </div>
-  </div>
-  <!-- Scriptlerin sıralaması önemli - En alta alıyoruz -->
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <!-- Select2 CSS ve JS -->
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
   
-  <!-- Önce template.js -->
-  <script src="../js/template.js"></script>
-  <!-- En son bizim JS -->
-  <script type="module" src="../js/product-form.js"></script>
-</body>
-</html>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 CSS ve JS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+  
+    <!-- Şablon CSS/JS (varsayılan) -->
+    <script src="../js/template.js"></script>
+    <!-- Bizim product-form.js kodumuz (module tipinde) -->
+    <script type="module" src="../js/product-form.js"></script>
+  </body>
+  </html>

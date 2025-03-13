@@ -76,8 +76,6 @@ router.get('/companies', async (req, res) => {
 // routes/api.js içinde
 router.get('/antrepolar', async (req, res) => {
   try {
-    // Debug log ekleyelim
-    console.log('GET /antrepolar endpoint çalıştı');
     
     const sql = `
       SELECT 
@@ -101,13 +99,13 @@ router.get('/antrepolar', async (req, res) => {
       ORDER BY a.id DESC
     `;
 
-    // Debug için SQL'i yazdıralım
-    console.log('SQL Query:', sql);
+    
+    
 
     const [rows] = await db.query(sql);
     
-    // Debug için sonuçları yazdıralım
-    console.log('Query Results:', rows);
+   
+    
     
     res.json(rows);
   } catch (error) {
@@ -430,35 +428,44 @@ router.get('/urunler/:id', async (req, res) => {
 router.get('/antrepo-giris', async (req, res) => {
   try {
     const sql = `
-      SELECT 
-         ag.id,
-         ag.beyanname_no,
-         ag.beyanname_form_tarihi,
-         IFNULL(a.antrepoAdi, '') AS antrepo_adi,  -- antrepo_id yerine antrepoAdi
-         ag.antrepo_sirket_adi,
-         ag.gumruk,
-         ag.gonderici_sirket,
-         ag.alici_sirket,
-         ag.urun_tanimi,
-         ag.miktar,
-         ag.kap_adeti,
-         ag.antrepo_giris_tarihi,
-         ag.proforma_no,
-         ag.ticari_fatura_no,
-         ag.depolama_suresi,
-         -- Diğer tüm sütunlar da eklensin, böylece "sütun ekle" için kullanılabilir:
-         ag.urun_kodu,
-         ag.paket_boyutu,
-         ag.paketleme_tipi,
-         ag.brut_agirlik,
-         ag.net_agirlik,
-         ag.proforma_tarihi,
-         ag.ticari_fatura_tarihi,
-         ag.fatura_meblagi,
-         ag.urun_birim_fiyat,
-         ag.para_birimi,
-         ag.created_at,
-         ag.updated_at
+      SELECT
+        ag.id,
+        ag.beyanname_no,
+        ag.beyanname_form_tarihi,
+        a.antrepoAdi AS antrepo_adi,
+        ag.antrepo_id,
+        ag.antrepo_sirket_adi,
+        ag.antrepo_kodu,
+        ag.gumruk,
+        ag.adres,
+        ag.sehir,
+        ag.sozlesme_id,
+        ag.gonderici_sirket,
+        ag.alici_sirket,
+        ag.urun_tanimi,
+        ag.urun_kodu,
+        ag.paket_boyutu,
+        ag.paketleme_tipi,  -- Artık ID yerine bu metin sütununu alıyoruz
+        ag.paket_hacmi,
+        ag.miktar,
+        ag.kap_adeti,
+        ag.birim_id,
+        ag.brut_agirlik,
+        ag.net_agirlik,
+        ag.antrepo_giris_tarihi,
+        ag.proforma_no,
+        ag.proforma_tarihi,
+        ag.ticari_fatura_no,
+        ag.ticari_fatura_tarihi,
+        ag.fatura_meblagi,
+        ag.urun_birim_fiyat,
+        ag.para_birimi,
+        ag.depolama_suresi,
+        ag.fatura_aciklama,
+        ag.urun_varyant_id,
+        ag.description,
+        ag.created_at,
+        ag.updated_at
       FROM antrepo_giris ag
       LEFT JOIN antrepolar a ON ag.antrepo_id = a.id
       ORDER BY ag.id DESC
@@ -471,156 +478,65 @@ router.get('/antrepo-giris', async (req, res) => {
   }
 });
 
+
+
+
 // GET /api/antrepo-giris/:id - Belirli bir antrepo giriş kaydını getirir
 router.get('/antrepo-giris/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const sql = `
-      SELECT 
-         ag.id,
-         ag.beyanname_no,
-         ag.beyanname_form_tarihi,
-         IFNULL(a.antrepoAdi, '') AS antrepo_adi,
-         ag.antrepo_sirket_adi,
-         ag.gumruk,
-         ag.gonderici_sirket,
-         ag.alici_sirket,
-         ag.urun_tanimi,
-         ag.miktar,
-         ag.kap_adeti,
-         ag.antrepo_giris_tarihi,
-         ag.proforma_no,
-         ag.ticari_fatura_no,
-         ag.depolama_suresi,
-         ag.antrepo_kodu,
-         ag.urun_kodu,
-         ag.paket_boyutu,
-         ag.paketleme_tipi,
-         ag.brut_agirlik,
-         ag.net_agirlik,
-         ag.proforma_tarihi,
-         ag.ticari_fatura_tarihi,
-         ag.fatura_meblagi,
-         ag.urun_birim_fiyat,
-         ag.para_birimi,
-         ag.adres,
-         ag.sehir,
-         ag.sozlesme_id,
-         ag.fatura_aciklama,
-         ag.created_at,
-         ag.updated_at
+      SELECT
+        ag.id,
+        ag.beyanname_no,
+        ag.beyanname_form_tarihi,
+        a.antrepoAdi AS antrepo_adi,
+        ag.antrepo_id,
+        ag.antrepo_sirket_adi,
+        ag.antrepo_kodu,
+        ag.gumruk,
+        ag.adres,
+        ag.sehir,
+        ag.sozlesme_id,
+        ag.gonderici_sirket,
+        ag.alici_sirket,
+        ag.urun_tanimi,
+        ag.urun_kodu,
+        ag.paket_boyutu,
+        ag.paketleme_tipi,   -- Varyantın paketleme tipi metni (description olarak kullanılacak)
+        ag.paket_hacmi,
+        ag.miktar,
+        ag.kap_adeti,
+        ag.birim_id,
+        ag.brut_agirlik,
+        ag.net_agirlik,
+        ag.antrepo_giris_tarihi,
+        ag.proforma_no,
+        ag.proforma_tarihi,
+        ag.ticari_fatura_no,
+        ag.ticari_fatura_tarihi,
+        ag.fatura_meblagi,
+        ag.urun_birim_fiyat,
+        ag.para_birimi,
+        ag.depolama_suresi,
+        ag.fatura_aciklama,
+        ag.urun_varyant_id,
+        ag.description,       -- Ek açıklama (varsa)
+        uv.description AS varyant_description,
+        ag.created_at,
+        ag.updated_at
       FROM antrepo_giris ag
       LEFT JOIN antrepolar a ON ag.antrepo_id = a.id
+      LEFT JOIN urun_varyantlari uv ON ag.urun_varyant_id = uv.id
       WHERE ag.id = ?
     `;
     const [rows] = await db.query(sql, [id]);
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Kayıt bulunamadı' });
-    }
-    res.json(rows[0]);
-  } catch (error) {
-    console.error("GET /api/antrepo-giris/:id hatası:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.get('/antrepo-giris/:girisId/hareketler', async (req, res) => {
-  try {
-    const girisId = req.params.girisId;
-    const sql = `
-      SELECT 
-      h.id,
-      h.antrepo_giris_id,
-      DATE_FORMAT(h.islem_tarihi, '%Y-%m-%d') AS islem_tarihi, -- Format as YYYY-MM-DD
-      h.islem_tipi,
-      h.miktar,
-      h.kap_adeti,
-      h.brut_agirlik,
-      h.net_agirlik,
-      h.birim_id,
-      b.birim_adi,
-      h.aciklama
-      FROM antrepo_hareketleri h
-      LEFT JOIN birimler b ON h.birim_id = b.id
-      WHERE h.antrepo_giris_id = ?
-      ORDER BY h.islem_tarihi DESC
-    `;
-    const [rows] = await db.query(sql, [girisId]);
     res.json(rows);
   } catch (error) {
-    console.error("GET /api/antrepo-giris/:girisId/hareketler hatası:", error);
+    console.error("GET /antrepo-giris/:id hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
-
-
-
-// routes/api.js
-
-router.get('/sozlesmeler/:id/parametreler', async (req, res) => {
-  try {
-    const { id } = req.params;
-    // Sözleşme bilgilerini çekelim
-    const contractSql = `
-      SELECT 
-        id, sozlesme_sirket_id, sozlesme_kodu, sozlesme_adi, baslangic_tarihi, bitis_tarihi,
-        fatura_periyodu, min_fatura, para_birimi, giris_gunu_kural, kismi_gun_yontemi,
-        hafta_sonu_carpani, kdv_orani, doviz_kuru
-      FROM sozlesmeler
-      WHERE id = ?
-    `;
-    const [contractRows] = await db.query(contractSql, [id]);
-    if (!contractRows || contractRows.length === 0) {
-      return res.status(404).json({ error: "Sözleşme bulunamadı." });
-    }
-    const contract = contractRows[0];
-
-    // Sözleşmeye bağlı hizmet kalemlerini çekelim
-    const serviceSql = `
-      SELECT 
-        id, sozlesme_id, hizmet_tipi, oran, birim, min_ucret, temel_ucret, carpan
-      FROM sozlesme_hizmetler
-      WHERE sozlesme_id = ?
-    `;
-    const [serviceRows] = await db.query(serviceSql, [id]);
-
-    res.json({ contract, services: serviceRows });
-  } catch (error) {
-    console.error("GET /sozlesmeler/:id/parametreler hatası:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.get('/stock-card/:productId', async (req, res) => {
-  try {
-    const { productId } = req.params;
-    // Ürün kodunu alalım
-    const productSql = 'SELECT code FROM urunler WHERE id = ?';
-    const [productRows] = await db.query(productSql, [productId]);
-    if (!productRows || productRows.length === 0) {
-      return res.status(404).json({ error: 'Ürün bulunamadı.' });
-    }
-    const productCode = productRows[0].code;
-  
-    // Stok hesaplaması: antrepo_hareketleri tablosundaki giriş/çıkış hareketlerini toplayalım
-    const sql = `
-      SELECT 
-        SUM(CASE WHEN islem_tipi = 'Giriş' THEN miktar ELSE -miktar END) AS currentStock
-      FROM antrepo_hareketleri
-      WHERE antrepo_giris_id IN (
-         SELECT id FROM antrepo_giris WHERE urun_kodu = ?
-      )
-    `;
-    const [rows] = await db.query(sql, [productCode]);
-    const currentStock = rows[0].currentStock || 0;
-    res.json({ currentStock });
-  } catch (error) {
-    console.error("GET /stock-card/:productId hatası:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-
 
 router.get('/maliyet-analizi', async (req, res) => {
   try {
@@ -1316,78 +1232,86 @@ router.post('/sozlesmeler', async (req, res) => {
 });
 
 // routes/api.js (içinde) - POST /api/antrepo-giris
-// routes/api.js (örnek)
-// Antrepo giriş POST route
 router.post('/antrepo-giris', async (req, res) => {
   try {
     const payload = req.body;
 
-    // Burada tablo alanları ile payload eşleşmesi yapalım
-    // Soru işareti sayısı -> param sayısı
+    // Aşağıdaki sıralama tablo yapınıza bire bir uyuyor.
+    // (paketleme_tipi_id sütunu yok varsayımıyla.)
+
     const sql = `
-      INSERT INTO antrepo_giris(
-        beyanname_form_tarihi,
-        beyanname_no,
-        antrepo_sirket_adi,
-        sozlesme_id,
-        gumruk,
-        antrepo_id,
-        antrepo_kodu,
-        adres,
-        sehir,
-        urun_tanimi,
-        urun_kodu,
-        paket_boyutu,
-        paketleme_tipi,
-        miktar,
-        kap_adeti,
-        brut_agirlik,
-        net_agirlik,
-        antrepo_giris_tarihi,
-        gonderici_sirket,
-        alici_sirket,
-        proforma_no,
-        proforma_tarihi,
-        ticari_fatura_no,
-        ticari_fatura_tarihi,
-        depolama_suresi,
-        fatura_meblagi,
-        urun_birim_fiyat,
-        para_birimi,
-        fatura_aciklama
-      ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      INSERT INTO antrepo_giris (
+        beyanname_no,             -- 2
+        beyanname_form_tarihi,    -- 3
+        antrepo_id,               -- 4
+        antrepo_sirket_adi,       -- 5
+        antrepo_kodu,             -- 6
+        gumruk,                   -- 7
+        adres,                    -- 8
+        sehir,                    -- 9
+        sozlesme_id,              -- 10
+        gonderici_sirket,         -- 11
+        alici_sirket,             -- 12
+        urun_tanimi,              -- 13
+        urun_kodu,                -- 14
+        paket_boyutu,             -- 15
+        paketleme_tipi,           -- 16 (Örn. "IBC-Plastic (Bulk)")
+        paket_hacmi,              -- 17
+        miktar,                   -- 18
+        kap_adeti,                -- 19
+        birim_id,                 -- 20
+        brut_agirlik,             -- 21
+        net_agirlik,              -- 22
+        antrepo_giris_tarihi,     -- 23
+        proforma_no,              -- 24
+        proforma_tarihi,          -- 25
+        ticari_fatura_no,         -- 26
+        ticari_fatura_tarihi,     -- 27
+        fatura_meblagi,           -- 28
+        urun_birim_fiyat,         -- 29
+        para_birimi,              -- 30
+        depolama_suresi,          -- 31
+        fatura_aciklama,          -- 32
+        urun_varyant_id,          -- 35
+        description               -- 36
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
+    // 33 adet parametre
     const params = [
-      payload.beyanname_form_tarihi || null,
-      payload.beyanname_no || null,
-      payload.antrepo_sirket_adi || null,
-      payload.sozlesme_id || null,
-      payload.gumruk || null,
-      payload.antrepo_id || null, // tablo tipiniz int/bigint uyumlu olmalı
-      payload.antrepo_kodu || null,
-      payload.adres || null,
-      payload.sehir || null,
-      payload.urun_tanimi || null,
-      payload.urun_kodu || null,
-      payload.paket_boyutu || null,
-      payload.paketleme_tipi || null,
-      payload.miktar || null,
-      payload.kap_adeti || null,
-      payload.brut_agirlik || null,
-      payload.net_agirlik || null,
-      payload.antrepo_giris_tarihi || null,
-      payload.gonderici_sirket || null,
-      payload.alici_sirket || null,
-      payload.proforma_no || null,
-      payload.proforma_tarihi || null,
-      payload.ticari_fatura_no || null,
-      payload.ticari_fatura_tarihi || null,
-      payload.depolama_suresi || null,
-      payload.fatura_meblagi || null,
-      payload.urun_birim_fiyat || null,
-      payload.para_birimi || null,
-      payload.fatura_aciklama || null
+      payload.beyanname_no || null,            // 2
+      payload.beyanname_form_tarihi || null,   // 3
+      payload.antrepo_id || null,              // 4
+      payload.antrepo_sirket_adi || null,      // 5
+      payload.antrepo_kodu || null,            // 6
+      payload.gumruk || null,                  // 7
+      payload.adres || null,                   // 8
+      payload.sehir || null,                   // 9
+      payload.sozlesme_id || null,             // 10
+      payload.gonderici_sirket || null,        // 11
+      payload.alici_sirket || null,            // 12
+      payload.urun_tanimi || null,             // 13
+      payload.urun_kodu || null,               // 14
+      payload.paket_boyutu || null,            // 15
+      payload.paketleme_tipi || null,          // 16
+      payload.paket_hacmi || null,             // 17
+      payload.miktar || null,                  // 18
+      payload.kap_adeti || null,               // 19
+      payload.birim_id || null,                // 20
+      payload.brut_agirlik || null,            // 21
+      payload.net_agirlik || null,             // 22
+      payload.antrepo_giris_tarihi || null,    // 23
+      payload.proforma_no || null,             // 24
+      payload.proforma_tarihi || null,         // 25
+      payload.ticari_fatura_no || null,        // 26
+      payload.ticari_fatura_tarihi || null,    // 27
+      payload.fatura_meblagi || null,          // 28
+      payload.urun_birim_fiyat || null,        // 29
+      payload.para_birimi || null,             // 30
+      payload.depolama_suresi || null,         // 31
+      payload.fatura_aciklama || null,         // 32
+      payload.urun_varyant_id || null,         // 35
+      payload.description || null              // 36
     ];
 
     const [result] = await db.query(sql, params);
@@ -1399,10 +1323,9 @@ router.post('/antrepo-giris', async (req, res) => {
     });
   } catch (error) {
     console.error("POST /api/antrepo-giris hatası:", error);
-    res.status(500).json({ error: "Sunucu hatası: " + error.message });
+    res.status(500).json({ error: error.message });
   }
 });
-
 
 
 // POST /api/customs - Yeni gümrük ekleme
@@ -1437,19 +1360,32 @@ router.post('/customs', async (req, res) => {
 router.post('/antrepo-giris/:girisId/hareketler', async (req, res) => {
   try {
     const girisId = req.params.girisId;
-    const { islem_tarihi, islem_tipi, miktar, kap_adeti, brut_agirlik, net_agirlik, birim_id, aciklama } = req.body;
+    const { 
+      islem_tarihi, 
+      islem_tipi, 
+      miktar, 
+      kap_adeti, 
+      brut_agirlik, 
+      net_agirlik, 
+      birim_id, 
+      paketleme_tipi_id, 
+      paket_hacmi,       
+      aciklama,
+      description  // Yeni: description alanı
+    } = req.body;
     
-    // Basit zorunlu alan kontrolü
+    // Zorunlu alan kontrolü
     if (!islem_tarihi || !miktar) {
       return res.status(400).json({ error: "Zorunlu alanlar eksik" });
     }
     
     const sql = `
       INSERT INTO antrepo_hareketleri
-      (antrepo_giris_id, islem_tarihi, islem_tipi, miktar, kap_adeti, brut_agirlik, net_agirlik, birim_id, aciklama)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (antrepo_giris_id, islem_tarihi, islem_tipi, miktar, kap_adeti, brut_agirlik, net_agirlik, birim_id, paketleme_tipi_id, paket_hacmi, aciklama, description)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    const [result] = await db.query(sql, [
+    
+    const params = [
       girisId, 
       islem_tarihi, 
       islem_tipi, 
@@ -1458,14 +1394,56 @@ router.post('/antrepo-giris/:girisId/hareketler', async (req, res) => {
       brut_agirlik || 0, 
       net_agirlik || 0, 
       birim_id || 1, 
-      aciklama || ""
-    ]);
+      paketleme_tipi_id || null, 
+      paket_hacmi || null,       
+      aciklama || "",
+      description || ""
+    ];
+    
+    const [result] = await db.query(sql, params);
     res.json({ success: true, insertedId: result.insertId });
   } catch (error) {
-    console.error("POST /api/antrepo-giris/:girisId/hareketler hatası:", error);
+    console.error("POST /antrepo-giris/:girisId/hareketler hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
+
+
+router.get('/antrepo-giris/:girisId/hareketler', async (req, res) => {
+  try {
+    const { girisId } = req.params;
+    const sql = `
+      SELECT
+        id,
+        antrepo_giris_id,
+        islem_tarihi,
+        islem_tipi,
+        miktar,
+        birim_id,
+        paketleme_tipi_id,
+        paket_hacmi,
+        aciklama,
+        description,
+        created_at,
+        updated_at,
+        kap_adeti,
+        brut_agirlik,
+        net_agirlik,
+        urun_varyant_id
+      FROM antrepo_hareketleri
+      WHERE antrepo_giris_id = ?
+      ORDER BY islem_tarihi DESC, created_at DESC
+    `;
+    const [rows] = await db.query(sql, [girisId]);
+    res.json(rows);
+  } catch (error) {
+    console.error("GET /antrepo-giris/:girisId/hareketler hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 
 
 
@@ -1611,36 +1589,39 @@ router.post('/urun', async (req, res) => {
 });
 
 // POST /api/urun-varyantlari - Yeni varyant ekle
+// routes/api.js (örnek)
+
 router.post('/urun-varyantlari', async (req, res) => {
   try {
-    const { urun_id, paket_hacmi, paketleme_tipi_id } = req.body;
-
-    // Validasyon
-    if (!urun_id || !paket_hacmi || !paketleme_tipi_id) {
+    const { urun_id, paket_hacmi, description } = req.body;
+    
+    // Validasyon: Tüm alanlar dolu olmalı
+    if (!urun_id || !paket_hacmi || !description) {
       return res.status(400).json({ 
-        error: "Tüm alanlar zorunludur: urun_id, paket_hacmi, paketleme_tipi_id" 
+        error: "Tüm alanlar zorunludur: urun_id, paket_hacmi, description" 
       });
     }
 
     const sql = `
       INSERT INTO urun_varyantlari 
-      (urun_id, paket_hacmi, paketleme_tipi_id) 
+      (urun_id, paket_hacmi, description) 
       VALUES (?, ?, ?)
     `;
     
-    const [result] = await db.query(sql, [urun_id, paket_hacmi, paketleme_tipi_id]);
+    const [result] = await db.query(sql, [urun_id, paket_hacmi, description]);
     
     res.json({ 
       success: true, 
       message: 'Varyant başarıyla eklendi',
       insertedId: result.insertId 
     });
-
   } catch (error) {
     console.error("Varyant ekleme hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 router.put('/api/sozlesme_hizmetler/:id', async (req, res) => {
   const { id } = req.params;
@@ -1672,110 +1653,124 @@ router.put('/antrepo-giris/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      beyanname_form_tarihi,
+      description,
       beyanname_no,
-      antrepo_sirket_adi,
-      sozlesme_id,
-      gumruk,
+      beyanname_form_tarihi,
       antrepo_id,
+      antrepo_sirket_adi,
       antrepo_kodu,
+      gumruk,
       adres,
       sehir,
-
+      sozlesme_id,
+      gonderici_sirket,
+      alici_sirket,
       urun_tanimi,
       urun_kodu,
+      paketleme_tipi_id,
       paket_boyutu,
       paketleme_tipi,
+      paket_hacmi,
       miktar,
       kap_adeti,
+      birim_id,
       brut_agirlik,
       net_agirlik,
       antrepo_giris_tarihi,
-
-      gonderici_sirket,
-      alici_sirket,
       proforma_no,
       proforma_tarihi,
       ticari_fatura_no,
       ticari_fatura_tarihi,
-      depolama_suresi,
       fatura_meblagi,
       urun_birim_fiyat,
       para_birimi,
-      fatura_aciklama
+      depolama_suresi,
+      fatura_aciklama,
+      urun_varyant_id
     } = req.body;
 
     const sql = `
       UPDATE antrepo_giris
       SET
-        beyanname_form_tarihi = ?,
         beyanname_no = ?,
-        antrepo_sirket_adi = ?,
-        sozlesme_id = ?,
-        gumruk = ?,
+        beyanname_form_tarihi = ?,
         antrepo_id = ?,
+        antrepo_sirket_adi = ?,
         antrepo_kodu = ?,
+        gumruk = ?,
         adres = ?,
         sehir = ?,
+        sozlesme_id = ?,
+        gonderici_sirket = ?,
+        alici_sirket = ?,
         urun_tanimi = ?,
         urun_kodu = ?,
+        paketleme_tipi_id = ?,
         paket_boyutu = ?,
         paketleme_tipi = ?,
+        paket_hacmi = ?,
         miktar = ?,
         kap_adeti = ?,
+        birim_id = ?,
         brut_agirlik = ?,
         net_agirlik = ?,
         antrepo_giris_tarihi = ?,
-        gonderici_sirket = ?,
-        alici_sirket = ?,
         proforma_no = ?,
         proforma_tarihi = ?,
         ticari_fatura_no = ?,
         ticari_fatura_tarihi = ?,
-        depolama_suresi = ?,
         fatura_meblagi = ?,
         urun_birim_fiyat = ?,
         para_birimi = ?,
+        depolama_suresi = ?,
         fatura_aciklama = ?,
+        urun_varyant_id = ?,
+        description = ?,
         updated_at = NOW()
       WHERE id = ?
     `;
-    const values = [
-      beyanname_form_tarihi || null,
+
+    const params = [
       beyanname_no || null,
-      antrepo_sirket_adi || null,
-      sozlesme_id || null,
-      gumruk || null,
+      beyanname_form_tarihi || null,
       antrepo_id || null,
+      antrepo_sirket_adi || null,
       antrepo_kodu || null,
+      gumruk || null,
       adres || null,
       sehir || null,
+      sozlesme_id || null,
+      gonderici_sirket || null,
+      alici_sirket || null,
       urun_tanimi || null,
       urun_kodu || null,
+      paketleme_tipi_id || null,
       paket_boyutu || null,
       paketleme_tipi || null,
+      paket_hacmi || null,
       miktar || null,
       kap_adeti || null,
+      birim_id || null,
       brut_agirlik || null,
       net_agirlik || null,
       antrepo_giris_tarihi || null,
-      gonderici_sirket || null,
-      alici_sirket || null,
       proforma_no || null,
       proforma_tarihi || null,
       ticari_fatura_no || null,
       ticari_fatura_tarihi || null,
-      depolama_suresi || null,
       fatura_meblagi || null,
       urun_birim_fiyat || null,
       para_birimi || null,
+      depolama_suresi || null,
       fatura_aciklama || null,
+      urun_varyant_id || null,
+      description || null,
       id
     ];
 
-    const [result] = await db.query(sql, values);
+    const [result] = await db.query(sql, params);
     if (result.affectedRows > 0) {
-      res.json({ success: true });
+      res.json({ success: true, message: 'Kayıt güncellendi.' });
     } else {
       res.status(404).json({ error: 'Kayıt bulunamadı.' });
     }
@@ -1788,20 +1783,23 @@ router.put('/antrepo-giris/:id', async (req, res) => {
 router.put('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => {
   try {
     const { girisId, hareketId } = req.params;
-    const {
-      islem_tarihi,
-      islem_tipi,
-      miktar,
+    const { 
+      islem_tarihi, 
+      islem_tipi, 
+      miktar, 
+      birim_id, 
+      paketleme_tipi_id,  
+      paket_hacmi,        
+      aciklama,
       kap_adeti,
       brut_agirlik,
       net_agirlik,
-      birim_id,
-      aciklama
+      urun_varyant_id,
+      description  // Yeni eklenen alan
     } = req.body;
 
-    // Zorunlu alan kontrolü
-    if (!islem_tarihi || !islem_tipi || !miktar) {
-      return res.status(400).json({ error: 'Zorunlu alanlar eksik.' });
+    if (!girisId || !hareketId || !islem_tarihi || !islem_tipi || !miktar) {
+      return res.status(400).json({ error: "Zorunlu alanlar eksik" });
     }
 
     const sql = `
@@ -1810,38 +1808,50 @@ router.put('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => 
         islem_tarihi = ?,
         islem_tipi = ?,
         miktar = ?,
+        birim_id = ?,
+        paketleme_tipi_id = ?,
+        paket_hacmi = ?,
+        aciklama = ?,
         kap_adeti = ?,
         brut_agirlik = ?,
         net_agirlik = ?,
-        birim_id = ?,
-        aciklama = ?,
+        urun_varyant_id = ?,
+        description = ?,
         updated_at = NOW()
       WHERE id = ? AND antrepo_giris_id = ?
     `;
-    const values = [
+
+    const params = [
       islem_tarihi,
       islem_tipi,
       miktar,
+      birim_id || null,
+      paketleme_tipi_id || null,
+      paket_hacmi || null,
+      aciklama || null,
       kap_adeti || 0,
-      brut_agirlik || 0,
-      net_agirlik || 0,
-      birim_id,
-      aciklama,
+      brut_agirlik || 0.00,
+      net_agirlik || 0.00,
+      urun_varyant_id || null,
+      description || null,
       hareketId,
       girisId
     ];
 
-    const [result] = await db.query(sql, values);
+    const [result] = await db.query(sql, params);
+
     if (result.affectedRows > 0) {
       res.json({ success: true });
     } else {
-      res.status(404).json({ error: 'Hareket bulunamadı.' });
+      res.status(404).json({ error: 'Hareket kaydı bulunamadı.' });
     }
   } catch (error) {
     console.error("PUT /antrepo-giris/:girisId/hareketler/:hareketId hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 
 // ============== 2) SÖZLEŞME GÜNCELLEME (PUT) ==============
@@ -2078,37 +2088,23 @@ router.put('/api/contracts/:id', async (req, res) => {
 
 
 
-router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => {
-  try {
-    const girisId = req.params.girisId;
-    const hareketId = req.params.hareketId;
-    const sql = `DELETE FROM antrepo_hareketleri WHERE id = ? AND antrepo_giris_id = ?`;
-    const [result] = await db.query(sql, [hareketId, girisId]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Hareket bulunamadı.' });
-    }
-    res.json({ success: true, message: 'Hareket kaydı silindi.' });
-  } catch (error) {
-    console.error("DELETE /:girisId/hareketler/:hareketId hatası:", error);
-    res.status (500).json({ error: error.message });
-  }
-});
-
-
-// DELETE /api/antrepo-giris/:id - Antrepo giriş kaydını sil
 router.delete('/antrepo-giris/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const [result] = await db.query('DELETE FROM antrepo_giris WHERE id = ?', [id]);
+    const sql = `DELETE FROM antrepo_giris WHERE id = ?`;
+    const [result] = await db.query(sql, [id]);
     if (result.affectedRows > 0) {
       res.json({ success: true });
     } else {
       res.status(404).json({ error: 'Kayıt bulunamadı.' });
     }
   } catch (error) {
+    console.error("DELETE /api/antrepo-giris/:id hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
+
 
 // DELETE /api/companies/:id
 router.delete('/companies/:id', async (req, res) => {
@@ -2230,258 +2226,6 @@ router.delete('/sozlesmeler/:id', async (req, res) => {
 });
 
 
-router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => {
-  try {
-    const { hareketId } = req.params;
-    const sql = 'DELETE FROM antrepo_hareketleri WHERE id = ?';
-    const [result] = await db.query(sql, [hareketId]);
-    if (result.affectedRows > 0) {
-      res.json({ success: true });
-    } else {
-      res.status(404).json({ error: 'Hareket bulunamadı.' });
-    }
-  } catch (error) {
-    console.error("DELETE /api/antrepo-giris/hareketler/:hareketId hatası:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.delete('/api/contracts/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [result] = await db.query('DELETE FROM sozlesmeler WHERE id = ?', [id]);
-    if (result.affectedRows > 0) {
-      res.json({ success: true });
-    } else {
-      res.status(404).json({ error: "Sözleşme bulunamadı" });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.delete('/api/sozlesme_hizmetler/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    const [result] = await db.query('DELETE FROM sozlesme_hizmetler WHERE id = ?', [id]);
-    if (result.affectedRows > 0) {
-      res.json({ success: true });
-    } else {
-      res.status(404).json({ error: "Sözleşme hizmet kalemi bulunamadı" });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// DELETE /api/antrepo-giris/:girisId/ek-hizmetler/:ekHizmetId
-router.delete('/antrepo-giris/:girisId/ek-hizmetler/:ekHizmetId', async (req, res) => {
-  try {
-    const { girisId, ekHizmetId } = req.params;
-    const sql = `
-      DELETE FROM antrepo_giris_hizmetler
-      WHERE id = ? AND antrepo_giris_id = ?
-    `;
-    const [result] = await db.query(sql, [ekHizmetId, girisId]);
-    if (result.affectedRows > 0) {
-      return res.json({ success: true });
-    } else {
-      return res.status(404).json({ error: "Kayıt bulunamadı" });
-    }
-  } catch (error) {
-    console.error("DELETE /api/antrepo-giris/:girisId/ek-hizmetler/:ekHizmetId hata:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-
-// GET /api/companies/:id - Tek bir şirketin detaylarını getir
-router.get('/companies/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const sql = `
-      SELECT *
-      FROM sirketler
-      WHERE sirket_id = ?
-    `;
-    const [rows] = await db.query(sql, [id]);
-    
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'Şirket bulunamadı' });
-    }
-
-    // API response formatı - address alanları direkt tablodaki kolonlardan alınıyor
-    const company = {
-      sirket_id: rows[0].sirket_id,
-      firstName: rows[0].first_name,
-      lastName: rows[0].last_name,
-      companyName: rows[0].company_name,
-      displayName: rows[0].display_name,
-      emailAddress: rows[0].email,
-      phoneNumber: rows[0].phone_number,
-      currency: rows[0].currency,
-      taxRate: rows[0].tax_rate,
-      taxNumber: rows[0].tax_number,
-      taxOffice: rows[0].tax_office,
-      paymentTerms: rows[0].payment_terms,
-      address: {
-        city_id: rows[0].address_city_id,
-        district: rows[0].address_district,
-        postalCode: rows[0].address_postal_code,
-        detail: rows[0].address_detail
-      }
-    };
-    
-    res.json(company);
-  } catch (error) {
-    console.error('GET /companies/:id error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// PUT /api/companies/:id - Şirket bilgilerini güncelle
-router.put('/companies/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      firstName, lastName, companyName, displayName, emailAddress, phoneNumber,
-      currency, taxRate, taxNumber, taxOffice, paymentTerms, address
-    } = req.body;
-
-    const sql = `
-      UPDATE sirketler 
-      SET 
-        first_name = ?,
-        last_name = ?,
-        company_name = ?,
-        display_name = ?,
-        phone_number = ?,
-        email = ?,
-        currency = ?,
-        tax_rate = ?,
-        tax_number = ?,
-        tax_office = ?,
-        payment_terms = ?,
-        address_city_id = ?,
-        address_district = ?,
-        address_postal_code = ?,
-        address_detail = ?,
-        updated_at = NOW()
-      WHERE sirket_id = ?
-    `;
-    
-    const values = [
-      firstName || null,
-      lastName || null,
-      companyName,
-      displayName,
-      phoneNumber,
-      emailAddress || null,
-      currency,
-      taxRate || null,
-      taxNumber || null,
-      taxOffice || null,
-      paymentTerms || null,
-      address.city_id,
-      address.district || null,
-      address.postalCode || null,
-      address.detail,
-      id
-    ];
-
-    const [result] = await db.query(sql, values);
-    
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Şirket bulunamadı' });
-    }
-    
-    res.json({ success: true });
-  } catch (error) {
-    console.error('PUT /companies/:id error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// GET /api/customs/:id - Tekil gümrük detayını getir
-router.get('/customs/:id', async (req, res) => {
-    try {
-        const gumrukId = req.params.id;
-        const sql = `
-            SELECT gumruk_id, gumruk_adi, sinif, sehir_ad, bolge_mudurlugu, notes
-            FROM gumrukler
-            WHERE gumruk_id = ?
-        `;
-        const [rows] = await db.query(sql, [gumrukId]);
-        
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Gümrük bulunamadı' });
-        }
-        
-        res.json(rows[0]);
-    } catch (error) {
-        console.error('GET /customs/:id error:', error);
-        res.status(500).json({ error: error.message });
-    }
-});
-
-// PUT /api/antrepolar/:id - Antrepo güncelleme endpoint'i
-router.put('/antrepolar/:id', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const {
-            antrepoAdi,
-            antrepoKodu,
-            antrepoTipi,
-            gumruk,
-            gumrukMudurlugu,
-            sehir,
-            acikAdres,
-            antrepoSirketi
-        } = req.body;
-
-        // Debug log
-        console.log('Update Request:', {
-            id,
-            body: req.body
-        });
-
-        const sql = `
-            UPDATE antrepolar 
-            SET 
-                antrepoAdi = ?,
-                antrepoKodu = ?,
-                antrepoTipi = ?,
-                gumruk = ?,
-                gumrukMudurlugu = ?,
-                sehir = ?,
-                acikAdres = ?,
-                antrepoSirketi = ?
-            WHERE id = ?
-        `;
-
-        const [result] = await db.query(sql, values);
-
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Antrepo bulunamadı'
-            });
-        }
-
-        res.json({
-            success: true,
-            message: 'Antrepo başarıyla güncellendi'
-        });
-
-    } catch (error) {
-        console.error('Antrepo Update Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Güncelleme sırasında hata oluştu',
-            error: error.message
-        });
-    }
-});
 
 router.delete('/api/contracts/:id', async (req, res) => {
   const { id } = req.params;
@@ -2502,63 +2246,179 @@ router.delete('/api/contracts/:id', async (req, res) => {
 router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) => {
   try {
     const { girisId, hareketId } = req.params;
-    
-    // Hareketin varlığını ve girişe ait olup olmadığını kontrol et
-    const [hareketRows] = await db.query(
-      'SELECT id FROM antrepo_hareketleri WHERE id = ? AND antrepo_giris_id = ?', 
-      [hareketId, girisId]
-    );
-    
-    if (hareketRows.length === 0) {
-      return res.status(404).json({ success: false, error: 'Hareket bulunamadı' });
+    const sql = `
+      DELETE FROM antrepo_hareketleri 
+      WHERE id = ? AND antrepo_giris_id = ?
+    `;
+    const [result] = await db.query(sql, [hareketId, girisId]);
+    if (result.affectedRows > 0) {
+      res.json({ success: true, message: 'Hareket kaydı silindi.' });
+    } else {
+      res.status(404).json({ error: 'Hareket kaydı bulunamadı.' });
     }
-    
-    // Varlığını kontrol ettikten sonra sil
-    await db.query('DELETE FROM antrepo_hareketleri WHERE id = ?', [hareketId]);
-    
-    res.json({ success: true, message: 'Hareket başarıyla silindi' });
   } catch (error) {
     console.error("DELETE /antrepo-giris/:girisId/hareketler/:hareketId hatası:", error);
-    res.status(500).json({ success: false, error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-// /api/urun_varyantlari
+
+router.get('/hareketler', async (req, res) => {
+  try {
+    const sql = `
+      SELECT
+        id,
+        antrepo_giris_id,
+        islem_tarihi,
+        islem_tipi,
+        miktar,
+        birim_id,
+        paketleme_tipi_id,
+        paket_hacmi,
+        aciklama,
+        created_at,
+        updated_at,
+        kap_adeti,
+        brut_agirlik,
+        net_agirlik,
+        urun_varyant_id
+      FROM antrepo_hareketleri
+      ORDER BY id DESC
+    `;
+    const [rows] = await db.query(sql);
+    res.json(rows);
+  } catch (error) {
+    console.error("GET /api/hareketler hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+router.get('/hareketler/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `
+      SELECT
+        id,
+        antrepo_giris_id,
+        islem_tarihi,
+        islem_tipi,
+        miktar,
+        birim_id,
+        paketleme_tipi_id,
+        paket_hacmi,
+        aciklama,
+        created_at,
+        updated_at,
+        kap_adeti,
+        brut_agirlik,
+        net_agirlik,
+        urun_varyant_id
+      FROM antrepo_hareketleri
+      WHERE id = ?
+    `;
+    const [rows] = await db.query(sql, [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Hareket kaydı bulunamadı.' });
+    }
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("GET /api/hareketler/:id hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
+// GET /api/urun_varyantlari
+// Artık bağımlılık kaldırıldı: 
+// - Paketleme tipi verisi için: ?urunId=... 
+// - Paket boyutu verisi için: ?urunId=...&getSizes=true
 router.get('/urun_varyantlari', async (req, res) => {
   try {
-    const { urunId, paketlemeTipiId } = req.query;
+    const { urunId, getSizes } = req.query;
     if (!urunId) {
-      return res.status(400).json({ error: 'urunId parametresi zorunlu' });
+      return res.status(400).json({ error: 'urunId parametresi gerekli.' });
     }
-
-    if (paketlemeTipiId) {
-      // Paket boyutlarını getir
+    if (getSizes && getSizes === 'true') {
+      // Bağımsız paket boyutu verilerini getir: ürün bazında tüm farklı paket_hacmi değerleri
       const sql = `
-        SELECT paket_hacmi 
+        SELECT DISTINCT paket_hacmi AS paket_boyutu
         FROM urun_varyantlari
-        WHERE urun_id = ? AND paketleme_tipi_id = ?
+        WHERE urun_id = ?
       `;
-      const [rows] = await db.query(sql, [urunId, paketlemeTipiId]);
+      const [rows] = await db.query(sql, [urunId]);
+      if (!rows.length) {
+        return res.status(404).json({ error: 'Paket boyutu varyantı bulunamadı.' });
+      }
       return res.json(rows);
-
     } else {
-      // Paketleme tiplerini getir
+      // Bağımsız paketleme tipi verilerini getir: ürün bazında tüm farklı paketleme_tipi_id ve isimleri
       const sql = `
-        SELECT uv.paketleme_tipi_id, pt.name AS paketleme_tipi_name
+        SELECT DISTINCT uv.paketleme_tipi_id, pt.name AS paketleme_tipi_name
         FROM urun_varyantlari uv
-        LEFT JOIN paketleme_tipleri pt ON uv.paketleme_tipi_id = pt.id
+        JOIN paketleme_tipleri pt ON pt.id = uv.paketleme_tipi_id
         WHERE uv.urun_id = ?
-        GROUP BY uv.paketleme_tipi_id
       `;
       const [rows] = await db.query(sql, [urunId]);
       return res.json(rows);
     }
-
   } catch (error) {
-    console.error('GET /urun_varyantlari hata:', error);
-    return res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
+
+
+// Bu endpoint, ilgili ürünün tüm farklı paket_hacmi (paket boyutu) değerlerini getirir.
+router.get('/urun_varyantlari/paket-boyutlari', async (req, res) => {
+  try {
+    const { urunId } = req.query;
+    if (!urunId) {
+      return res.status(400).json({ error: 'urunId parametresi gerekli.' });
+    }
+    const sql = `
+      SELECT DISTINCT paket_hacmi AS paket_boyutu
+      FROM urun_varyantlari
+      WHERE urun_id = ?
+      ORDER BY paket_hacmi
+    `;
+    const [rows] = await db.query(sql, [urunId]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Paket boyutu varyantı bulunamadı.' });
+    }
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+router.get('/urun_varyantlari/details', async (req, res) => {
+  try {
+    const { urunId } = req.query;
+    if (!urunId) {
+      return res.status(400).json({ error: 'urunId parametresi gerekli.' });
+    }
+    const sql = `
+      SELECT
+        uv.id,
+        uv.urun_id,
+        uv.paket_hacmi,
+        uv.description,
+        uv.olusturulma_tarihi,
+        uv.guncellenme_tarihi
+      FROM urun_varyantlari uv
+      WHERE uv.urun_id = ?
+    `;
+    const [rows] = await db.query(sql, [urunId]);
+    res.json(rows);
+  } catch (error) {
+    console.error('GET /api/urun_varyantlari/details hata:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 
 
 // GET /api/urun_varyantlari/:id - Tekil varyant getir
@@ -2591,6 +2451,79 @@ router.get('/urun_varyantlari/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.put('/hareketler/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      antrepo_giris_id,
+      islem_tarihi,
+      islem_tipi,
+      miktar,
+      birim_id,
+      paketleme_tipi_id,
+      paket_hacmi,
+      aciklama,
+      kap_adeti,
+      brut_agirlik,
+      net_agirlik,
+      urun_varyant_id
+    } = req.body;
+
+    if (!antrepo_giris_id || !islem_tarihi || !islem_tipi || !miktar) {
+      return res.status(400).json({ error: "Zorunlu alanlar eksik" });
+    }
+
+    const sql = `
+      UPDATE antrepo_hareketleri
+      SET
+        antrepo_giris_id = ?,
+        islem_tarihi = ?,
+        islem_tipi = ?,
+        miktar = ?,
+        birim_id = ?,
+        paketleme_tipi_id = ?,
+        paket_hacmi = ?,
+        aciklama = ?,
+        kap_adeti = ?,
+        brut_agirlik = ?,
+        net_agirlik = ?,
+        urun_varyant_id = ?,
+        updated_at = NOW()
+      WHERE id = ?
+    `;
+
+    const params = [
+      antrepo_giris_id,
+      islem_tarihi,
+      islem_tipi,
+      miktar,
+      birim_id || null,
+      paketleme_tipi_id || null,
+      paket_hacmi || null,
+      aciklama || null,
+      kap_adeti || 0,
+      brut_agirlik || 0.00,
+      net_agirlik || 0.00,
+      urun_varyant_id || null,
+      id
+    ];
+
+    const [result] = await db.query(sql, params);
+
+    if (result.affectedRows > 0) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Hareket kaydı bulunamadı.' });
+    }
+  } catch (error) {
+    console.error("PUT /api/hareketler/:id hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
 
 // PUT /api/urun_varyantlari/:id - Varyant güncelle  
 router.put('/urun_varyantlari/:id', async (req, res) => {
@@ -2737,30 +2670,52 @@ router.get('/stock-amounts/:urunKodu', async (req, res) => {
   }
 });
 
-// Varyant bulan endpoint - paketleme tipi ve paket boyutuna göre varyant ID'sini döndürür
+router.delete('/hareketler/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `DELETE FROM antrepo_hareketleri WHERE id = ?`;
+    const [result] = await db.query(sql, [id]);
+    if (result.affectedRows > 0) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: 'Hareket kaydı bulunamadı.' });
+    }
+  } catch (error) {
+    console.error("DELETE /api/hareketler/:id hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+
+// GET /api/find-variant?urunId=XX&paketlemeTipi=YY&paketBoyutu=ZZ
 router.get('/find-variant', async (req, res) => {
   try {
-    const { urunKodu, paketlemeTipiId, paketBoyutu } = req.query;
+    const { urunId, paketlemeTipi, paketBoyutu } = req.query;
     
-    if (!urunKodu || !paketlemeTipiId || !paketBoyutu) {
-      return res.status(400).json({ error: 'Tüm parametreler gereklidir' });
+    if (!urunId || !paketlemeTipi || !paketBoyutu) {
+      return res.status(400).json({ error: "Eksik parametre: urunId, paketlemeTipi ve paketBoyutu gereklidir" });
     }
     
+    // urun_varyantlari tablosunda ilgili varyantı ara
+    // Not: Burada description alanı paketleme tipi olarak kullanılıyor
     const sql = `
-      SELECT uv.id as variantId
-      FROM urun_varyantlari uv
-      JOIN urunler u ON uv.urun_id = u.id
-      WHERE 
-        u.code = ?
-        AND uv.paketleme_tipi_id = ?
-        AND uv.paket_hacmi = ?
+      SELECT id AS variantId 
+      FROM urun_varyantlari 
+      WHERE urun_id = ? 
+        AND description = ? 
+        AND paket_hacmi = ?
       LIMIT 1
     `;
     
-    const [rows] = await db.query(sql, [urunKodu, paketlemeTipiId, paketBoyutu]);
+    const [rows] = await db.query(sql, [urunId, paketlemeTipi, paketBoyutu]);
     
     if (rows.length === 0) {
-      return res.status(404).json({ error: 'Varyant bulunamadı' });
+      return res.status(404).json({ 
+        error: "Varyant bulunamadı",
+        message: "Bu ürün için belirtilen paketleme tipi ve paket boyutu kombinasyonu mevcut değil"
+      });
     }
     
     res.json({ variantId: rows[0].variantId });
@@ -2769,5 +2724,8 @@ router.get('/find-variant', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+
+
 
 module.exports = router;

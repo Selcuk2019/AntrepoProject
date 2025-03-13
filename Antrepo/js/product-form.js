@@ -12,19 +12,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   const isVariantMode = mode === "variant" && (urunId || varyantId);
 
   // Sayfa başlığını güncelle
-  document.querySelector('.page-header h1').textContent = 
+  document.querySelector('.page-header h1').textContent =
     mode === 'edit' && varyantId ? 'Varyant Düzenle' :
-    isVariantMode ? 'Yeni Varyant Ekle' : 
+    isVariantMode ? 'Yeni Varyant Ekle' :
     productId ? 'Ürün Düzenle' : 'Yeni Ürün ve Varyant Ekle';
-  
-  // Varyant düzenleme modunda sadece varyant alanlarını göster
+
+  // Eğer varyant düzenleme modundaysanız (mode=edit & varyantId)
   if (mode === 'edit' && varyantId) {
     document.querySelector('.form-section:first-child').style.display = 'none';
     try {
       const response = await fetch(`${baseUrl}/api/urun_varyantlari/${varyantId}`);
       if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
       const variant = await response.json();
-      
+
       // Ürün bilgilerini göster
       const productInfo = document.createElement('div');
       productInfo.className = 'product-info';
@@ -35,38 +35,33 @@ document.addEventListener("DOMContentLoaded", async () => {
           <p>Ürün Kodu: ${variant.urun_kodu}</p>
         </div>
       `;
-      
-      // Form container'ın en üstüne ekle
       const formContainer = document.querySelector('.form-container');
       formContainer.insertBefore(productInfo, formContainer.firstChild);
-      
+
       // Form alanlarını doldur
       document.getElementById("bagSize").value = variant.paket_hacmi;
-      $(packagingTypeSelect).val(variant.paketleme_tipi_id).trigger('change');
-      
+      // Not: variant.description varsa, packagingTypeSelect'e val() olarak variant.description vereceğiz (ID değil!)
+      // Örneğin: $(packagingTypeSelect).val(variant.description).trigger('change');
     } catch (error) {
       console.error("Varyant yükleme hatası:", error);
       alert("Varyant bilgileri yüklenirken hata oluştu!");
     }
   }
 
-  // Form başlığını ve görünümünü güncelle
+  // Yeni varyant ekleme modundaysanız (mode=variant, urunId)
   if (isVariantMode && !varyantId) {
-    document.querySelector('.page-header h1').textContent = 'Yeni Varyant Ekle';
-    
-    // Ürün bilgileri bölümünü gizle yerine disable et
+    // Ürün alanlarını devre dışı bırak (sadece varyant doldurulacak)
     const productFields = document.querySelectorAll('.form-section:first-child input, .form-section:first-child textarea');
     productFields.forEach(field => {
-      field.disabled = true; // readOnly yerine disabled kullan
+      field.disabled = true;
     });
-    
-    // Ürün bilgilerini getir ve doldur
+
+    // Ürün bilgilerini getir
     try {
       const response = await fetch(`${baseUrl}/api/urunler/${urunId}`);
       if (!response.ok) throw new Error('Ürün bilgileri alınamadı');
       const product = await response.json();
-      
-      // ID'leri güncellendi - HTML ile eşleşecek şekilde
+
       document.getElementById("productName").value = product.name;
       document.getElementById("productCode").value = product.code;
     } catch (error) {
@@ -83,36 +78,28 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
 
-      // Select2'yi başlat
+      // Select2'yi başlatmadan önce boşalt
       $(packagingTypeSelect).empty();
-      
-      // Boş bir option ekle (placeholder için)
+
+      // Placeholder ekleyin
       $(packagingTypeSelect).append(new Option('', '', true, true));
-      
+
+      // Burada id: item.name atıyoruz, text: item.name
       $(packagingTypeSelect).select2({
         placeholder: 'Paketleme Tipi Seçin',
         allowClear: true,
         width: '100%',
         data: data.map(item => ({
-          id: item.id,
-          text: item.name
+          id: item.name,    // <--- METİN
+          text: item.name   // <--- METİN
         })),
-        // Başlangıçta seçili değer olmaması için
         initSelection: function() {
           $(packagingTypeSelect).val(null).trigger('change');
         }
       });
 
-      // Eğer düzenleme modundaysa ve seçili değer varsa
-      if (mode === 'edit' && varyantId) {
-        const currentValue = packagingTypeSelect.value;
-        if (currentValue) {
-          $(packagingTypeSelect).val(currentValue).trigger('change');
-        }
-      } else {
-        // Düzenleme modu değilse değeri temizle
-        $(packagingTypeSelect).val(null).trigger('change');
-      }
+      // mode=edit & varyantId varsa, var olan varyant.description değerini set edebilirsiniz
+      // (Bu kısım, varyant bilgisi yüklendikten sonra da yapılabilir.)
 
       return true;
     } catch (error) {
@@ -122,14 +109,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   };
 
-  // Sayfa yüklendiğinde hemen paketleme tiplerini yükle
+  // Sayfa açılışında paketleme tiplerini yükle
   try {
     await loadPackagingTypes();
   } catch (error) {
     console.error("Initial loadPackagingTypes error:", error);
   }
 
-  // Sonra, eğer düzenleme modundaysa ürün bilgilerini getir
+  // Ürün düzenleme modundaysa
   if (productId) {
     try {
       const resp = await fetch(`${baseUrl}/api/urunler/${productId}`);
@@ -141,35 +128,36 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("productCode").value = product.code || '';
       document.getElementById("bagSize").value = product.paket_hacmi || '';
       document.getElementById("description").value = product.description || '';
-      
-      // Paketleme tipini seç - Select2 için trigger('change') ekle
-      if (product.paketleme_tipi_id) {
-        $(packagingTypeSelect).val(product.paketleme_tipi_id).trigger('change');
-      }
+
+      // Eski kodda "product.paketleme_tipi_id" set ediliyordu. Artık "product.description" olabilir.
+      // $(packagingTypeSelect).val(product.description).trigger('change');
     } catch (error) {
       console.error("Ürün yükleme hatası:", error);
       alert("Ürün bilgileri yüklenirken hata oluştu!");
     }
   }
 
-  // 2) Form submit: Ürün ekleme
+  // Form submit
   productForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // Varyant düzenleme modu
+    // Varyant düzenleme (mode=edit & varyantId)
     if (mode === 'edit' && varyantId) {
       try {
+        const paketHacmiVal = document.getElementById("bagSize").value.trim();
+        const packagingTypeVal = $(packagingTypeSelect).val(); // Bu bir METİN olmalı artık
         const response = await fetch(`${baseUrl}/api/urun_varyantlari/${varyantId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            paket_hacmi: document.getElementById("bagSize").value,
-            paketleme_tipi_id: $(packagingTypeSelect).val()
+            paket_hacmi: paketHacmiVal,
+            // pakette "description" alanını backend PUT'ta bekliyorsanız, "description" gönderin
+            // eğer "paketleme_tipi_id" bekliyorsanız, API'nizi düzeltmeniz lazım
+            description: packagingTypeVal
           })
         });
 
         if (!response.ok) throw new Error('Varyant güncellenemedi');
-        
         alert("Varyant başarıyla güncellendi!");
         window.location.href = `stock-card.html?id=${urunId}`;
         return;
@@ -180,13 +168,26 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // Varyant modu için ayrı işlem
+    // Yeni varyant ekleme (mode=variant & urunId)
     if (isVariantMode && !varyantId) {
+      const bagSizeValue = document.getElementById("bagSize").value.trim();
+      const packagingTypeValue = $(packagingTypeSelect).val(); // METİN
+      console.log("Debug: Varyant Ekleme Form Değerleri:", {
+        urunId,
+        bagSize: bagSizeValue,
+        packagingType: packagingTypeValue
+      });
+
       const variantData = {
         urun_id: urunId,
-        paket_hacmi: document.getElementById("bagSize").value.trim(),
-        paketleme_tipi_id: packagingTypeSelect.value
+        paket_hacmi: bagSizeValue,
+        description: packagingTypeValue
       };
+
+      if (!variantData.urun_id || !variantData.paket_hacmi || !variantData.description) {
+        alert("Varyant eklemek için urun_id, paket_hacmi ve description zorunludur!");
+        return;
+      }
 
       try {
         const response = await fetch(`${baseUrl}/api/urun-varyantlari`, {
@@ -196,12 +197,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
 
         if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.message || 'Varyant eklenirken hata oluştu');
+          const errorResp = await response.json();
+          throw new Error(errorResp.error || 'Varyant eklenirken hata oluştu');
         }
 
         alert("Varyant başarıyla eklendi!");
-        // Stok kartına geri dön
         window.location.href = `stock-card.html?id=${urunId}`;
         return;
       } catch (error) {
@@ -211,54 +211,48 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
 
-    // Form verilerini topla - ID'leri güncellendi
+    // Ürün ekleme/güncelleme işlemi
     const formData = {
-      // Ürün bilgileri
       product: {
         name: document.getElementById("productName").value.trim(),
         code: document.getElementById("productCode").value.trim(),
         description: document.getElementById("description").value.trim()
       },
-      // Varyant bilgileri (opsiyonel)
       variant: {
         paket_hacmi: document.getElementById("bagSize").value.trim(),
-        paketleme_tipi_id: $(packagingTypeSelect).val() // Select2 değerini al
+        // Eskiden "paketleme_tipi_id" idi, artık "description" olabilir
+        description: $(packagingTypeSelect).val()
       }
     };
 
-    // Validasyon
+    // Basit validasyon
     if (!formData.product.name || !formData.product.code) {
       alert("Ürün adı ve kodu zorunludur!");
       return;
     }
-
-    // Varyant bilgileri girilmişse validasyon yap
-    if (formData.variant.paket_hacmi || formData.variant.paketleme_tipi_id) {
-      if (!formData.variant.paket_hacmi || !formData.variant.paketleme_tipi_id) {
+    // Varyant verileri girilmişse
+    if (formData.variant.paket_hacmi || formData.variant.description) {
+      if (!formData.variant.paket_hacmi || !formData.variant.description) {
         alert("Varyant için hem paket hacmi hem de paketleme tipi gereklidir!");
         return;
       }
     }
 
     try {
-      // API'ye gönder
       const response = await fetch(`${baseUrl}/api/urun`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Bir hata oluştu');
+        const errorResp = await response.json();
+        throw new Error(errorResp.message || 'Bir hata oluştu');
       }
 
       const result = await response.json();
       alert("Ürün ve varyant başarıyla kaydedildi!");
       window.location.href = "product-list.html";
-
     } catch (error) {
       console.error('Hata:', error);
       alert(error.message || "İşlem sırasında bir hata oluştu!");

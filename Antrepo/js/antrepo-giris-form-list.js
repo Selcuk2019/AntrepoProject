@@ -18,12 +18,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         },
         columns: [
-            // Beyanname No sütununu link olarak düzenliyoruz
             { 
                 data: 'beyanname_no',
                 render: function(data, type, row) {
                     if (type === 'display') {
-                        // Link oluşturuyoruz
+                        // Beyanname No linki, view modunda açılır (mode=view) ve ilgili id URL'e eklenir.
                         return `<a href="antrepo-giris-formu.html?id=${row.id}&mode=view" class="form-link">${data || ''}</a>`;
                     }
                     return data || '';
@@ -86,9 +85,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 render: function(data, type, row) {
                     return `
                         <div class="action-buttons">
-                            <button onclick="editEntry(${row.id})" class="modern-btn-icon modern-btn-edit" title="Düzenle">
+                            <a href="antrepo-giris-formu.html?id=${row.id}&mode=edit" class="modern-btn-icon modern-btn-edit" title="Düzenle">
                                 <i class="fas fa-edit"></i>
-                            </button>
+                            </a>
                         </div>
                     `;
                 }
@@ -130,9 +129,9 @@ document.addEventListener('DOMContentLoaded', function() {
     document.head.appendChild(style);
 
     // Mevcut işlevselliği koru
-    window.editEntry = function(id) {
-        window.location.href = `antrepo-giris-formu.html?mode=edit&id=${id}`;
-    };
+    // window.editEntry = function(id) {
+    //     window.location.href = `antrepo-giris-formu.html?mode=edit&id=${id}`;
+    // };
 
     // Yeni Antrepo Giriş Formu oluşturma butonu
     document.getElementById('newEntryBtn')?.addEventListener('click', () => {
