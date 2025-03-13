@@ -2350,37 +2350,29 @@ router.get('/hareketler/:id', async (req, res) => {
 // - Paket boyutu verisi için: ?urunId=...&getSizes=true
 router.get('/urun_varyantlari', async (req, res) => {
   try {
-    const { urunId, getSizes } = req.query;
+    const { urunId } = req.query;
     if (!urunId) {
       return res.status(400).json({ error: 'urunId parametresi gerekli.' });
     }
-    if (getSizes && getSizes === 'true') {
-      // Bağımsız paket boyutu verilerini getir: ürün bazında tüm farklı paket_hacmi değerleri
-      const sql = `
-        SELECT DISTINCT paket_hacmi AS paket_boyutu
-        FROM urun_varyantlari
-        WHERE urun_id = ?
-      `;
-      const [rows] = await db.query(sql, [urunId]);
-      if (!rows.length) {
-        return res.status(404).json({ error: 'Paket boyutu varyantı bulunamadı.' });
-      }
-      return res.json(rows);
-    } else {
-      // Bağımsız paketleme tipi verilerini getir: ürün bazında tüm farklı paketleme_tipi_id ve isimleri
-      const sql = `
-        SELECT DISTINCT uv.paketleme_tipi_id, pt.name AS paketleme_tipi_name
-        FROM urun_varyantlari uv
-        JOIN paketleme_tipleri pt ON pt.id = uv.paketleme_tipi_id
-        WHERE uv.urun_id = ?
-      `;
-      const [rows] = await db.query(sql, [urunId]);
-      return res.json(rows);
-    }
+    const sql = `
+      SELECT
+        uv.id,
+        uv.urun_id,
+        uv.paket_hacmi,
+        uv.description AS paketleme_tipi_adi,  -- Artık ID yerine description metni
+        uv.olusturulma_tarihi
+      FROM urun_varyantlari uv
+      WHERE uv.urun_id = ?
+      ORDER BY uv.id DESC
+    `;
+    const [rows] = await db.query(sql, [urunId]);
+    res.json(rows);
   } catch (error) {
+    console.error('GET /urun_varyantlari hata:', error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 
 // Bu endpoint, ilgili ürünün tüm farklı paket_hacmi (paket boyutu) değerlerini getirir.
@@ -2443,12 +2435,10 @@ router.get('/urun_varyantlari/:id', async (req, res) => {
         v.id,
         v.urun_id,
         v.paket_hacmi,
-        v.paketleme_tipi_id,
-        pt.name as paketleme_tipi_adi,
+        v.description,
         u.name as urun_adi,
         u.code as urun_kodu
       FROM urun_varyantlari v
-      LEFT JOIN paketleme_tipleri pt ON v.paketleme_tipi_id = pt.id
       LEFT JOIN urunler u ON v.urun_id = u.id
       WHERE v.id = ?
     `;
@@ -2597,9 +2587,10 @@ router.get('/urun_varyantlari', async (req, res) => {
     // Paketleme tiplerini döndür (paketlemeTipi parametresi boşsa)
     if (!paketlemeTipi) {
       const sqlTips = `
-        SELECT DISTINCT uv.paketleme_tipi_id, pt.name as paketleme_tipi_name
+        SELECT DISTINCT 
+          uv.id,
+          uv.description as paketleme_tipi_name
         FROM urun_varyantlari uv
-        JOIN paketleme_tipleri pt ON pt.id = uv.paketleme_tipi_id
         WHERE uv.urun_id = ?
       `;
       const [rows] = await db.query(sqlTips, [urunId]);
@@ -2610,7 +2601,7 @@ router.get('/urun_varyantlari', async (req, res) => {
     const sqlBoyut = `
       SELECT DISTINCT paket_hacmi
       FROM urun_varyantlari
-      WHERE urun_id = ? AND paketleme_tipi_id = ?
+      WHERE urun_id = ? AND description = ?
     `;
     const [rows] = await db.query(sqlBoyut, [urunId, paketlemeTipi]);
     if (!rows.length) {
@@ -2739,6 +2730,285 @@ router.get('/find-variant', async (req, res) => {
 });
 
 
+// GET /api/stock-card/:productId - Ürün stok kartı bilgilerini getirir
+router.get('/stock-card/:productId', async (req, res) => {
+  try {
+    const { productId } = req.params;
+    
+    // 1. Ürün genel bilgilerini al
+    const sqlUrun = `
+      SELECT 
+        u.id, 
+        u.name, 
+        u.code, 
+        u.paket_hacmi,
+        u.description
+      FROM urunler u
+      WHERE u.id = ?
+    `;
+    const [urunRows] = await db.query(sqlUrun, [productId]);
+    
+    if (urunRows.length === 0) {
+      return res.status(404).json({ error: 'Ürün bulunamadı' });
+    }
+    
+    const urun = urunRows[0];
+    
+    // 2. Ürüne ait hareketler ve stok miktarını hesapla
+    const sqlStok = `
+      SELECT 
+        ag.id as giris_id,
+        a.antrepoAdi,
+        a.id as antrepo_id,
+        SUM(CASE WHEN h.islem_tipi = 'Giriş' THEN h.miktar ELSE 0 END) AS giris_miktar,
+        SUM(CASE WHEN h.islem_tipi = 'Çıkış' THEN h.miktar ELSE 0 END) AS cikis_miktar,
+        SUM(CASE WHEN h.islem_tipi = 'Giriş' THEN h.kap_adeti ELSE 0 END) AS giris_kap,
+        SUM(CASE WHEN h.islem_tipi = 'Çıkış' THEN h.kap_adeti ELSE 0 END) AS cikis_kap
+      FROM antrepo_hareketleri h
+      JOIN antrepo_giris ag ON h.antrepo_giris_id = ag.id
+      JOIN antrepolar a ON ag.antrepo_id = a.id
+      JOIN urunler u ON ag.urun_kodu = u.code
+      WHERE u.id = ?
+      GROUP BY a.antrepoAdi, a.id, ag.id
+    `;
+    
+    const [stokRows] = await db.query(sqlStok, [productId]);
+    
+    // 3. Ürün varyantlarını al
+    const sqlVaryant = `
+      SELECT 
+        uv.id, 
+        uv.paket_hacmi, 
+        uv.description,
+        COUNT(*) as kullanim_sayisi
+      FROM urun_varyantlari uv
+      LEFT JOIN antrepo_giris ag ON ag.urun_varyant_id = uv.id
+      WHERE uv.urun_id = ?
+      GROUP BY uv.id, uv.paket_hacmi, uv.description
+      ORDER BY uv.id
+    `;
+    
+    const [varyantRows] = await db.query(sqlVaryant, [productId]);
+    
+    // 4. Stok durumunu hesapla
+    const stokDurumu = stokRows.map(row => {
+      const netMiktar = parseFloat(row.giris_miktar) - parseFloat(row.cikis_miktar);
+      const netKap = parseInt(row.giris_kap) - parseInt(row.cikis_kap);
+      
+      return {
+        antrepo_id: row.antrepo_id,
+        antrepo_adi: row.antrepoAdi,
+        giris_id: row.giris_id,
+        net_miktar: netMiktar.toFixed(2),
+        net_kap: netKap,
+        stok_durumu: netMiktar > 0 ? 'Mevcut' : 'Tükendi'
+      };
+    });
+    
+    // Sonuç objesini oluştur
+    const result = {
+      urun: urun,
+      stok_durumu: stokDurumu,
+      toplam_stok: stokDurumu.reduce((sum, item) => sum + parseFloat(item.net_miktar), 0).toFixed(2),
+      toplam_kap: stokDurumu.reduce((sum, item) => sum + parseInt(item.net_kap), 0),
+      varyantlar: varyantRows
+    };
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error("GET /api/stock-card/:productId hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
+// Düzeltilmiş: /api/urun_varyantlari endpoint'i 
+// (paketleme_tipi_id referansı kaldırıldı)
+router.get('/urun_varyantlari', async (req, res) => {
+  try {
+    const { urunId } = req.query;
+    if (!urunId) {
+      return res.status(400).json({ error: 'urunId parametresi gerekli.' });
+    }
+    const sql = `
+      SELECT
+        uv.id,
+        uv.urun_id,
+        uv.paket_hacmi,
+        uv.description AS paketleme_tipi_adi,
+        uv.olusturulma_tarihi
+      FROM urun_varyantlari uv
+      WHERE uv.urun_id = ?
+      ORDER BY uv.id DESC
+    `;
+    const [rows] = await db.query(sql, [urunId]);
+    res.json(rows);
+  } catch (error) {
+    console.error('GET /urun_varyantlari hata:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Düzeltilmiş: /api/urun_varyantlari/details endpoint'i
+// (paketleme_tipi_id referansı kaldırıldı)
+router.get('/urun_varyantlari/details', async (req, res) => {
+  try {
+    const { urunId } = req.query;
+    if (!urunId) {
+      return res.status(400).json({ error: 'urunId parametresi gerekli.' });
+    }
+    const sql = `
+      SELECT
+        uv.id,
+        uv.urun_id,
+        uv.paket_hacmi,
+        uv.description,
+        uv.olusturulma_tarihi,
+        uv.guncellenme_tarihi
+      FROM urun_varyantlari uv
+      WHERE uv.urun_id = ?
+    `;
+    const [rows] = await db.query(sql, [urunId]);
+    res.json(rows);
+  } catch (error) {
+    console.error('GET /api/urun_varyantlari/details hata:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Düzeltilmiş: /api/urun_varyantlari/:id endpoint'i 
+// (paketleme_tipi_id referansı kaldırıldı)
+router.get('/urun_varyantlari/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const sql = `
+      SELECT 
+        v.id,
+        v.urun_id,
+        v.paket_hacmi,
+        v.description,
+        u.name as urun_adi,
+        u.code as urun_kodu
+      FROM urun_varyantlari v
+      LEFT JOIN urunler u ON v.urun_id = u.id
+      WHERE v.id = ?
+    `;
+    const [rows] = await db.query(sql, [id]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Varyant bulunamadı' });
+    }
+    
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Varyant getirme hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Düzeltilmiş: Bu eski endpoint'i de kontrol edelim
+router.get('/urun_varyantlari', async (req, res) => {
+  try {
+    const { urunId, paketlemeTipi } = req.query;
+    if (!urunId) {
+      return res.status(400).json({ error: 'urunId parametresi gerekli.' });
+    }
+
+    // Paketleme tiplerini döndür (paketlemeTipi parametresi boşsa)
+    if (!paketlemeTipi) {
+      const sqlTips = `
+        SELECT DISTINCT 
+          uv.id,
+          uv.description as paketleme_tipi_name
+        FROM urun_varyantlari uv
+        WHERE uv.urun_id = ?
+      `;
+      const [rows] = await db.query(sqlTips, [urunId]);
+      return res.json(rows);
+    }
+
+    // Paket boyutlarını döndür
+    const sqlBoyut = `
+      SELECT DISTINCT paket_hacmi
+      FROM urun_varyantlari
+      WHERE urun_id = ? AND description = ?
+    `;
+    const [rows] = await db.query(sqlBoyut, [urunId, paketlemeTipi]);
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Varyant bulunamadı.' });
+    }
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Düzeltilmiş: /api/find-variant endpoint'i
+router.get('/find-variant', async (req, res) => {
+  try {
+    const { urunId, paketlemeTipi, paketBoyutu } = req.query;
+    
+    if (!urunId || !paketlemeTipi || !paketBoyutu) {
+      return res.status(400).json({ error: "Eksik parametre: urunId, paketlemeTipi ve paketBoyutu gereklidir" });
+    }
+    
+    // urun_varyantlari tablosunda ilgili varyantı ara
+    // description alanı paketleme tipi olarak kullanılıyor
+    const sql = `
+      SELECT id AS variantId 
+      FROM urun_varyantlari 
+      WHERE urun_id = ? 
+        AND description = ? 
+        AND paket_hacmi = ?
+      LIMIT 1
+    `;
+    
+    const [rows] = await db.query(sql, [urunId, paketlemeTipi, paketBoyutu]);
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ 
+        error: "Varyant bulunamadı",
+        message: "Bu ürün için belirtilen paketleme tipi ve paket boyutu kombinasyonu mevcut değil"
+      });
+    }
+    
+    res.json({ variantId: rows[0].variantId });
+  } catch (error) {
+    console.error('Varyant bulma hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Düzeltilmiş: /api/urun-varyantlari endpoint'i (PUT method)
+router.put('/urun_varyantlari/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { paket_hacmi, description } = req.body;
+
+    // Validasyon
+    if (!paket_hacmi || !description) {
+      return res.status(400).json({ 
+        error: "paket_hacmi ve description zorunludur" 
+      });
+    }
+
+    const sql = `
+      UPDATE urun_varyantlari 
+      SET paket_hacmi = ?, description = ?
+      WHERE id = ?
+    `;
+
+    const [result] = await db.query(sql, [paket_hacmi, description, id]);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Varyant bulunamadı' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Varyant güncelleme hatası:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 module.exports = router;

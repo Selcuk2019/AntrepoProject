@@ -25,17 +25,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Stok detaylarını göster
     displayStockDetails(product);
     
-    // Güncel stok miktarını getir
-    await loadCurrentStock();
+    // Load each component individually and catch errors separately
+    try {
+      await loadCurrentStock(productId);
+    } catch (err) {
+      console.error("Current stock loading error:", err);
+    }
     
-    // Antrepo bazlı stok miktarlarını getir
-    await loadStockAmounts(product.code);
+    try {
+      await loadStockAmounts(product.code);
+    } catch (err) {
+      console.error("Stock amounts loading error:", err);
+    }
     
-    // Varyantları getir
-    await loadProductVariants();
+    try {
+      await loadProductVariants(productId);
+    } catch (err) {
+      console.error("Product variants loading error:", err);
+    }
     
-    // Stok hareketlerini getir
-    await loadStockMovements();
+    try {
+      await loadStockMovements();
+    } catch (err) {
+      console.error("Stock movements loading error:", err);
+    }
 
   } catch (error) {
     console.error('Veri yükleme hatası:', error);
@@ -73,26 +86,82 @@ function displayStockDetails(product) {
 }
 
 // Güncel stok bilgisini getir ve göster
-async function loadCurrentStock() {
+async function loadCurrentStock(productId) {
   try {
     const response = await fetch(`${baseUrl}/api/stock-card/${productId}`);
-    if (!response.ok) throw new Error('Stok bilgisi alınamadı');
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error('Stok bilgisi alınamadı');
+    }
     
-    const stockDisplay = document.getElementById('currentStockDisplay');
-    if (stockDisplay) {
-      // Sayısal değer kontrolü yapalım ve sonra toFixed kullanalım
-      const stockValue = typeof data.currentStock === 'number' 
-        ? data.currentStock.toFixed(2) 
-        : parseFloat(data.currentStock || 0).toFixed(2);
-        
-      stockDisplay.innerHTML = `
-        <strong>Güncel Stok:</strong> 
-        <span>${stockValue} Ton</span>
+    const data = await response.json();
+    console.log("Stok bilgisi:", data);
+    
+    // currentStockDisplay'i güncelle - burası eksikti
+    const currentStockDisplay = document.getElementById('currentStockDisplay');
+    if (currentStockDisplay) {
+      currentStockDisplay.innerHTML = `
+        <strong>Toplam Stok:</strong> 
+        <span>${data.toplam_stok || '0'} ton</span>
+        <strong style="margin-left: 15px;">Toplam Kap Adedi:</strong> 
+        <span>${data.toplam_kap || '0'}</span>
       `;
     }
+    
+    // Stok tablosuna veri ekleme - ADD NULL CHECK HERE
+    const stockTableBody = document.getElementById('stockTableBody');
+    if (stockTableBody) { // Add null check
+      stockTableBody.innerHTML = '';
+      
+      if (data.stok_durumu && data.stok_durumu.length > 0) {
+        data.stok_durumu.forEach(stock => {
+          if (parseFloat(stock.net_miktar) > 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${stock.antrepo_adi}</td>
+              <td>${stock.net_miktar}</td>
+              <td>${stock.net_kap}</td>
+              <td>${stock.stok_durumu}</td>
+            `;
+            stockTableBody.appendChild(row);
+          }
+        });
+      } else {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td colspan="4" class="text-center">Stok bulunamadı</td>`;
+        stockTableBody.appendChild(row);
+      }
+    } else {
+      console.warn("Element with ID 'stockTableBody' not found in the DOM");
+    }
+    
+    // Add null checks for other elements
+    const totalStockElement = document.getElementById('totalStock');
+    if (totalStockElement) {
+      totalStockElement.textContent = data.toplam_stok || '0';
+    }
+    
+    const totalPackageElement = document.getElementById('totalPackage');
+    if (totalPackageElement) {
+      totalPackageElement.textContent = data.toplam_kap || '0';
+    }
+    
+    return data;
   } catch (error) {
-    console.error('Stok bilgisi yükleme hatası:', error);
+    console.error("Stok bilgisi yükleme hatası:", error);
+    
+    // currentStockDisplay hata durumunu da güncelle
+    const currentStockDisplay = document.getElementById('currentStockDisplay');
+    if (currentStockDisplay) {
+      currentStockDisplay.innerHTML = `
+        <span class="text-danger">Stok bilgisi yüklenemedi: ${error.message}</span>
+      `;
+    }
+    
+    const stockTableBody = document.getElementById('stockTableBody');
+    if (stockTableBody) { // Add null check here too
+      stockTableBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">Hata: ${error.message}</td></tr>`;
+    }
+    return null;
   }
 }
 
@@ -105,118 +174,117 @@ async function loadStockMovements() {
     
     // Verileri tabloya doldur
     const tbody = document.getElementById('stockMovementsTable');
-    tbody.innerHTML = movements.map(m => `
-      <tr>
-        <td>${new Date(m.islem_tarihi).toLocaleDateString()}</td>
-        <td>${m.islem_tipi}</td>
-        <td>${m.miktar}</td>
-        <td>${m.birim_adi || '-'}</td>
-        <td>${m.antrepo_adi || '-'}</td>
-        <td>${m.belge_no || '-'}</td>
-        <td>${m.aciklama || '-'}</td>
-      </tr>
-    `).join('');
+    if (tbody) { // Add null check
+      tbody.innerHTML = movements.map(m => `
+        <tr>
+          <td>${new Date(m.islem_tarihi).toLocaleDateString()}</td>
+          <td>${m.islem_tipi}</td>
+          <td>${m.miktar}</td>
+          <td>${m.birim_adi || '-'}</td>
+          <td>${m.antrepo_adi || '-'}</td>
+          <td>${m.belge_no || '-'}</td>
+          <td>${m.aciklama || '-'}</td>
+        </tr>
+      `).join('');
+    } else {
+      console.warn("Element with ID 'stockMovementsTable' not found in the DOM");
+    }
   } catch (error) {
     console.error('Stok hareketleri yükleme hatası:', error);
   }
 }
 
-// Varyantları getir
-async function loadProductVariants() {
+// Varyantları getir - DataTables kullanarak
+async function loadProductVariants(productId) {
   try {
-    const response = await fetch(`${baseUrl}/api/urun_varyantlari?urunId=${productId}`);
-    if (!response.ok) throw new Error('Varyant bilgileri alınamadı');
-    const variants = await response.json();
+    const response = await fetch(`${baseUrl}/api/urun_varyantlari/details?urunId=${productId}`);
+    if (!response.ok) {
+      throw new Error('Varyant bilgileri alınamadı');
+    }
+    const data = await response.json();
+    console.log("Varyant bilgileri:", data);
     
-    console.log('Yüklenen varyantlar:', variants); // Debug log
-
-    // Önce mevcut DataTable'ı güvenli bir şekilde yok et
+    // DataTables ile varyantları göster
+    const variantsTable = $('#variantsTable');
+    
+    // DataTable zaten initialize edilmişse önce yok et
     if ($.fn.DataTable.isDataTable('#variantsTable')) {
-      $('#variantsTable').DataTable().destroy();
+      variantsTable.DataTable().destroy();
     }
     
-    // HTML tabloyu hazırla
-    const tableHtml = `
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Paket Hacmi (kg)</th>
-          <th>Paketleme Tipi</th>
-          <th>Oluşturulma Tarihi</th>
-          <th>İşlemler</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `;
-    $('#variantsTable').html(tableHtml);
+    // Tabloyu boşalt
+    variantsTable.empty();
     
-    // DataTables'ı başlat
-    const dataTable = $('#variantsTable').DataTable({
-      data: variants,
-      columns: [
-        // id alanı yoksa veya variantlar farklı yapıdaysa düzeltin
-        { data: 'id', defaultContent: '-' }, // defaultContent ekleyerek null değerleri ele alıyoruz
-        { data: 'paket_hacmi', defaultContent: '-' },
-        { data: 'paketleme_tipi_adi', defaultContent: '-' },
-        { 
-          data: 'olusturulma_tarihi',
-          render: function(data) {
-            return data ? new Date(data).toLocaleDateString('tr-TR') : '-';
+    // DataTable'ı initialize et
+    if (data && data.length > 0) {
+      variantsTable.DataTable({
+        data: data,
+        responsive: true,
+        columns: [
+          { 
+            title: "Paketleme Tipi", 
+            data: "description",
+            render: function(data) {
+              return data || '-';
+            }
           },
-          defaultContent: '-'
-        },
-        {
-          data: null,
-          orderable: false,
-          render: function(data, type, row) {
-            // id kontrolü ekleyelim
-            const variantId = row.id || '';
-            return `
-              <div class="action-buttons">
-                <button onclick="editVariant('${variantId}')" class="btn-icon btn-edit">
-                  <i class="fas fa-edit"></i>
+          { 
+            title: "Paket Boyutu", 
+            data: "paket_hacmi",
+            render: function(data) {
+              return data || '-';
+            }
+          },
+          { 
+            title: "İşlemler", 
+            data: "id",
+            orderable: false,
+            render: function(data) {
+              return `
+                <button onclick="editVariant(${data})" class="btn btn-sm btn-primary">
+                  <i class="fas fa-edit"></i> Düzenle
                 </button>
-                <button onclick="deleteVariant('${variantId}')" class="btn-icon btn-delete">
-                  <i class="fas fa-trash"></i>
+                <button onclick="deleteVariant(${data})" class="btn btn-sm btn-danger">
+                  <i class="fas fa-trash"></i> Sil
                 </button>
-              </div>
-            `;
+              `;
+            }
           }
+        ],
+        language: {
+          url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
         }
-      ],
-      language: {
-        url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json'
-      },
-      responsive: true,
-      order: [[0, 'desc']],
-      pageLength: 10,
-      dom: 'rtip',
-      searching: false
-    });
-
-  } catch (error) {
-    console.error('Varyant bilgileri yükleme hatası:', error);
-    
-    // Hata durumunda basit bir tablo göster
-    if ($.fn.DataTable.isDataTable('#variantsTable')) {
-      $('#variantsTable').DataTable().destroy();
+      });
+    } else {
+      // Veri yoksa boş bir DataTable göster
+      variantsTable.DataTable({
+        language: {
+          url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json",
+          emptyTable: "Varyant bulunamadı"
+        }
+      });
     }
     
-    $('#variantsTable').html(`
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Paket Hacmi (kg)</th>
-          <th>Paketleme Tipi</th>
-          <th>Oluşturulma Tarihi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td colspan="4" class="text-center">Varyant bulunamadı veya yüklenirken hata oluştu</td>
-        </tr>
-      </tbody>
-    `);
+    return data;
+  } catch (error) {
+    console.error("Varyant bilgileri yükleme hatası:", error);
+    
+    // Hata durumunda da boş bir DataTable göster
+    const variantsTable = $('#variantsTable');
+    
+    if ($.fn.DataTable.isDataTable('#variantsTable')) {
+      variantsTable.DataTable().destroy();
+    }
+    
+    variantsTable.empty();
+    variantsTable.DataTable({
+      language: {
+        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json",
+        emptyTable: `Hata: ${error.message}`
+      }
+    });
+    
+    return [];
   }
 }
 
@@ -240,8 +308,8 @@ window.deleteVariant = async function(varyantId) {
       throw new Error('Varyant silinemedi');
     }
     
-    // Tabloyu yenile
-    await loadProductVariants();
+    // Varyant listesini güncelle
+    await loadProductVariants(productId);
     
   } catch (error) {
     console.error('Varyant silme hatası:', error);
@@ -249,7 +317,7 @@ window.deleteVariant = async function(varyantId) {
   }
 }
 
-// Antrepo bazlı stok miktarları
+// Antrepo bazlı stok miktarlarını getir
 async function loadStockAmounts(productCode) {
   if (!productCode) return;
   
@@ -260,7 +328,10 @@ async function loadStockAmounts(productCode) {
     
     // Verileri tabloya doldur
     const tbody = document.getElementById('stockAmountsTable');
-    if (!tbody) return;
+    if (!tbody) {
+      console.warn("Element with ID 'stockAmountsTable' not found in the DOM");
+      return; // Exit early if element doesn't exist
+    }
     
     tbody.innerHTML = '';
     
@@ -275,7 +346,7 @@ async function loadStockAmounts(productCode) {
     data.forEach(item => {
       const tr = document.createElement('tr');
       
-      // Değerlerin sayı kontrolünü yaparak ekliyoruz
+      // Miktarların sayı kontrolü yapılarak iki ondalık gösterim sağlanıyor
       const miktar = typeof item.Miktar === 'number' ? item.Miktar.toFixed(2) : parseFloat(item.Miktar || 0).toFixed(2);
       const kapAdeti = item.KapAdeti || '0';
       const formAdeti = item.FormAdeti || '0';
