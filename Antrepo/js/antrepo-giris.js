@@ -1172,6 +1172,10 @@ async function loadExistingData(id) {
     }
     if (inputFaturaAciklama) inputFaturaAciklama.value = formData.fatura_aciklama || "";
     
+    // EK: Gönderici ve Alıcı Şirket bilgileri (eksik olan kısım)
+    inputGondericiSirket.value = formData.gonderici_sirket || "";
+    inputAliciSirket.value = formData.alici_sirket || "";
+    
     // Sözleşme ve şirket bilgilerini doldur
     if (formData.sozlesme_id) {
       const foundSoz = allSozlesmeler.find(s => s.id === formData.sozlesme_id);
