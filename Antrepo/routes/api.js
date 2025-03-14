@@ -3269,7 +3269,8 @@ router.get('/product-movements/:productId', async (req, res) => {
       SELECT
         h.*,
         a.antrepoAdi as antrepo_adi,
-        b.birim_adi
+        b.birim_adi,
+        ag.beyanname_no as beyanname_no
       FROM antrepo_hareketleri h
       LEFT JOIN antrepo_giris ag ON h.antrepo_giris_id = ag.id
       LEFT JOIN antrepolar a ON ag.antrepo_id = a.id
