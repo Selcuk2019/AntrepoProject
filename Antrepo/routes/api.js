@@ -3023,6 +3023,34 @@ router.put('/urun_varyantlari/:id', async (req, res) => {
   }
 });
 
+// GET /api/product-movements/:productId
+router.get('/product-movements/:productId', async (req, res) => {
+  try {
+    const { productId } = req.params;
+    
+    const sql = `
+      SELECT
+        h.*,
+        a.antrepoAdi as antrepo_adi,
+        b.birim_adi,
+        ag.beyanname_no  -- Add beyanname_no from antrepo_giris
+      FROM antrepo_hareketleri h
+      LEFT JOIN antrepo_giris ag ON h.antrepo_giris_id = ag.id
+      LEFT JOIN antrepolar a ON ag.antrepo_id = a.id
+      LEFT JOIN birimler b ON h.birim_id = b.id
+      LEFT JOIN urunler u ON ag.urun_kodu = u.code
+      WHERE u.id = ?
+      ORDER BY h.islem_tarihi DESC, h.created_at DESC
+    `;
+    
+    const [movementRows] = await db.query(sql, [productId]);
+    res.json(movementRows);
+  } catch (error) {
+    console.error("GET /api/product-movements/:productId error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/product-movements/:productId - Ürün ID'sine göre ilgili hareketleri getirir
 router.get('/product-movements/:productId', async (req, res) => {
   try {

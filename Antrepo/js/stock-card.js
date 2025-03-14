@@ -171,28 +171,38 @@ async function loadCurrentStock(productId) {
 // Stok hareketlerini getir
 async function loadStockMovements() {
   try {
-    // Yeni endpoint'i kullan - ürün ID'sine göre hareket getir
     const response = await fetch(`${baseUrl}/api/product-movements/${productId}`);
     if (!response.ok) throw new Error('Stok hareketleri alınamadı');
     const movements = await response.json();
     
-    // Verileri tabloya doldur
-    const tbody = document.getElementById('stockMovementsTable');
-    if (tbody) {
-      tbody.innerHTML = movements.map(m => `
-        <tr>
-          <td>${new Date(m.islem_tarihi).toLocaleDateString()}</td>
-          <td>${m.islem_tipi}</td>
-          <td>${m.miktar}</td>
-          <td>${m.birim_adi || '-'}</td>
-          <td>${m.antrepo_adi || '-'}</td>
-          <td>${m.belge_no || '-'}</td>
-          <td>${m.aciklama || '-'}</td>
-        </tr>
-      `).join('');
-    } else {
-      console.warn("Element with ID 'stockMovementsTable' not found");
-    }
+    // Initialize DataTable
+    const table = $('#stockMovementsTable').parents('table').DataTable({
+      data: movements,
+      destroy: true, // Destroy existing table if any
+      columns: [
+        { 
+          data: 'islem_tarihi',
+          title: 'Tarih',
+          render: function(data) {
+            return new Date(data).toLocaleDateString();
+          }
+        },
+        { data: 'islem_tipi', title: 'İşlem Tipi' },
+        { data: 'miktar', title: 'Miktar' },
+        { data: 'birim_adi', title: 'Birim' },
+        { data: 'antrepo_adi', title: 'Antrepo' },
+        { 
+          data: 'beyanname_no', // Antrepo giriş formundan gelen beyanname no
+          title: 'Belge No',
+          defaultContent: '-'
+        },
+        { data: 'aciklama', title: 'Açıklama' }
+      ],
+      order: [[0, 'desc']], // Sort by date descending by default
+      language: {
+        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
+      }
+    });
   } catch (error) {
     console.error('Stok hareketleri yükleme hatası:', error);
   }
@@ -335,46 +345,29 @@ async function loadStockAmounts(productCode) {
     if (!response.ok) throw new Error('Stok miktarları alınamadı');
     const data = await response.json();
     
-    // Verileri tabloya doldur
-    const tbody = document.getElementById('stockAmountsTable');
-    if (!tbody) {
-      console.warn("Element with ID 'stockAmountsTable' not found in the DOM");
-      return; // Exit early if element doesn't exist
-    }
-    
-    tbody.innerHTML = '';
-    
-    if (data.length === 0) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = '<td colspan="4" class="text-center">Bu ürün için stok bulunamadı.</td>';
-      tbody.appendChild(tr);
-      return;
-    }
-    
-    // Her antrepo için bir satır oluştur
-    data.forEach(item => {
-      const tr = document.createElement('tr');
-      
-      // Miktarların sayı kontrolü yapılarak iki ondalık gösterim sağlanıyor
-      const miktar = typeof item.Miktar === 'number' ? item.Miktar.toFixed(2) : parseFloat(item.Miktar || 0).toFixed(2);
-      const kapAdeti = item.KapAdeti || '0';
-      const formAdeti = item.FormAdeti || '0';
-      
-      tr.innerHTML = `
-        <td>${item.Antrepo || '-'}</td>
-        <td>${miktar}</td>
-        <td>${kapAdeti}</td>
-        <td>${formAdeti}</td>
-      `;
-      tbody.appendChild(tr);
+    // Initialize DataTable
+    $('#stockAmountsTable').parents('table').DataTable({
+      data: data,
+      destroy: true, // Destroy existing table if any
+      columns: [
+        { data: 'Antrepo', title: 'Antrepo' },
+        { 
+          data: 'Miktar', 
+          title: 'Miktar (ton)',
+          render: function(data) {
+            return parseFloat(data).toFixed(2);
+          }
+        },
+        { data: 'KapAdeti', title: 'Kap Adeti' },
+        { data: 'FormAdeti', title: 'Antrepo Formu Adeti' }
+      ],
+      language: {
+        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
+      }
     });
     
   } catch (error) {
     console.error('Stok miktarları yükleme hatası:', error);
-    const tbody = document.getElementById('stockAmountsTable');
-    if (tbody) {
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center">Hata: ${error.message}</td></tr>`;
-    }
   }
 }
 
