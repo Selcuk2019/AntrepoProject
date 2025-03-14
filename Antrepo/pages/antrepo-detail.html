@@ -109,7 +109,21 @@
           <div id="stockQuantitiesTab" class="tab-panel">
             <div class="card">
               <h2>Stok Miktarları</h2>
-              <p>Bu sekme ileride doldurulacak.</p>
+              <div class="table-responsive">
+                <table id="stockQuantitiesTable" class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>Ürün Adı</th>
+                      <th>Ürün Kodu</th>
+                      <th>Mevcut Miktar</th>
+                      <th>Kap Adedi</th>
+                      <th>Toplam Maliyet</th>
+                      <th>İşlemler</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
             </div>
           </div>
 
@@ -129,5 +143,10 @@
   <script src="../js/template.js"></script>
   <!-- antrepo-detail.js (type="module") -->
   <script type="module" src="../js/antrepo-detail.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
 </body>
 </html>

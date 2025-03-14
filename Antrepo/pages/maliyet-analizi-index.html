@@ -7,17 +7,49 @@
     <link rel="stylesheet" href="../css/style.css">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <!-- DataTables Responsive CSS - Ekleyin -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.min.css">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Ek stil - Tablo için yatay kaydırma ve responsive davranış -->
+    <style>
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Küçük ekranlar için ek stil */
+        @media screen and (max-width: 992px) {
+            .modern-table th, .modern-table td {
+                white-space: nowrap;
+            }
+        }
+
+        /* Sıralama oklarını düzeltme */
+        table.dataTable thead .sorting:after,
+        table.dataTable thead .sorting_asc:after,
+        table.dataTable thead .sorting_desc:after {
+            opacity: 1;
+        }
+        
+        table.dataTable thead .sorting:before,
+        table.dataTable thead .sorting_asc:before,
+        table.dataTable thead .sorting_desc:before {
+            opacity: 1;
+        }
+        
+        /* Aktif sütunu vurgula */
+        table.dataTable thead th.sorting_asc,
+        table.dataTable thead th.sorting_desc {
+            background-color: #eef5ff !important;
+        }
+    </style>
 </head>
 <body>
-    <header class="topbar">
-        <!-- template.js ile doldurulacak -->
-    </header>
+    <header class="topbar"></header>
     <div class="main-container">
-        <nav class="sidebar">
-            <!-- template.js ile doldurulacak -->
-        </nav>
+        <nav class="sidebar"></nav>
         
         <div class="content">
             <div class="modern-page-header">
@@ -25,37 +57,35 @@
                     <h1>Maliyet Analizi</h1>
                     <p class="subtitle">Antrepo giriş ve maliyetlerinin detaylı analizi</p>
                 </div>
-                <div class="search-action-container">
-                    <div class="search-box">
-                        <i class="fas fa-search search-icon"></i>
-                        <input type="text" class="modern-search" id="tableSearch" placeholder="Ara...">
-                    </div>
-                </div>
             </div>
 
             <div class="modern-card">
                 <div class="modern-card-body">
-                    <table id="maliyetTable" class="modern-table display">
-                        <thead>
-                            <tr>
-                                <th>Ürün Adı</th>
-                                <th>Ürün Kodu</th>
-                                <th>Antrepo Giriş Tarihi</th>
-                                <th>Form No</th>
-                                <th>Giriş Adedi</th>
-                                <th>Giriş Kap Adedi</th>
-                                <th>Son Çıkış Tarihi</th>
-                                <th>Son Çıkış Adedi</th>
-                                <th>Mevcut Stok</th>
-                                <th>Mevcut Kap Adedi</th>
-                                <th>Mevcut Maliyet</th>
-                                <th>Toplam Maliyet</th>
-                                <th>Birim Maliyete Etkisi</th>
-                                <th>İşlemler</th>
-                            </tr>
-                        </thead>
-                        <tbody id="maliyetTableBody"></tbody>
-                    </table>
+                    <!-- Tabloyu responsive container içine alın -->
+                    <div class="table-responsive">
+                        <table id="maliyetTable" class="modern-table display responsive nowrap" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>Antrepo</th>          <!-- Yeni sütun -->
+                                    <th>Ürün Adı</th>
+                                    <th>Ürün Kodu</th>
+                                    <th>Antrepo Giriş Tarihi</th>
+                                    <th>Form No</th>
+                                    <th>Giriş Adedi</th>
+                                    <th>Giriş Kap Adedi</th>
+                                    <th>Son Çıkış Tarihi</th>
+                                    <th>Son Çıkış Adedi</th>
+                                    <th>Mevcut Stok</th>
+                                    <th>Mevcut Kap Adedi</th>
+                                    <th>Mevcut Maliyet</th>
+                                    <th>Toplam Maliyet</th>
+                                    <th>Birim Maliyete Etkisi</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody id="maliyetTableBody"></tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
             <!-- Eski linki kaldırıp yerine yeni button-container ekliyoruz -->
@@ -71,6 +101,8 @@
     <!-- template.js'i mutlaka ekliyoruz (navigasyon vb.) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <!-- DataTables Responsive JS - Ekleyin -->
+    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script src="../js/template.js"></script>
     <script type="module" src="../js/maliyet-analizi-index.js"></script>

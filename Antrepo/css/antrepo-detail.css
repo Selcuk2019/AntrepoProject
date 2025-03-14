@@ -16,13 +16,16 @@
   .tabs-menu ul {
     list-style: none;
     padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #dee2e6;
   }
   .tabs-menu ul li {
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.5rem;
+    display: inline-block;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-bottom: -1px;
     background: #fff;
     border: 1px solid #ddd;
-    cursor: pointer;
     transition: background-color 0.3s;
     border-radius: 6px;
   }
@@ -30,8 +33,10 @@
     background: #f0f0f0;
   }
   .tabs-menu ul li.active {
-    background: #dce9f9; /* Seçili sekme rengi */
-    border-color: #408dfb; /* Mavi kenar */
+    border: 1px solid #dee2e6;
+    border-bottom: 1px solid #fff;
+    border-radius: 4px 4px 0 0;
+    background: #fff;
   }
   
   /* Tabs içerik */
@@ -47,6 +52,7 @@
   /* Her panel */
   .tab-panel {
     display: none;
+    padding: 20px 0;
   }
   .tab-panel.active {
     display: block;
@@ -119,13 +125,16 @@
   .tabs-menu ul {
     list-style: none;
     padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #dee2e6;
   }
   .tabs-menu ul li {
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.5rem;
+    display: inline-block;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-bottom: -1px;
     background: #fff;
     border: 1px solid #ddd;
-    cursor: pointer;
     transition: background-color 0.3s;
     border-radius: 6px;
   }
@@ -133,8 +142,10 @@
     background: #f0f0f0;
   }
   .tabs-menu ul li.active {
-    background: #dce9f9; /* Seçili sekme rengi */
-    border-color: #408dfb; /* Mavi kenar */
+    border: 1px solid #dee2e6;
+    border-bottom: 1px solid #fff;
+    border-radius: 4px 4px 0 0;
+    background: #fff;
   }
   
   /* Sağ İçerik Alanı */
@@ -150,6 +161,7 @@
   /* Sekme Panelleri */
   .tab-panel {
     display: none;
+    padding: 20px 0;
   }
   .tab-panel.active {
     display: block;
@@ -262,13 +274,16 @@
   .tabs-menu ul {
     list-style: none;
     padding: 0;
+    margin: 0;
+    border-bottom: 1px solid #dee2e6;
   }
   .tabs-menu ul li {
-    padding: 0.75rem 1rem;
-    margin-bottom: 0.5rem;
+    display: inline-block;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-bottom: -1px;
     background: #fff;
     border: 1px solid #ddd;
-    cursor: pointer;
     transition: background-color 0.3s;
     border-radius: 6px;
   }
@@ -276,8 +291,10 @@
     background: #f0f0f0;
   }
   .tabs-menu ul li.active {
-    background: #dce9f9; 
-    border-color: #408dfb; 
+    border: 1px solid #dee2e6;
+    border-bottom: 1px solid #fff;
+    border-radius: 4px 4px 0 0;
+    background: #fff;
   }
   .tabs-content {
     flex-grow: 1;
@@ -289,6 +306,7 @@
   }
   .tab-panel {
     display: none;
+    padding: 20px 0;
   }
   .tab-panel.active {
     display: block;
@@ -378,3 +396,11 @@
     background-color: #ddd;
   }
   
+  /* DataTables özelleştirmeleri */
+.dataTables_wrapper {
+    padding: 20px;
+}
+
+.table-responsive {
+    margin-top: 20px;
+}

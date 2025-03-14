@@ -1,6 +1,7 @@
 import { baseUrl } from './config.js';
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // URL parametresinden antrepoId'yi al
     const params = new URLSearchParams(window.location.search);
     const antrepoId = params.get("id");
 
@@ -40,27 +41,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Antrepo detaylarını çek
         const antrepoResp = await fetch(`${baseUrl}/api/antrepolar/${antrepoId}`);
         if (!antrepoResp.ok) throw new Error('Antrepo bulunamadı');
-        
         const antrepo = await antrepoResp.json();
-        
+
         // Form alanlarını doldur
         document.getElementById('antrepoAdi').value = antrepo.antrepoAdi || '';
         document.getElementById('antrepoKodu').value = antrepo.antrepoKodu || '';
-        document.getElementById('antrepoTipi').value = antrepo.antrepoTipi || ''; // ID değeri
-        document.getElementById('gumruk').value = antrepo.gumruk || '';           // ID değeri
-        document.getElementById('gumrukMudurlugu').value = antrepo.gumrukMudurlugu || ''; // ID değeri
-        document.getElementById('sehir').value = antrepo.sehir || '';             // ID değeri
+        document.getElementById('antrepoTipi').value = antrepo.antrepoTipi || '';
+        document.getElementById('gumruk').value = antrepo.gumruk || '';
+        document.getElementById('gumrukMudurlugu').value = antrepo.gumrukMudurlugu || '';
+        document.getElementById('sehir').value = antrepo.sehir || '';
         document.getElementById('acikAdres').value = antrepo.acikAdres || '';
-        document.getElementById('antrepoSirketi').value = antrepo.antrepoSirketi || ''; // ID değeri
+        document.getElementById('antrepoSirketi').value = antrepo.antrepoSirketi || '';
 
-        // Debug için
         console.log('Antrepo Data:', antrepo);
-        console.log('Form Elements:', {
-            antrepoAdi: document.getElementById('antrepoAdi'),
-            antrepoKodu: document.getElementById('antrepoKodu'),
-            // ...diğer elementler
-        });
-
     } catch (error) {
         console.error('Hata:', error);
         alert('Veriler yüklenirken hata oluştu!');
@@ -72,7 +65,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (!select) return;
 
         select.innerHTML = '<option value="">Seçiniz</option>';
-        
         data.forEach(item => {
             const option = document.createElement('option');
             option.value = item[valueField];
@@ -81,7 +73,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Kaydet butonu
+    // Kaydet butonu işlevi
     document.getElementById('saveAntrepoBtn').addEventListener('click', async () => {
         try {
             const updatedData = {
@@ -113,22 +105,172 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             const result = await response.json();
-            
+
             if (result.success) {
                 alert(result.message || 'Antrepo başarıyla güncellendi!');
                 window.location.href = 'antrepo-list.html';
             } else {
                 throw new Error(result.message || 'Güncelleme başarısız');
             }
-
         } catch (error) {
             console.error('Güncelleme hatası:', error);
             alert('Güncelleme sırasında hata oluştu: ' + error.message);
         }
     });
 
-    // İptal butonu
+    // İptal butonu işlevi
     document.getElementById('cancelBtn')?.addEventListener('click', () => {
         window.location.href = 'antrepo-list.html';
     });
+
+    // Sekme (tab) geçiş işlevselliği
+    const tabButtons = document.querySelectorAll('.tabs-menu li');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Tüm sekmelerden ve panelden aktif sınıfları kaldır
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabPanels.forEach(panel => panel.classList.remove('active'));
+
+            // Tıklanan sekmeye ve ilgili panele aktif sınıfı ekle
+            button.classList.add('active');
+            const tabId = button.getAttribute('data-tab');
+            document.getElementById(tabId).classList.add('active');
+
+            // Eğer "Stok Miktarları" sekmesi seçildiyse, tabloyu initialize et
+            if (tabId === 'stockQuantitiesTab') {
+                initializeStockQuantitiesTable();
+            }
+        });
+    });
+
+    // Stok miktarları tablosunun initialize edilmesi (maliyet analizi verisi üzerinden)
+    async function initializeStockQuantitiesTable() {
+        try {
+            // 1. Antrepo ID'sini URL'den al
+            const params = new URLSearchParams(window.location.search);
+            const antrepoId = params.get("id");
+            
+            // 2. Maliyet Analizi verilerinin TAMAMINI bir kerede çek
+            const response = await fetch(`${baseUrl}/api/maliyet-analizi`);
+            if (!response.ok) throw new Error('Maliyet analizi verisi alınamadı');
+            const allData = await response.json();
+            
+            // 3. Frontend'de bu antrepoya ait kayıtları filtrele 
+            const filteredByAntrepo = allData.filter(item => 
+                String(item.antrepoId) === String(antrepoId)
+            );
+            
+            // 4. Ürün bazlı gruplama: Aynı productCode'a sahip kayıtların toplamları
+            const groupedMap = {};
+            filteredByAntrepo.forEach(item => {
+                const code = item.productCode;
+                if (!groupedMap[code]) {
+                    groupedMap[code] = {
+                        productName: item.productName,
+                        productCode: code,
+                        currentStock: 0,
+                        currentKapCount: 0,
+                        totalCost: 0,
+                        paraBirimi: item.paraBirimi
+                    };
+                }
+                
+                // Her kayıt için değerleri topla
+                groupedMap[code].currentStock += parseFloat(item.currentStock || 0);
+                groupedMap[code].currentKapCount += parseInt(item.currentKapCount || 0);
+                
+                // Her kayıt için toplam maliyeti topla
+                groupedMap[code].totalCost += parseFloat(item.totalCost || 0);
+            });
+            
+            // 5. DataTable için array oluştur
+            const tableData = Object.values(groupedMap);
+
+            // Eğer DataTable zaten kurulmuşsa destroy et
+            if ($.fn.DataTable.isDataTable('#stockQuantitiesTable')) {
+                $('#stockQuantitiesTable').DataTable().destroy();
+            }
+
+            // 6. DataTable'ı initialize et
+            $('#stockQuantitiesTable').DataTable({
+                data: tableData,
+                ordering: true,
+                pageLength: 10,
+                responsive: true,
+                language: {
+                    url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
+                },
+                // "Toplam Maliyet" ve "Detay" sütunlarını gizle (indeks 4 ve 5)
+                columnDefs: [
+                    { 
+                        targets: [4, 5], // 4: Toplam Maliyet, 5: Detay
+                        visible: false
+                    }
+                ],
+                columns: [
+                    { 
+                        title: "Ürün Adı",
+                        data: 'productName',
+                        render: function(data) {
+                            return data || '-';
+                        }
+                    },
+                    { 
+                        title: "Ürün Kodu",
+                        data: 'productCode',
+                        render: function(data) {
+                            return data || '-';
+                        }
+                    },
+                    { 
+                        title: "Mevcut Miktar (Ton)",
+                        data: 'currentStock',
+                        render: function(data) {
+                            return parseFloat(data).toFixed(2) + ' ton';
+                        }
+                    },
+                    { 
+                        title: "Kap Adedi",
+                        data: 'currentKapCount',
+                        render: function(data) {
+                            return data || '0';
+                        }
+                    },
+                    { 
+                        title: "Toplam Maliyet",
+                        data: 'totalCost',
+                        render: function(data, type, row) {
+                            return parseFloat(data).toFixed(2) + ' ' + row.paraBirimi;
+                        }
+                    },
+                    {
+                        title: "Detay",
+                        data: 'productCode',
+                        render: function(data) {
+                            return `<button class="btn btn-sm btn-primary" onclick="goToMaliyetAnalizi('${data}')">
+                                        Detay
+                                    </button>`;
+                        }
+                    }
+                ]
+            });
+
+        } catch (error) {
+            console.error('Stok miktarları yükleme hatası:', error);
+            alert('Stok miktarları yüklenirken bir hata oluştu!');
+        }
+    }
+
+    // Global fonksiyon: Detay butonuna tıklanınca maliyet analizi sayfasına yönlendir
+    window.goToMaliyetAnalizi = function(productCode) {
+        window.location.href = `maliyet-analizi-index.html?filter=${encodeURIComponent(productCode)}`;
+    };
+
+    // Sayfa yüklenirken "Stok Miktarları" sekmesi aktifse tabloyu initialize et
+    const stockTabElement = document.querySelector('#stockQuantitiesTab');
+    if (stockTabElement && stockTabElement.classList.contains('active')) {
+        initializeStockQuantitiesTable();
+    }
 });
