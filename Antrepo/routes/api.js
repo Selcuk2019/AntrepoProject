@@ -3070,4 +3070,207 @@ router.get('/product-movements/:productId', async (req, res) => {
   }
 });
 
+// GET /api/varyant-hareketleri/:variantId - Movement history with running balance
+router.get('/varyant-hareketleri/:variantId', async (req, res) => {
+  try {
+    const { variantId } = req.params;
+    
+    // First get all movements for this variant ordered by date
+    const [rows] = await db.query(
+      `SELECT 
+        h.id,
+        h.islem_tarihi,
+        h.islem_tipi,
+        h.miktar,
+        h.kap_adeti,
+        h.brut_agirlik,
+        h.net_agirlik,
+        h.aciklama,
+        a.antrepoAdi AS antrepo_adi
+      FROM antrepo_hareketleri h
+      JOIN antrepo_giris g ON h.antrepo_giris_id = g.id
+      JOIN antrepolar a ON g.antrepo_id = a.id
+      WHERE h.urun_varyant_id = ?
+      ORDER BY h.islem_tarihi, h.id`,
+      [variantId]
+    );
+    
+    // Calculate running balance
+    let runningBalance = 0;
+    const result = rows.map(row => {
+      const amount = parseFloat(row.miktar);
+      if (row.islem_tipi === 'Giriş') {
+        runningBalance += amount;
+      } else if (row.islem_tipi === 'Çıkış') {
+        runningBalance -= amount;
+      }
+      
+      return {
+        ...row,
+        running_balance: runningBalance
+      };
+    });
+    
+    res.json(result);
+  } catch (error) {
+    console.error('GET /api/varyant-hareketleri/:variantId error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/urun-varyantlari/with-stock/:urunId - Variants with current stock
+router.get('/urun-varyantlari/with-stock/:urunId', async (req, res) => {
+  try {
+    const { urunId } = req.params;
+    
+    // Improved query that correctly attributes stock to variants
+    const sql = `
+      SELECT 
+        v.id,
+        v.urun_id,
+        v.paket_hacmi,
+        v.description,
+        v.olusturulma_tarihi,
+        v.guncellenme_tarihi,
+        COALESCE(
+          SUM(
+            CASE 
+              WHEN h.islem_tipi = 'Giriş' AND h.urun_varyant_id = v.id THEN h.miktar
+              WHEN h.islem_tipi = 'Çıkış' AND h.urun_varyant_id = v.id THEN -h.miktar
+              ELSE 0
+            END
+          ),
+          0
+        ) AS mevcut_stok
+      FROM urun_varyantlari v
+      LEFT JOIN antrepo_hareketleri h ON h.urun_varyant_id = v.id
+      WHERE v.urun_id = ?
+      GROUP BY v.id, v.urun_id, v.paket_hacmi, v.description, v.olusturulma_tarihi, v.guncellenme_tarihi
+      ORDER BY v.id
+    `;
+    
+    const [rows] = await db.query(sql, [urunId]);
+    
+    // If no variant has stock, use an alternative query to find product-level stock
+    if (rows.length > 0 && rows.every(row => row.mevcut_stok === 0)) {
+      console.log("No variant-specific stock found, checking product-level stock...");
+      
+      // Get total product stock for potentially unattributed movements
+      const sqlProductStock = `
+        SELECT 
+          SUM(
+            CASE 
+              WHEN h.islem_tipi = 'Giriş' THEN h.miktar
+              WHEN h.islem_tipi = 'Çıkış' THEN -h.miktar
+              ELSE 0
+            END
+          ) AS total_stock
+        FROM antrepo_hareketleri h
+        JOIN antrepo_giris ag ON h.antrepo_giris_id = ag.id
+        JOIN urunler u ON ag.urun_kodu = u.code
+        WHERE u.id = ? AND h.urun_varyant_id IS NULL
+      `;
+      
+      const [productStock] = await db.query(sqlProductStock, [urunId]);
+      const totalUnattributedStock = productStock[0]?.total_stock || 0;
+      
+      if (totalUnattributedStock > 0 && rows.length > 0) {
+        console.log(`Found ${totalUnattributedStock} tons of unattributed product stock, distributing among variants`);
+        
+        // Distribute the unattributed stock to the variants proportionally or equally
+        const stockPerVariant = totalUnattributedStock / rows.length;
+        rows.forEach(row => {
+          row.mevcut_stok = parseFloat(stockPerVariant.toFixed(2));
+        });
+      }
+    }
+    
+    console.log(`Found ${rows.length} variants for product ${urunId} with stock data:`, 
+      rows.map(r => ({id: r.id, description: r.description, stock: r.mevcut_stok})));
+    
+    res.json(rows);
+  } catch (error) {
+    console.error('GET /api/urun-varyantlari/with-stock/:urunId error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/urun-varyantlari/with-stock/:urunId', async (req, res) => {
+  try {
+    const { urunId } = req.params;
+    
+    // First get all variants for this product to make sure we return all of them
+    const variantSql = `
+      SELECT 
+        v.id,
+        v.urun_id,
+        v.paket_hacmi,
+        v.description,
+        v.olusturulma_tarihi,
+        v.guncellenme_tarihi,
+        (
+          SELECT 
+            COALESCE(SUM(
+              CASE 
+                WHEN h.islem_tipi = 'Giriş' THEN h.miktar
+                WHEN h.islem_tipi = 'Çıkış' THEN -h.miktar
+                ELSE 0
+              END
+            ), 0)
+          FROM antrepo_hareketleri h
+          JOIN antrepo_giris ag ON h.antrepo_giris_id = ag.id
+          WHERE 
+            (h.urun_varyant_id = v.id) OR
+            (ag.urun_varyant_id = v.id) OR
+            (h.urun_varyant_id IS NULL AND ag.urun_varyant_id IS NULL 
+             AND ag.urun_kodu = (SELECT code FROM urunler WHERE id = v.urun_id))
+        ) as mevcut_stok
+      FROM urun_varyantlari v
+      WHERE v.urun_id = ?
+      ORDER BY v.id
+    `;
+
+    const [variants] = await db.query(variantSql, [urunId]);
+
+    // If there's unattributed stock and multiple variants
+    if (variants.length > 1 && variants.every(v => v.mevcut_stok === 0)) {
+      // Get total unattributed stock
+      const unattributedSql = `
+        SELECT 
+          COALESCE(SUM(
+            CASE 
+              WHEN h.islem_tipi = 'Giriş' THEN h.miktar
+              WHEN h.islem_tipi = 'Çıkış' THEN -h.miktar
+              ELSE 0
+            END
+          ), 0) as total_stock
+        FROM antrepo_hareketleri h
+        JOIN antrepo_giris ag ON h.antrepo_giris_id = ag.id
+        WHERE h.urun_varyant_id IS NULL 
+        AND ag.urun_varyant_id IS NULL
+        AND ag.urun_kodu = (SELECT code FROM urunler WHERE id = ?)
+      `;
+      
+      const [unattributedStock] = await db.query(unattributedSql, [urunId]);
+      const totalUnattributed = unattributedStock[0]?.total_stock || 0;
+      
+      if (totalUnattributed > 0) {
+        // Distribute unattributed stock equally among variants
+        const stockPerVariant = totalUnattributed / variants.length;
+        variants.forEach(variant => {
+          variant.mevcut_stok = parseFloat(stockPerVariant.toFixed(2));
+        });
+      }
+    }
+
+    console.log(`Found ${variants.length} variants for product ${urunId} with stock data:`, 
+      variants.map(v => ({id: v.id, description: v.description, stock: v.mevcut_stok})));
+    
+    res.json(variants);
+  } catch (error) {
+    console.error('GET /api/urun-varyantlari/with-stock/:urunId error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

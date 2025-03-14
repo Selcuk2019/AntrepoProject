@@ -4,6 +4,9 @@ import { baseUrl } from './config.js';
 // Global değişken olarak productId'yi tanımla
 let productId;
 
+// Declare variantsTable globally
+let variantsTable;
+
 document.addEventListener('DOMContentLoaded', async () => {
   const params = new URLSearchParams(window.location.search);
   productId = params.get('id'); // Global değişkene ata
@@ -198,92 +201,97 @@ async function loadStockMovements() {
 // Varyantları getir - DataTables kullanarak
 async function loadProductVariants(productId) {
   try {
-    const response = await fetch(`${baseUrl}/api/urun_varyantlari/details?urunId=${productId}`);
+    // First make sure the DataTable container is visible
+    const tableContainer = document.querySelector('#urun-varyantlari .table-responsive');
+    if (tableContainer) {
+      tableContainer.style.display = 'block';
+    }
+    
+    // Fetch variants with stock information
+    const response = await fetch(`${baseUrl}/api/urun-varyantlari/with-stock/${productId}`);
     if (!response.ok) {
       throw new Error('Varyant bilgileri alınamadı');
     }
+    
     const data = await response.json();
-    console.log("Varyant bilgileri:", data);
     
-    // DataTables ile varyantları göster
-    const variantsTable = $('#variantsTable');
-    
-    // DataTable zaten initialize edilmişse önce yok et
-    if ($.fn.DataTable.isDataTable('#variantsTable')) {
-      variantsTable.DataTable().destroy();
-    }
-    
-    // Tabloyu boşalt
-    variantsTable.empty();
-    
-    // DataTable'ı initialize et
-    if (data && data.length > 0) {
-      variantsTable.DataTable({
-        data: data,
-        responsive: true,
-        columns: [
-          { 
-            title: "Paketleme Tipi", 
-            data: "description",
-            render: function(data) {
-              return data || '-';
-            }
-          },
-          { 
-            title: "Paket Boyutu", 
-            data: "paket_hacmi",
-            render: function(data) {
-              return data || '-';
-            }
-          },
-          { 
-            title: "İşlemler", 
-            data: "id",
-            orderable: false,
-            render: function(data) {
-              return `
-                <button onclick="editVariant(${data})" class="btn btn-sm btn-primary">
-                  <i class="fas fa-edit"></i> Düzenle
-                </button>
-                <button onclick="deleteVariant(${data})" class="btn btn-sm btn-danger">
-                  <i class="fas fa-trash"></i> Sil
-                </button>
-              `;
-            }
-          }
-        ],
-        language: {
-          url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
-        }
-      });
+    console.log("Varyant API Response:", data);
+    if (data.length === 0) {
+      console.warn("API returned empty dataset for variants");
     } else {
-      // Veri yoksa boş bir DataTable göster
-      variantsTable.DataTable({
-        language: {
-          url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json",
-          emptyTable: "Varyant bulunamadı"
-        }
-      });
+      console.log("Sample variant data structure:", data[0]);
     }
+    
+    // Always destroy existing table before re-initializing
+    if ($.fn.DataTable.isDataTable('#variantsTable')) {
+      $('#variantsTable').DataTable().destroy();
+    }
+    
+    // Make sure the table has a tbody
+    if ($('#variantsTable tbody').length === 0) {
+      $('#variantsTable').append('<tbody></tbody>');
+    }
+    
+    // Initialize DataTable with explicit column definitions
+    variantsTable = $('#variantsTable').DataTable({
+      data: data,
+      responsive: true,
+      columns: [
+        { 
+          title: "Paketleme Tipi", 
+          data: "description",
+          render: function(data) {
+            return data || '-';
+          }
+        },
+        { 
+          title: "Paket Boyutu", 
+          data: "paket_hacmi",
+          render: function(data) {
+            return data ? data + ' Kg' : '-';
+          }
+        },
+        { 
+          title: "Mevcut Stok", 
+          data: "mevcut_stok",
+          render: function(data) {
+            return data !== undefined ? data + ' ton' : '0 ton';
+          }
+        },
+        { 
+          title: "İşlemler", 
+          data: "id",
+          orderable: false,
+          render: function(data) {
+            return `
+              <button onclick="editVariant(${data})" class="btn btn-sm btn-primary">
+                <i class="fas fa-edit"></i> Düzenle
+              </button>
+              <button onclick="deleteVariant(${data})" class="btn btn-sm btn-danger">
+                <i class="fas fa-trash"></i> Sil
+              </button>
+            `;
+          }
+        }
+      ],
+      language: {
+        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
+      },
+      drawCallback: function() {
+        console.log("DataTable draw complete");
+      }
+    });
     
     return data;
   } catch (error) {
     console.error("Varyant bilgileri yükleme hatası:", error);
     
-    // Hata durumunda da boş bir DataTable göster
-    const variantsTable = $('#variantsTable');
-    
+    // Cleanup and show error in table
     if ($.fn.DataTable.isDataTable('#variantsTable')) {
-      variantsTable.DataTable().destroy();
+      $('#variantsTable').DataTable().destroy();
     }
     
-    variantsTable.empty();
-    variantsTable.DataTable({
-      language: {
-        url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json",
-        emptyTable: `Hata: ${error.message}`
-      }
-    });
+    $('#variantsTable').find('tbody').html('<tr><td colspan="4" class="text-center text-danger">Hata: ' + error.message + '</td></tr>');
     
     return [];
   }
