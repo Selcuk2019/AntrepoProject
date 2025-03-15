@@ -142,6 +142,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (tabId === 'stockQuantitiesTab') {
                 initializeStockQuantitiesTable();
             }
+            
+            // Eğer "Stok Hareketleri" sekmesi seçildiyse, hareketler tablosunu initialize et
+            if (tabId === 'stockMovementsTab') {
+                initializeStockMovementsTable();
+            }
         });
     });
 
@@ -263,6 +268,97 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // Stok hareketleri tablosunu initialize etme fonksiyonu
+    async function initializeStockMovementsTable() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const antrepoId = params.get("id");
+            
+            if (!antrepoId) {
+                console.error("Antrepo ID bulunamadı!");
+                return;
+            }
+            
+            // API'den veri çekme
+            const response = await fetch(`${baseUrl}/api/antrepolar/${antrepoId}/hareketler`);
+            if (!response.ok) throw new Error("Hareket verileri alınamadı");
+            const data = await response.json();
+            
+            // Eğer DataTable zaten kurulmuşsa destroy et
+            if ($.fn.DataTable.isDataTable('#stokMovementsTable')) {
+                $('#stokMovementsTable').DataTable().destroy();
+            }
+            
+            // DataTable oluştur
+            $('#stokMovementsTable').DataTable({
+                data: data,
+                columns: [
+                    { 
+                        data: 'form_no', 
+                        title: 'Form No',
+                        render: function(data) { return data || '-'; }
+                    },
+                    { 
+                        data: 'urun_tanimi', 
+                        title: 'Ürün Adı',
+                        render: function(data) { return data || '-'; }
+                    },
+                    { 
+                        data: 'urun_kodu', 
+                        title: 'Ürün Kodu',
+                        render: function(data) { return data || '-'; }
+                    },
+                    { 
+                        data: 'islem_tipi', 
+                        title: 'İşlem Tipi',
+                        render: function(data) { 
+                            if (data === 'Giriş') {
+                                return '<span class="badge bg-success">Giriş</span>';
+                            } else {
+                                return '<span class="badge bg-danger">Çıkış</span>';
+                            }
+                        }
+                    },
+                    { 
+                        data: 'islem_tarihi', 
+                        title: 'İşlem Tarihi',
+                        render: function(data) { 
+                            if (!data) return '-';
+                            return new Date(data).toLocaleDateString('tr-TR'); 
+                        }
+                    },
+                    { 
+                        data: 'miktar', 
+                        title: 'Miktar',
+                        render: function(data, type, row) { 
+                            return data != null ? parseFloat(data).toFixed(2) + ' ' + (row.birim_adi || 'ton') : '-';
+                        }
+                    },
+                    { 
+                        data: 'kap_adeti', 
+                        title: 'Kap Adedi',
+                        render: function(data) { return data != null ? data : '-'; }
+                    },
+                    { 
+                        data: 'aciklama', 
+                        title: 'Açıklama',
+                        render: function(data) { return data || '-'; }
+                    }
+                ],
+                responsive: true,
+                order: [[4, 'desc']], // İşlem tarihi sütununa göre sıralama
+                pageLength: 10,
+                language: {
+                    url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
+                }
+            });
+
+        } catch (error) {
+            console.error("Stok hareketleri yüklenirken hata:", error);
+            alert("Stok hareketleri yüklenirken bir hata oluştu!");
+        }
+    }
+
     // Global fonksiyon: Detay butonuna tıklanınca maliyet analizi sayfasına yönlendir
     window.goToMaliyetAnalizi = function(productCode) {
         window.location.href = `maliyet-analizi-index.html?filter=${encodeURIComponent(productCode)}`;
@@ -272,5 +368,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const stockTabElement = document.querySelector('#stockQuantitiesTab');
     if (stockTabElement && stockTabElement.classList.contains('active')) {
         initializeStockQuantitiesTable();
+    }
+
+    // Sayfa yüklenirken "Stok Hareketleri" sekmesi aktifse tabloyu initialize et
+    const stockMovementsTabElement = document.querySelector('#stockMovementsTab');
+    if (stockMovementsTabElement && stockMovementsTabElement.classList.contains('active')) {
+        initializeStockMovementsTable();
     }
 });
