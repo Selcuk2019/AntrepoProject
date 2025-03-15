@@ -3338,4 +3338,82 @@ router.get('/urun-varyantlari/with-stock/:productId', async (req, res) => {
   }
 });
 
+// GET /api/antrepolar/:antrepoId/hareketler - Belirli bir antrepoya ait tüm hareketleri listeler
+router.get('/antrepo/:antrepoId/hareketler', async (req, res) => {
+  try {
+    const { antrepoId } = req.params;
+
+    // Antrepo ID'ye ait tüm antrepo_giris kayıtlarını bulup,
+    // antrepo_hareketleri tablosuyla join yaparak hareketleri alıyoruz
+    const sql = `
+      SELECT 
+        h.id AS hareketId,
+        h.antrepo_giris_id,
+        h.islem_tarihi,
+        h.islem_tipi,
+        h.miktar,
+        h.kap_adeti,
+        h.aciklama,
+        h.brut_agirlik,
+        h.net_agirlik,
+        h.created_at,
+        h.updated_at,
+        ag.beyanname_no AS form_no,
+        ag.urun_tanimi,
+        ag.urun_kodu,
+        b.birim_adi
+      FROM antrepo_hareketleri h
+      JOIN antrepo_giris ag ON h.antrepo_giris_id = ag.id
+      LEFT JOIN birimler b ON h.birim_id = b.id
+      WHERE ag.antrepo_id = ?
+      ORDER BY h.islem_tarihi DESC, h.created_at DESC
+    `;
+    
+    const [rows] = await db.query(sql, [antrepoId]);
+    res.json(rows);
+  } catch (error) {
+    console.error("GET /api/antrepolar/:antrepoId/hareketler error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/antrepolar/:antrepoId/hareketler - Belirli bir antrepoya ait tüm hareketleri listeler
+router.get('/antrepolar/:antrepoId/hareketler', async (req, res) => {
+  try {
+    const { antrepoId } = req.params;
+
+    // Antrepo ID'ye ait tüm antrepo_giris kayıtlarını bulup,
+    // antrepo_hareketleri tablosuyla join yaparak hareketleri alıyoruz
+    const sql = `
+      SELECT 
+        h.id AS hareketId,
+        h.antrepo_giris_id,
+        h.islem_tarihi,
+        h.islem_tipi,
+        h.miktar,
+        h.kap_adeti,
+        h.aciklama,
+        h.brut_agirlik,
+        h.net_agirlik,
+        h.created_at,
+        h.updated_at,
+        ag.beyanname_no AS form_no,
+        ag.urun_tanimi,
+        ag.urun_kodu,
+        b.birim_adi
+      FROM antrepo_hareketleri h
+      JOIN antrepo_giris ag ON h.antrepo_giris_id = ag.id
+      LEFT JOIN birimler b ON h.birim_id = b.id
+      WHERE ag.antrepo_id = ?
+      ORDER BY h.islem_tarihi DESC, h.created_at DESC
+    `;
+    
+    const [rows] = await db.query(sql, [antrepoId]);
+    res.json(rows);
+  } catch (error) {
+    console.error("GET /api/antrepolar/:antrepoId/hareketler error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
