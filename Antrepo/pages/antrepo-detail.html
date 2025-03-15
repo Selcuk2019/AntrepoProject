@@ -29,21 +29,24 @@
       <div class="info-cards-row">
         <!-- 1) Stokta -->
         <div class="info-card">
+          <i class="fas fa-box-open"></i>
           <h3>Stokta</h3>
           <p id="stockedQty">0 MT</p>
-          <small>(Opsiyonel açıklama)</small>
+          <small>Bu antrepoya ait tüm antrepo giriş formlarında henüz çıkışı yapılmamış ürünlerin toplam tonajını gösterir.</small>
         </div>
         <!-- 2) Kap Adedi (eski Taahhüt Edilen) -->
         <div class="info-card">
+          <i class="fas fa-boxes"></i>
           <h3>Kap Adedi</h3>
           <p id="kapAdediQty">0</p>
-          <small>(Opsiyonel açıklama)</small>
+          <small>Aynı antrepoya ait tüm giriş formlarında kalan kapların toplam adedini gösterir.</small>
         </div>
         <!-- 3) Boş Kapasite -->
         <div class="info-card">
-          <h3>Boş Kapasite</h3>
-          <p id="freeCapacity">0 MT / 1 MT</p>
-          <small>(Opsiyonel açıklama)</small>
+          <i class="fas fa-clipboard-list"></i>
+          <h3>Devam Eden Form Adeti</h3>
+          <p id="freeCapacity">0 form</p>
+          <small>Bu antrepoda hâlâ stok barındıran antrepo giriş formlarının (yani “açık” formların) adeti.</small>
         </div>
       </div>
 
@@ -51,9 +54,15 @@
       <div class="detail-container">
         <div class="tabs-menu">
           <ul>
-            <li class="active" data-tab="antrepoDetailTab">Antrepo Detay</li>
-            <li data-tab="stockQuantitiesTab">Stok Miktarları</li>
-            <li data-tab="stockMovementsTab">Stok Hareketleri</li>
+            <li class="active" data-tab="antrepoDetailTab">
+              <i class="fas fa-warehouse"></i> Antrepo Detay
+            </li>
+            <li data-tab="stockQuantitiesTab">
+              <i class="fas fa-boxes"></i> Stok Miktarları
+            </li>
+            <li data-tab="stockMovementsTab">
+              <i class="fas fa-exchange-alt"></i> Stok Hareketleri
+            </li>
           </ul>
         </div>
 
@@ -110,19 +119,7 @@
             <div class="card">
               <h2>Stok Miktarları</h2>
               <div class="table-responsive">
-                <table id="stockQuantitiesTable" class="table table-striped">
-                  <thead>
-                    <tr>
-                      <th>Ürün Adı</th>
-                      <th>Ürün Kodu</th>
-                      <th>Mevcut Miktar</th>
-                      <th>Kap Adedi</th>
-                      <th>Toplam Maliyet</th>
-                      <th>İşlemler</th>
-                    </tr>
-                  </thead>
-                  <tbody></tbody>
-                </table>
+                <table id="stockQuantitiesTable"></table>
               </div>
             </div>
           </div>
@@ -132,21 +129,8 @@
             <div class="card">
               <h2>Stok Hareketleri</h2>
               <div class="table-responsive">
-                <table id="stokMovementsTable" class="table table-striped">
-                  <thead>
-                    <tr>
-                      <th>Form No</th>
-                      <th>Ürün Adı</th>
-                      <th>Ürün Kodu</th>
-                      <th>İşlem Tipi</th>
-                      <th>İşlem Tarihi</th>
-                      <th>Miktar</th>
-                      <th>Kap Adedi</th>
-                      <th>Açıklama</th>
-                    </tr>
-                  </thead>
-                  <tbody id="stokMovementsTableBody"></tbody>
-                </table>
+                <!-- ÖNEMLI: Tamamen boş tablo - thead/tbody YOK -->
+                <table id="stokMovementsTable"></table>
               </div>
             </div>
           </div>

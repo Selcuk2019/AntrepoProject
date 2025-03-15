@@ -10,6 +10,39 @@ document.addEventListener('DOMContentLoaded', async function() {
         window.location.href = "antrepo-list.html";
         return;
     }
+    
+    // Antrepo istatistiklerini yükle ve bilgi kartlarını doldur
+    try {
+        const statsResponse = await fetch(`${baseUrl}/api/antrepolar/${antrepoId}/stats`);
+        if (!statsResponse.ok) {
+            throw new Error(`Antrepo istatistikleri alınamadı: ${statsResponse.status}`);
+        }
+        
+        const stats = await statsResponse.json();
+        
+        // Kart 1: Stokta (MT)
+        document.getElementById('stockedQty').textContent = `${stats.totalStock} MT`;
+        
+        // Kart 2: Kap Adedi
+        document.getElementById('kapAdediQty').textContent = stats.totalKap;
+        
+        // Kart 3: Boş Kapasite / Açık Form Sayısı
+        if (stats.kapasite) {
+            // Kapasite varsa kalan kapasiteyi göster
+            const freeCapacity = Math.max(0, stats.kapasite - stats.totalStock);
+            document.getElementById('freeCapacity').textContent = 
+                `${freeCapacity.toFixed(2)} MT / ${stats.kapasite} MT`;
+        } else {
+            // Yoksa açık form sayısını göster
+            document.getElementById('freeCapacity').textContent = `${stats.openFormsCount} form`;
+        }
+    } catch (error) {
+        console.error("İstatistik kartları yüklenirken hata:", error);
+        // Hata durumunda varsayılan değerler göster
+        document.getElementById('stockedQty').textContent = "0 MT";
+        document.getElementById('kapAdediQty').textContent = "0";
+        document.getElementById('freeCapacity').textContent = "0 MT / 0 MT";
+    }
 
     // Dropdown verilerini yükle
     try {
@@ -147,11 +180,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (tabId === 'stockMovementsTab') {
                 initializeStockMovementsTable();
             }
+
+            // Yeni: Tablo yeniden boyutlandırması
+            setTimeout(() => {
+                if (tabId === 'stockQuantitiesTab' && $.fn.DataTable.isDataTable('#stockQuantitiesTable')) {
+                    $('#stockQuantitiesTable').DataTable().columns.adjust().draw(false); // 'false' prevents resorting
+                } else if (tabId === 'stockMovementsTab' && $.fn.DataTable.isDataTable('#stokMovementsTable')) {
+                    $('#stokMovementsTable').DataTable().columns.adjust().draw(false); // 'false' prevents resorting
+                }
+            }, 10); // Yeni sekmede tablo görünür olduktan sonra
         });
     });
 
     // Stok miktarları tablosunun initialize edilmesi (maliyet analizi verisi üzerinden)
     async function initializeStockQuantitiesTable() {
+        console.log("Initializing DataTable for #stockQuantitiesTable");
+        
         try {
             // 1. Antrepo ID'sini URL'den al
             const params = new URLSearchParams(window.location.search);
@@ -173,6 +217,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const code = item.productCode;
                 if (!groupedMap[code]) {
                     groupedMap[code] = {
+                        productId: item.productId,
                         productName: item.productName,
                         productCode: code,
                         currentStock: 0,
@@ -193,24 +238,33 @@ document.addEventListener('DOMContentLoaded', async function() {
             // 5. DataTable için array oluştur
             const tableData = Object.values(groupedMap);
 
-            // Eğer DataTable zaten kurulmuşsa destroy et
+            // ÖNEMLI: İlk olarak destroy et, sonra sadece BİR kez initialize et!
             if ($.fn.DataTable.isDataTable('#stockQuantitiesTable')) {
                 $('#stockQuantitiesTable').DataTable().destroy();
             }
+            
+            // Debug: Stok verilerinin doğruluğunu kontrol et
+            console.log("Stok miktarları:", tableData.map(item => ({
+                productId: item.productId,
+                productName: item.productName,
+                currentStock: item.currentStock
+            })));
 
-            // 6. DataTable'ı initialize et
+            // SADECE TEK BİR DATATABLE INIT - ikinci init yok!
             $('#stockQuantitiesTable').DataTable({
                 data: tableData,
                 ordering: true,
                 pageLength: 10,
                 responsive: true,
+                scrollX: true,
+                autoWidth: false,
+                dom: '<"table-top"f>rt<"table-bottom"ip>',
                 language: {
                     url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
                 },
-                // "Toplam Maliyet" ve "Detay" sütunlarını gizle (indeks 4 ve 5)
                 columnDefs: [
                     { 
-                        targets: [4, 5], // 4: Toplam Maliyet, 5: Detay
+                        targets: [4],
                         visible: false
                     }
                 ],
@@ -218,14 +272,22 @@ document.addEventListener('DOMContentLoaded', async function() {
                     { 
                         title: "Ürün Adı",
                         data: 'productName',
-                        render: function(data) {
+                        render: function(data, type, row) {
+                            console.log("Rendering 'Ürün Adı' for:", row);
+                            if (type === 'display' && data && row.productId) {
+                                return `<a href="stock-card.html?id=${row.productId}" class="table-link">${data}</a>`;
+                            }
                             return data || '-';
                         }
                     },
                     { 
                         title: "Ürün Kodu",
                         data: 'productCode',
-                        render: function(data) {
+                        render: function(data, type, row) {
+                            console.log("Rendering 'Ürün Kodu' for:", row);
+                            if (type === 'display' && data && row.productId) {
+                                return `<a href="stock-card.html?id=${row.productId}" class="table-link">${data}</a>`;
+                            }
                             return data || '-';
                         }
                     },
@@ -249,18 +311,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                         render: function(data, type, row) {
                             return parseFloat(data).toFixed(2) + ' ' + row.paraBirimi;
                         }
-                    },
-                    {
-                        title: "Detay",
-                        data: 'productCode',
-                        render: function(data) {
-                            return `<button class="btn btn-sm btn-primary" onclick="goToMaliyetAnalizi('${data}')">
-                                        Detay
-                                    </button>`;
-                        }
                     }
-                ]
+                ],
+                createdRow: function(row, data, dataIndex) {
+                    // Her satıra productId verisini ekle
+                    $(row).attr('data-product-id', data.productId);
+                    console.log("Created row with productId:", data.productId);
+                }
             });
+
+            // Ürün satırlarına tıklama olayı ekle (gerekirse)
+            $('#stockQuantitiesTable tbody').off('click', 'tr');
 
         } catch (error) {
             console.error('Stok miktarları yükleme hatası:', error);
@@ -284,33 +345,57 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!response.ok) throw new Error("Hareket verileri alınamadı");
             const data = await response.json();
             
+            // Veri dönüşümlerini kontrol et ve düzelt
+            const processedData = data.map(row => {
+                // API'den gelen veriyi debug et
+                console.debug(`Form data check - form_no: ${row.form_no}, antrepo_giris_id: ${row.antrepo_giris_id}`);
+                
+                return {
+                    ...row,
+                    // Eğer form_no yoksa kontrol
+                    form_no: row.form_no || `#${row.antrepo_giris_id}`,
+                    // Tıklanabilirlik için ID'leri kontrol et
+                    antrepo_giris_id: row.antrepo_giris_id || row.giris_id
+                };
+            });
+            
             // Eğer DataTable zaten kurulmuşsa destroy et
             if ($.fn.DataTable.isDataTable('#stokMovementsTable')) {
                 $('#stokMovementsTable').DataTable().destroy();
             }
             
+            // HTML'deki thead/tbody yapısını temizle, tablo tamamen boş olsun
+            $('#stokMovementsTable').empty();
+            
             // DataTable oluştur
             $('#stokMovementsTable').DataTable({
-                data: data,
+                data: processedData,
+                scrollX: true,
+                autoWidth: false,
+                responsive: true,
+                dom: '<"table-top"f>rt<"table-bottom"ip>', // Customize table layout
                 columns: [
                     { 
-                        data: 'form_no', 
-                        title: 'Form No',
-                        render: function(data) { return data || '-'; }
+                        title: "Form No",
+                        data: 'form_no',
+                        render: function(data, type, row) { 
+                            if (type === 'display' && row.antrepo_giris_id) {
+                                return `<a href="antrepo-giris-formu.html?id=${row.antrepo_giris_id}&mode=view" class="table-link">${data}</a>`;
+                            }
+                            return data || '-'; 
+                        }
                     },
                     { 
-                        data: 'urun_tanimi', 
-                        title: 'Ürün Adı',
-                        render: function(data) { return data || '-'; }
+                        title: "Ürün Adı",
+                        data: 'urun_tanimi'
                     },
                     { 
-                        data: 'urun_kodu', 
-                        title: 'Ürün Kodu',
-                        render: function(data) { return data || '-'; }
+                        title: "Ürün Kodu",
+                        data: 'urun_kodu'
                     },
                     { 
-                        data: 'islem_tipi', 
-                        title: 'İşlem Tipi',
+                        title: "İşlem Tipi",
+                        data: 'islem_tipi',
                         render: function(data) { 
                             if (data === 'Giriş') {
                                 return '<span class="badge bg-success">Giriş</span>';
@@ -320,38 +405,40 @@ document.addEventListener('DOMContentLoaded', async function() {
                         }
                     },
                     { 
-                        data: 'islem_tarihi', 
-                        title: 'İşlem Tarihi',
+                        title: "İşlem Tarihi",
+                        data: 'islem_tarihi',
                         render: function(data) { 
                             if (!data) return '-';
                             return new Date(data).toLocaleDateString('tr-TR'); 
                         }
                     },
                     { 
-                        data: 'miktar', 
-                        title: 'Miktar',
+                        title: "Miktar",
+                        data: 'miktar',
                         render: function(data, type, row) { 
                             return data != null ? parseFloat(data).toFixed(2) + ' ' + (row.birim_adi || 'ton') : '-';
                         }
                     },
                     { 
-                        data: 'kap_adeti', 
-                        title: 'Kap Adedi',
+                        title: "Kap Adedi",
+                        data: 'kap_adeti',
                         render: function(data) { return data != null ? data : '-'; }
                     },
                     { 
-                        data: 'aciklama', 
-                        title: 'Açıklama',
+                        title: "Açıklama",
+                        data: 'aciklama',
                         render: function(data) { return data || '-'; }
                     }
                 ],
-                responsive: true,
                 order: [[4, 'desc']], // İşlem tarihi sütununa göre sıralama
                 pageLength: 10,
                 language: {
                     url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
                 }
             });
+            
+            // Tablo hazır olduğunu bildir
+            console.log("Stok hareketleri tablosu başarıyla yüklendi");
 
         } catch (error) {
             console.error("Stok hareketleri yüklenirken hata:", error);
