@@ -3372,7 +3372,7 @@ router.get('/antrepo/:antrepoId/hareketler', async (req, res) => {
     const [rows] = await db.query(sql, [antrepoId]);
     res.json(rows);
   } catch (error) {
-    console.error("GET /api/antrepolar/:antrepoId/hareketler error:", error);
+    console.error("GET /api/antrepo/:antrepoId/hareketler error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -3412,6 +3412,55 @@ router.get('/antrepolar/:antrepoId/hareketler', async (req, res) => {
     res.json(rows);
   } catch (error) {
     console.error("GET /api/antrepolar/:antrepoId/hareketler error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/antrepolar/:antrepoId/stats - Antrepo istatistiklerini döndürür (stok, kap adedi, açık form sayısı)
+router.get('/antrepolar/:antrepoId/stats', async (req, res) => {
+  try {
+    const { antrepoId } = req.params;
+    
+    // Giriş-çıkış farklarını hesaplayan sorgu
+    const sql = `
+      SELECT 
+        ag.antrepo_giris_id,
+        SUM(CASE WHEN ag.islem_tipi = 'Giriş' THEN ag.miktar ELSE -ag.miktar END) AS currentStock,
+        SUM(CASE WHEN ag.islem_tipi = 'Giriş' THEN ag.kap_adeti ELSE -ag.kap_adeti END) AS currentKap
+      FROM antrepo_hareketleri ag
+      JOIN antrepo_giris g ON ag.antrepo_giris_id = g.id
+      WHERE g.antrepo_id = ?
+      GROUP BY ag.antrepo_giris_id
+    `;
+    
+    const [rows] = await db.query(sql, [antrepoId]);
+    
+    // Toplam değerleri hesaplama
+    let totalStock = 0, totalKap = 0, openFormsCount = 0;
+    
+    rows.forEach(row => {
+      // Pozitif stoku olan kayıtlar için açık form sayısını artır
+      if (parseFloat(row.currentStock) > 0) {
+        openFormsCount++;
+      }
+      
+      // Toplam stok ve kap adedi için değerleri topla
+      totalStock += parseFloat(row.currentStock || 0);
+      totalKap += parseInt(row.currentKap || 0);
+    });
+    
+    // Antrepo kapasitesi bilgisini getir (eğer gösterilecekse)
+    const [antrepoRows] = await db.query('SELECT kapasite FROM antrepolar WHERE id = ?', [antrepoId]);
+    const kapasite = antrepoRows.length > 0 ? antrepoRows[0].kapasite : null;
+    
+    res.json({
+      totalStock: parseFloat(totalStock.toFixed(2)),  // Ton (MT)
+      totalKap,                                       // Kap adedi
+      openFormsCount,                                 // Açık form sayısı
+      kapasite: kapasite ? parseFloat(kapasite) : null // Toplam kapasite (varsa)
+    });
+  } catch (error) {
+    console.error("GET /api/antrepolar/:antrepoId/stats error:", error);
     res.status(500).json({ error: error.message });
   }
 });
