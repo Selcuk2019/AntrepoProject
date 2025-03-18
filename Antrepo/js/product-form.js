@@ -40,8 +40,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // Form alanlarını doldur
       document.getElementById("bagSize").value = variant.paket_hacmi;
-      // Not: variant.description varsa, packagingTypeSelect'e val() olarak variant.description vereceğiz (ID değil!)
-      // Örneğin: $(packagingTypeSelect).val(variant.description).trigger('change');
+      // Varyantın description değeri select alanına set ediliyor
+      $(packagingTypeSelect).val(variant.description).trigger('change');
     } catch (error) {
       console.error("Varyant yükleme hatası:", error);
       alert("Varyant bilgileri yüklenirken hata oluştu!");
@@ -90,16 +90,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         allowClear: true,
         width: '100%',
         data: data.map(item => ({
-          id: item.name,    // <--- METİN
-          text: item.name   // <--- METİN
+          id: item.name,    // METİN olarak kullanılacak
+          text: item.name   // METİN
         })),
         initSelection: function() {
           $(packagingTypeSelect).val(null).trigger('change');
         }
       });
-
-      // mode=edit & varyantId varsa, var olan varyant.description değerini set edebilirsiniz
-      // (Bu kısım, varyant bilgisi yüklendikten sonra da yapılabilir.)
 
       return true;
     } catch (error) {
@@ -129,15 +126,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       document.getElementById("bagSize").value = product.paket_hacmi || '';
       document.getElementById("description").value = product.description || '';
 
-      // Eski kodda "product.paketleme_tipi_id" set ediliyordu. Artık "product.description" olabilir.
-      // $(packagingTypeSelect).val(product.description).trigger('change');
+      // Varyant seçiminde description alanı set ediliyor (varsa)
+      $(packagingTypeSelect).val(product.description).trigger('change');
     } catch (error) {
       console.error("Ürün yükleme hatası:", error);
       alert("Ürün bilgileri yüklenirken hata oluştu!");
     }
   }
 
-  // Form submit
+  // Form submit işlemi
   productForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -145,14 +142,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (mode === 'edit' && varyantId) {
       try {
         const paketHacmiVal = document.getElementById("bagSize").value.trim();
-        const packagingTypeVal = $(packagingTypeSelect).val(); // Bu bir METİN olmalı artık
+        const packagingTypeVal = $(packagingTypeSelect).val(); // Bu metin değeri
         const response = await fetch(`${baseUrl}/api/urun_varyantlari/${varyantId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             paket_hacmi: paketHacmiVal,
-            // pakette "description" alanını backend PUT'ta bekliyorsanız, "description" gönderin
-            // eğer "paketleme_tipi_id" bekliyorsanız, API'nizi düzeltmeniz lazım
             description: packagingTypeVal
           })
         });
@@ -190,7 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       try {
-        const response = await fetch(`${baseUrl}/api/urun-varyantlari`, {
+        const response = await fetch(`${baseUrl}/api/urun_varyantlari`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(variantData)
@@ -212,46 +207,50 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Ürün ekleme/güncelleme işlemi
+    const bagSize = document.getElementById("bagSize").value.trim();
+    const packagingType = $(packagingTypeSelect).val();
+    
+    console.log("Form verileri (debug):", {
+      bagSize,
+      packagingType,
+      productName: document.getElementById("productName").value,
+      productCode: document.getElementById("productCode").value
+    });
+    
     const formData = {
       product: {
         name: document.getElementById("productName").value.trim(),
         code: document.getElementById("productCode").value.trim(),
-        description: document.getElementById("description").value.trim()
+        description: packagingType || document.getElementById("description").value.trim()
       },
       variant: {
-        paket_hacmi: document.getElementById("bagSize").value.trim(),
-        // Eskiden "paketleme_tipi_id" idi, artık "description" olabilir
-        description: $(packagingTypeSelect).val()
+        paket_hacmi: bagSize || null,
+        description: packagingType || null
       }
     };
 
-    // Basit validasyon
+    // Validasyon
     if (!formData.product.name || !formData.product.code) {
       alert("Ürün adı ve kodu zorunludur!");
       return;
     }
-    // Varyant verileri girilmişse
-    if (formData.variant.paket_hacmi || formData.variant.description) {
-      if (!formData.variant.paket_hacmi || !formData.variant.description) {
-        alert("Varyant için hem paket hacmi hem de paketleme tipi gereklidir!");
-        return;
-      }
-    }
+
+    console.log("API'ye gönderilecek:", JSON.stringify(formData));
 
     try {
-      const response = await fetch(`${baseUrl}/api/urun`, {
+      const response = await fetch(`${baseUrl}/api/urunler`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
       });
 
       if (!response.ok) {
-        const errorResp = await response.json();
-        throw new Error(errorResp.message || 'Bir hata oluştu');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Bir hata oluştu');
       }
 
       const result = await response.json();
-      alert("Ürün ve varyant başarıyla kaydedildi!");
+      alert("Ürün kaydedildi!");
       window.location.href = "product-list.html";
     } catch (error) {
       console.error('Hata:', error);

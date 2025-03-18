@@ -380,6 +380,7 @@ router.get('/api/sozlesmeler/:id/hizmetler', async (req, res) => {
 });
 
 // GET /api/urunler
+// routes/api.js
 router.get('/urunler', async (req, res) => {
   try {
     const sql = `
@@ -388,19 +389,21 @@ router.get('/urunler', async (req, res) => {
         u.name,
         u.code,
         u.paket_hacmi,
-        u.paketleme_tipi_id,
-        pt.name AS paketleme_tipi_name,  -- Eklendi
-        u.description
+        -- Eğer tamamen description'a geçiyorsanız:
+        u.description AS paketleme_tipi
+        -- Veya COALESCE(pt.name, u.description) AS paketleme_tipi
       FROM urunler u
-      LEFT JOIN paketleme_tipleri pt ON u.paketleme_tipi_id = pt.id
+      -- LEFT JOIN paketleme_tipleri pt ON u.paketleme_tipi_id = pt.id
       ORDER BY u.name
     `;
+
     const [rows] = await db.query(sql);
     res.json(rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // 2) Tekil ürün (stok kartında kullanılacak)
 router.get('/urunler/:id', async (req, res) => {
@@ -413,22 +416,34 @@ router.get('/urunler/:id', async (req, res) => {
         u.code,
         u.paket_hacmi,
         u.paketleme_tipi_id,
-        pt.name AS paketleme_tipi_name,  -- Eklendi
+        u.paketleme_tipi_id AS paketleme_tipi_name,  -- Artık bu alan metin değer içeriyor
         u.description
       FROM urunler u
-      LEFT JOIN paketleme_tipleri pt ON u.paketleme_tipi_id = pt.id
       WHERE u.id = ?
     `;
     const [rows] = await db.query(sql, [id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: "Ürün bulunamadı" });
     }
-    res.json(rows[0]);
+    
+    // Varyant bilgisini de ekleyelim (ürün kartında gösterilmesi için)
+    const [variants] = await db.query(`
+      SELECT id, paket_hacmi, description 
+      FROM urun_varyantlari 
+      WHERE urun_id = ?
+    `, [id]);
+    
+    // Yanıta varyant bilgisini de ekle
+    const product = rows[0];
+    product.variants = variants;
+    
+    res.json(product);
   } catch (error) {
+    console.error("GET /urunler/:id error:", error);
     res.status(500).json({ error: error.message });
   }
 });
-
+// GET /api/antrepo-giris - Tüm antrepo giriş kayıtlarını getirir
 router.get('/antrepo-giris', async (req, res) => {
   try {
     const sql = `
@@ -436,8 +451,8 @@ router.get('/antrepo-giris', async (req, res) => {
         ag.id,
         ag.beyanname_no,
         ag.beyanname_form_tarihi,
-        a.antrepoAdi AS antrepo_adi,
         ag.antrepo_id,
+        a.antrepoAdi,
         ag.antrepo_sirket_adi,
         ag.antrepo_kodu,
         ag.gumruk,
@@ -449,7 +464,7 @@ router.get('/antrepo-giris', async (req, res) => {
         ag.urun_tanimi,
         ag.urun_kodu,
         ag.paket_boyutu,
-        ag.paketleme_tipi,  -- Artık ID yerine bu metin sütununu alıyoruz
+        ag.paketleme_tipi,
         ag.paket_hacmi,
         ag.miktar,
         ag.kap_adeti,
@@ -1063,47 +1078,45 @@ router.get('/antrepo-giris/:girisId/ek-hizmetler', async (req, res) => {
 // POST /api/urunler
 router.post('/urunler', async (req, res) => {
   try {
-    const { name, code, paket_hacmi, paketleme_tipi_id, description } = req.body;
-
-    // Basit validasyon
-    if (!name || !code) {
+    const { product, variant } = req.body;
+    if (!product.name || !product.code) {
       return res.status(400).json({ error: "Ürün adı ve kodu zorunludur." });
     }
-
-    const sql = `
+    
+    // Ürün ekle
+    const sqlProduct = `
       INSERT INTO urunler
       (name, code, paket_hacmi, paketleme_tipi_id, description)
       VALUES (?, ?, ?, ?, ?)
     `;
-    const values = [
-      name,
-      code,
-      paket_hacmi || 0,
-      paketleme_tipi_id || null,
-      description || null
+    // Eğer sistemde artık paketleme_tipi_id kullanılmıyorsa null gönderiyoruz,
+    // description alanına ise varyanttaki paketleme tipi metnini kaydediyoruz.
+    const productValues = [
+      product.name,
+      product.code,
+      variant.paket_hacmi || 0,
+      null,
+      product.description || variant.description || null
     ];
-
-    const [result] = await db.query(sql, values);
-    res.json({ success: true, insertedId: result.insertId });
-
-  } catch (error) {
-    if (error.code === 'ER_DUP_ENTRY') {
-      // MySQL duplicate hatası
-      // Hangi index'in tetiklendiğini error.sqlMessage veya error.message içinde bulabiliriz
-      if (error.sqlMessage.includes('idx_urun_code')) {
-        return res.status(400).json({ error: "Bu ürün kodu zaten mevcut!" });
-      } else if (error.sqlMessage.includes('idx_urun_name')) {
-        return res.status(400).json({ error: "Bu ürün adı zaten mevcut!" });
-      }
-      // Genel mesaj
-      return res.status(400).json({ error: "Tekrarlı kayıt hatası (code veya name)!" });
+    const [resultProduct] = await db.query(sqlProduct, productValues);
+    const newProductId = resultProduct.insertId;
+    
+    // İsteğe bağlı: Eğer varyant ekleniyorsa, urun_varyantlari tablosuna da kayıt eklenir.
+    if (variant) {
+      const sqlVariant = `
+        INSERT INTO urun_varyantlari
+        (urun_id, paket_hacmi, description)
+        VALUES (?, ?, ?)
+      `;
+      const variantValues = [newProductId, variant.paket_hacmi || 0, variant.description || null];
+      await db.query(sqlVariant, variantValues);
     }
-    // Diğer hatalar
+    
+    res.json({ success: true, insertedId: newProductId });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
-
-
 
 
 
@@ -1761,59 +1774,63 @@ router.post('/urun', async (req, res) => {
   const conn = await db.getConnection();
   
   try {
+    console.log("Received data:", {product, variant}); // Debug için gelen veriyi loglayalım
     await conn.beginTransaction();
 
-    // 1. Önce ürünü ekle - paket_hacmi ve paketleme_tipi_id direkt ürün tablosuna eklenecek
+    // Ürün tablosuna eklemek için SQL sorgusu
     const sqlProduct = `
-      INSERT INTO urunler (name, code, paket_hacmi, paketleme_tipi_id, description)
+      INSERT INTO urunler (name, code, description, paket_hacmi, paketleme_tipi_id)
       VALUES (?, ?, ?, ?, ?)
     `;
+    
+    // Ürün tablosuna varyant bilgilerini de ekleyelim
     const [productResult] = await conn.query(sqlProduct, [
       product.name,
       product.code,
-      variant?.paket_hacmi || 0,  // Varsayılan değer 0
-      variant?.paketleme_tipi_id || null,  // Varsayılan değer null
-      product.description || null
+      product.description || '',
+      variant && variant.paket_hacmi ? variant.paket_hacmi : 0,
+      variant && variant.description ? variant.description : null
     ]);
     
     const urunId = productResult.insertId;
-
-    // 2. Eğer varyant verileri varsa, varyant tablosuna da ekle
-    if (variant && variant.paket_hacmi && variant.paketleme_tipi_id) {
+    
+    // Varyant bilgilerini kaydet
+    if (variant && (variant.paket_hacmi || variant.description)) {
+      // Varyant verilerini kontrol edelim
+      console.log("Saving variant:", {
+        urun_id: urunId,
+        paket_hacmi: variant.paket_hacmi || 0,
+        description: variant.description || null
+      });
+      
       const sqlVariant = `
         INSERT INTO urun_varyantlari 
-        (urun_id, paket_hacmi, paketleme_tipi_id)
+        (urun_id, paket_hacmi, description)
         VALUES (?, ?, ?)
       `;
+      
       await conn.query(sqlVariant, [
         urunId,
-        variant.paket_hacmi,
-        variant.paketleme_tipi_id
+        variant.paket_hacmi || 0,
+        variant.description || null
       ]);
     }
 
     await conn.commit();
+    
+    // İşlem başarılı oldu
     res.json({ 
       success: true, 
       message: 'Ürün ve varyant başarıyla eklendi',
-      productId: urunId 
+      productId: urunId
     });
-
   } catch (error) {
     await conn.rollback();
-    
-    // Duplicate key hatalarını kontrol et
-    if (error.code === 'ER_DUP_ENTRY') {
-      if (error.sqlMessage.includes('urunler.code')) {
-        return res.status(400).json({ error: 'Bu ürün kodu zaten kullanımda!' });
-      }
-      if (error.sqlMessage.includes('urunler.name')) {
-        return res.status(400).json({ error: 'Bu ürün adı zaten kullanımda!' });
-      }
-    }
-    
     console.error('POST /api/urun error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      error: error.message,
+      stack: error.stack 
+    });
   } finally {
     conn.release();
   }
@@ -2687,6 +2704,35 @@ router.get('/urun_varyantlari/:id', async (req, res) => {
   }
 });
 
+router.post('/urun_varyantlari', async (req, res) => {
+  try {
+    const { urun_id, paket_hacmi, description } = req.body;
+    if (!urun_id || !paket_hacmi || !description) {
+      return res.status(400).json({ error: "urun_id, paket_hacmi ve description zorunludur." });
+    }
+    
+    const sqlVariant = `
+      INSERT INTO urun_varyantlari
+      (urun_id, paket_hacmi, description)
+      VALUES (?, ?, ?)
+    `;
+    const values = [urun_id, paket_hacmi, description];
+    const [result] = await db.query(sqlVariant, values);
+    
+    // Ürün tablosunu da güncelle (örneğin, ilk varyant verisini ürün kaydına yansıt)
+    const sqlUpdateProduct = `
+      UPDATE urunler 
+      SET paket_hacmi = ?, description = ? 
+      WHERE id = ?
+    `;
+    await db.query(sqlUpdateProduct, [paket_hacmi, description, urun_id]);
+    
+    res.json({ success: true, insertedId: result.insertId });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.put('/hareketler/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -2757,29 +2803,39 @@ router.put('/hareketler/:id', async (req, res) => {
 
 
 
-// PUT /api/urun_varyantlari/:id - Varyant güncelle  
+// Varyant güncelleme endpoint'inde (örnek)
 router.put('/urun_varyantlari/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { paket_hacmi, description } = req.body;
 
-    // Validasyon
     if (!paket_hacmi || !description) {
-      return res.status(400).json({ 
-        error: "paket_hacmi ve description zorunludur" 
-      });
+      return res.status(400).json({ error: "paket_hacmi ve description zorunludur" });
     }
 
-    const sql = `
+    // Varyantı güncelle
+    const sqlVariant = `
       UPDATE urun_varyantlari 
       SET paket_hacmi = ?, description = ?
       WHERE id = ?
     `;
+    const [result] = await db.query(sqlVariant, [paket_hacmi, description, id]);
 
-    const [result] = await db.query(sql, [paket_hacmi, description, id]);
-    
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Varyant bulunamadı' });
+    }
+
+    // İlgili ürünün id'sini alalım:
+    const [variantData] = await db.query("SELECT urun_id FROM urun_varyantlari WHERE id = ?", [id]);
+    if (variantData.length > 0) {
+      const urun_id = variantData[0].urun_id;
+      // Ürün tablosunda description alanını da güncelleyelim:
+      const sqlUpdateProduct = `
+        UPDATE urunler 
+        SET paket_hacmi = ?, description = ?
+        WHERE id = ?
+      `;
+      await db.query(sqlUpdateProduct, [paket_hacmi, description, urun_id]);
     }
 
     res.json({ success: true });
@@ -2788,6 +2844,7 @@ router.put('/urun_varyantlari/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // DELETE /api/urun_varyantlari/:id - Varyant sil
 router.delete('/urun_varyantlari/:id', async (req, res) => {
@@ -3208,37 +3265,6 @@ router.get('/find-variant', async (req, res) => {
   }
 });
 
-// Düzeltilmiş: /api/urun-varyantlari endpoint'i (PUT method)
-router.put('/urun_varyantlari/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { paket_hacmi, description } = req.body;
-
-    // Validasyon
-    if (!paket_hacmi || !description) {
-      return res.status(400).json({ 
-        error: "paket_hacmi ve description zorunludur" 
-      });
-    }
-
-    const sql = `
-      UPDATE urun_varyantlari 
-      SET paket_hacmi = ?, description = ?
-      WHERE id = ?
-    `;
-
-    const [result] = await db.query(sql, [paket_hacmi, description, id]);
-    
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Varyant bulunamadı' });
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Varyant güncelleme hatası:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // GET /api/product-movements/:productId - Ürün ID'sine göre ilgili hareketleri getirir
 router.get('/product-movements/:productId', async (req, res) => {
