@@ -22,7 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: 'beyanname_no',
                 render: function(data, type, row) {
                     if (type === 'display') {
-                        // Beyanname No linki, view modunda açılır (mode=view) ve ilgili id URL'e eklenir.
                         return `<a href="antrepo-giris-formu.html?id=${row.id}&mode=view" class="form-link">${data || ''}</a>`;
                     }
                     return data || '';
@@ -34,7 +33,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     return formatDate(data);
                 }
             },
-            { data: 'antrepo_adi' },
+            // DÜZENLENEN SATIR: 'antrepo_adi' -> 'antrepoAdi'
+            { data: 'antrepoAdi' },
             { data: 'antrepo_sirket_adi' },
             { data: 'gumruk' },
             { data: 'gonderici_sirket' },
@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function() {
             { data: 'proforma_no' },
             { data: 'ticari_fatura_no' },
             { data: 'depolama_suresi' },
-            // Ekstra sütunları başlangıçta gizli olarak ekleyelim
+            // Ekstra sütunlar (gizli)...
             { 
                 data: 'proforma_tarihi',
                 title: 'Proforma Tarihi',
@@ -112,6 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
         autoWidth: false,
         searching: true
     });
+    
 
     // Stil ekleme - CSS sınıfı
     const style = document.createElement('style');

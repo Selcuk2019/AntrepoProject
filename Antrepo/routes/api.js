@@ -21,6 +21,21 @@ router.get('/customs', async (req, res) => {
   }
 });
 
+// GET /api/customs/:id - Belirli bir gümrük kaydını getirir
+router.get('/customs/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.query('SELECT * FROM gumrukler WHERE gumruk_id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Gümrük bulunamadı.' });
+    }
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("GET /api/customs/:id hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // GET /api/cities - Şehirler tablosundan şehir verilerini çek
 router.get('/cities', async (req, res) => {
   try {
@@ -443,7 +458,8 @@ router.get('/urunler/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-// GET /api/antrepo-giris - Tüm antrepo giriş kayıtlarını getirir
+
+// File: routes/api.js
 router.get('/antrepo-giris', async (req, res) => {
   try {
     const sql = `
@@ -452,7 +468,7 @@ router.get('/antrepo-giris', async (req, res) => {
         ag.beyanname_no,
         ag.beyanname_form_tarihi,
         ag.antrepo_id,
-        a.antrepoAdi,
+        a.antrepoAdi AS antrepoAdi,
         ag.antrepo_sirket_adi,
         ag.antrepo_kodu,
         ag.gumruk,
@@ -481,24 +497,26 @@ router.get('/antrepo-giris', async (req, res) => {
         ag.para_birimi,
         ag.depolama_suresi,
         ag.fatura_aciklama,
-        ag.urun_varyant_id,
-        ag.description,
         ag.created_at,
-        ag.updated_at
+        ag.updated_at,
+        ag.urun_varyant_id,
+        ag.description
       FROM antrepo_giris ag
       LEFT JOIN antrepolar a ON ag.antrepo_id = a.id
       ORDER BY ag.id DESC
     `;
+    
     const [rows] = await db.query(sql);
-    res.json(rows);
+    if (!rows || !Array.isArray(rows)) {
+      return res.status(200).json([]);
+    }
+    res.status(200).json(rows);
   } catch (error) {
     console.error("GET /api/antrepo-giris hatası:", error);
-    res.status(500).json({ error: error.message });
+    // Hata durumunda bile boş dizi döndürerek HTTP 200 ile yanıt veriyoruz
+    res.status(200).json([]);
   }
 });
-
-
-
 
 // GET /api/antrepo-giris/:id - Belirli bir antrepo giriş kaydını getirir
 router.get('/antrepo-giris/:id', async (req, res) => {
@@ -1121,44 +1139,38 @@ router.post('/urunler', async (req, res) => {
 
 
 // POST /api/companies - Yeni şirket ekle
+// POST /api/companies
 router.post('/companies', async (req, res) => {
   try {
     const {
-      firstName, lastName, companyName, displayName, emailAddress, phoneNumber,
-      currency, taxRate, taxNumber, taxOffice, paymentTerms,
+      firstName, lastName, companyName, displayName, emailAddress,
+      phoneNumber, currency, taxRate, taxNumber, taxOffice, paymentTerms,
       address, customs
     } = req.body;
-
-    const sqlInsert = `
+    
+    const sql = `
       INSERT INTO sirketler 
-      (first_name, last_name, company_name, display_name, phone_number, email, 
-       currency, tax_rate, tax_number, tax_office, payment_terms, 
-       address_city_id, address_district, address_postal_code, address_detail)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (first_name, last_name, company_name, display_name, email, phone_number,
+       currency, tax_rate, tax_number, tax_office, payment_terms,
+       address_city_id, address_district, address_postal_code, address_detail,
+       customs_info, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
     const values = [
-      firstName || null,
-      lastName || null,
-      companyName,
-      displayName,
-      phoneNumber,
-      emailAddress || null,
-      currency,
-      taxRate || null,
-      taxNumber || null,
-      taxOffice || null,
-      paymentTerms || null,
-      address.city_id,
-      address.district || '',
-      address.postalCode || '',
-      address.detail
+      firstName, lastName, companyName, displayName, emailAddress, phoneNumber,
+      currency, parseFloat(taxRate), taxNumber, taxOffice, paymentTerms,
+      address.city_id, address.district, address.postalCode, address.detail,
+      JSON.stringify(customs || []),  // customs verisini JSON olarak ekliyoruz
     ];
-    const [result] = await db.query(sqlInsert, values);
+    
+    const [result] = await db.query(sql, values);
     res.json({ success: true, insertedId: result.insertId });
   } catch (error) {
+    console.error("POST /api/companies hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });
+
 
 // POST /api/antrepolar - Yeni antrepo ekle
 router.post('/antrepolar', async (req, res) => {
@@ -2366,6 +2378,90 @@ router.delete('/antrepo-giris/:id', async (req, res) => {
   }
 });
 
+router.get('/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [rows] = await db.query('SELECT * FROM sirketler WHERE sirket_id = ?', [id]);
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'Şirket bulunamadı.' });
+    }
+    // rows[0].customs_info JSON string
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("GET /api/companies/:id hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+router.put('/companies/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      firstName, lastName, companyName, displayName, emailAddress,
+      phoneNumber, currency, taxRate, taxNumber, taxOffice, paymentTerms,
+      address, customs // customs burada seçilen gümrüklerin dizisi (örneğin, [3,5,7])
+    } = req.body;
+    
+    const sql = `
+      UPDATE sirketler
+      SET
+        first_name = ?,
+        last_name = ?,
+        company_name = ?,
+        display_name = ?,
+        email = ?,
+        phone_number = ?,
+        currency = ?,
+        tax_rate = ?,
+        tax_number = ?,
+        tax_office = ?,
+        payment_terms = ?,
+        address_city_id = ?,
+        address_district = ?,
+        address_postal_code = ?,
+        address_detail = ?,
+        customs_info = ?,
+        updated_at = NOW()
+      WHERE sirket_id = ?
+    `;
+    const values = [
+      firstName, lastName, companyName, displayName, emailAddress,
+      phoneNumber, currency, parseFloat(taxRate), taxNumber, taxOffice,
+      paymentTerms,
+      address.city_id, address.district, address.postalCode, address.detail,
+      JSON.stringify(customs || []), // JSON string olarak kaydediyoruz
+      id
+    ];
+    
+    const [result] = await db.query(sql, values);
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Şirket bulunamadı.' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("PUT /api/companies/:id hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+// File: routes/api.js
+router.get('/companies/:id/customs', async (req, res) => {
+  try {
+    const { id } = req.params;
+    // Örnek: Şirketin gümrükleri, 'sirket_gumrukler' tablosunda tutuluyorsa
+    const [rows] = await db.query('SELECT gumruk_id FROM sirket_gumrukler WHERE sirket_id = ?', [id]);
+    const gumrukIds = rows.map(row => row.gumruk_id);
+    res.json(gumrukIds);
+  } catch (error) {
+    console.error("GET /api/companies/:id/customs hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 
 // DELETE /api/companies/:id
@@ -2520,6 +2616,27 @@ router.delete('/antrepo-giris/:girisId/hareketler/:hareketId', async (req, res) 
     }
   } catch (error) {
     console.error("DELETE /antrepo-giris/:girisId/hareketler/:hareketId hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// File: routes/api.js (veya ilgili dosya)
+router.delete('/antrepo-giris/:girisId/ek-hizmetler/:ekHizmetId', async (req, res) => {
+  try {
+    const { girisId, ekHizmetId } = req.params;
+    // DELETE sorgusu: girisId ile uyumlu kaydı kontrol ederek silme işlemi
+    const [result] = await db.query(
+      'DELETE FROM antrepo_giris_hizmetler WHERE id = ? AND antrepo_giris_id = ?',
+      [ekHizmetId, girisId]
+    );
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Ek hizmet kaydı bulunamadı' });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    console.error("DELETE /api/antrepo-giris/:girisId/ek-hizmetler/:ekHizmetId hatası:", error);
     res.status(500).json({ error: error.message });
   }
 });

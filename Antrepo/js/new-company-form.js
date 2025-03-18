@@ -1,3 +1,6 @@
+// File: new-company-form.js
+import { baseUrl } from './config.js';
+
 document.addEventListener("DOMContentLoaded", async function() {
   const saveBtn = document.getElementById("saveCompanyBtn");
   const cancelBtn = document.getElementById("cancelBtn");
@@ -6,20 +9,19 @@ document.addEventListener("DOMContentLoaded", async function() {
   
   let allCustoms = [];
   let allCurrencies = [];
-  let selectedCustomIds = [];
-
-  // NEW: Check for edit mode based on URL parameter
+  
+  // URL parametrelerini oku
   const params = new URLSearchParams(window.location.search);
   const companyId = params.get('id');
 
-  // Para birimleri yükleme
+  // -------------------------------
+  // Para Birimlerini Yükleyen Fonksiyon (endpoint: /api/para-birimleri)
   async function loadCurrencies() {
     try {
-      const resp = await fetch('/api/para-birimleri');
+      const resp = await fetch(`${baseUrl}/api/para-birimleri`);
       if (!resp.ok) throw new Error('Para birimleri listesi alınamadı');
       allCurrencies = await resp.json();
       
-      // Para birimleri select2 dropdown'ı doldur
       const currencySelect = $('#currency');
       currencySelect.empty().append('<option value="">Seçiniz</option>');
       
@@ -31,21 +33,20 @@ document.addEventListener("DOMContentLoaded", async function() {
         currencySelect.append(option);
       });
       
-      // Select2 olarak başlat
       currencySelect.trigger('change');
     } catch (err) {
       console.error('Para birimleri yüklenirken hata:', err);
     }
   }
 
-  // Şehir dropdown doldurma
+  // -------------------------------
+  // Şehirleri Yükleyen Fonksiyon (endpoint: /api/cities)
   async function loadCities() {
     try {
-      const resp = await fetch('/api/cities');
+      const resp = await fetch(`${baseUrl}/api/cities`);
       if (!resp.ok) throw new Error('Şehir listesi alınamadı');
       const cityData = await resp.json();
 
-      // İl select2 dropdown'ı doldur
       const citySelect = $('#addressCity');
       citySelect.empty().append('<option value="">Seçiniz</option>');
       
@@ -54,21 +55,20 @@ document.addEventListener("DOMContentLoaded", async function() {
         citySelect.append(option);
       });
       
-      // Select2 olarak başlat
       citySelect.trigger('change');
     } catch (err) {
       console.error('Şehirler yüklenirken hata:', err);
     }
   }
 
-  // Gümrükleri yükleme
+  // -------------------------------
+  // Gümrükleri Yükleyen Fonksiyon (endpoint: /api/customs)
   async function loadCustoms() {
     try {
-      const resp = await fetch('/api/customs');
+      const resp = await fetch(`${baseUrl}/api/customs`);
       if (!resp.ok) throw new Error('Gümrük listesi alınamadı');
       allCustoms = await resp.json();
       
-      // Gümrükleri select2 dropdown'a doldur
       const customsSelect = $('#serviceCustoms');
       customsSelect.empty();
       
@@ -77,67 +77,89 @@ document.addEventListener("DOMContentLoaded", async function() {
         customsSelect.append(option);
       });
       
-      // Select2 olarak başlat
       customsSelect.trigger('change');
-      
       console.log('Gümrükler yüklendi:', allCustoms.length);
     } catch (err) {
       console.error('Gümrükler yüklenirken hata:', err);
     }
   }
 
-  if (companyId) {
-    // Change page title and heading for edit mode
-    document.title = 'Antrepo Şirketini Düzenle';
-    const header = document.querySelector('.new-company-form h1');
-    if (header) header.textContent = 'Antrepo Şirketini Düzenle';
+  async function loadCompanyData(id) {
 
-    // Load existing company data from the API and prefill the form
-    (async function loadCompanyData() {
-      try {
-        const resp = await fetch(`/api/companies/${companyId}`);
-        if (!resp.ok) throw new Error('Şirket bilgileri alınamadı');
-        const data = await resp.json();
-        
-        // Prefill form fields (adjust input IDs as needed)
-        document.getElementById("firstName").value = data.firstName || '';
-        document.getElementById("lastName").value = data.lastName || '';
-        document.getElementById("companyName").value = data.companyName || '';
-        document.getElementById("displayName").value = data.displayName || '';
-        document.getElementById("emailAddress").value = data.emailAddress || '';
-        document.getElementById("phoneNumber").value = data.phoneNumber || '';
-        
-        // Select2 elementleri için değer atama
-        if (data.address?.city_id) {
-          $('#addressCity').val(data.address.city_id).trigger('change');
-        }
-        
-        document.getElementById("addressDistrict").value = data.address?.district || '';
-        document.getElementById("addressPostalCode").value = data.address?.postalCode || '';
-        document.getElementById("addressDetail").value = data.address?.detail || '';
-        document.getElementById("taxRate").value = data.taxRate || '';
-        document.getElementById("companyID").value = data.taxNumber || '';
-        document.getElementById("companyID2").value = data.taxOffice || '';
-        
-        // Para birimi select2'sine değer atama
-        if (data.currency) {
-          $('#currency').val(data.currency).trigger('change');
-        }
-        
-        document.getElementById("paymentTerms").value = data.paymentTerms || '';
-        
-        // Seçili gümrükler varsa, bunları select2'de işaretle
-        if (Array.isArray(data.customs) && data.customs.length > 0) {
-          $('#serviceCustoms').val(data.customs).trigger('change');
-        }
-      } catch (err) {
-        console.error('Edit form yüklenirken hata:', err);
-        alert('Şirket bilgileri yüklenemedi.');
+    console.log("taxRate elementi:", document.getElementById("taxRate"));
+    console.log("addressCity elementi:", document.getElementById("addressCity"));
+    console.log("serviceCustoms elementi:", document.getElementById("serviceCustoms"));
+
+    try {
+      const resp = await fetch(`${baseUrl}/api/companies/${id}`);
+      if (!resp.ok) throw new Error('Şirket bilgileri alınamadı');
+      const data = await resp.json();
+      
+      console.log("Yüklenen şirket verileri:", data);
+      
+      // Metin alanları
+      document.getElementById("firstName").value = data.first_name || '';
+      document.getElementById("lastName").value = data.last_name || '';
+      document.getElementById("companyName").value = data.company_name || '';
+      document.getElementById("displayName").value = data.display_name || '';
+      document.getElementById("emailAddress").value = data.email || '';
+      document.getElementById("phoneNumber").value = data.phone_number || '';
+      
+      // Adres alanları
+      if (data.address_city_id) {
+        $('#addressCity').val(data.address_city_id).trigger('change');
+        setTimeout(() => {
+          $('#addressCity').val(data.address_city_id).trigger('change');
+        }, 500);
       }
-    })();
+      document.getElementById("addressDistrict").value = data.address_district || '';
+      document.getElementById("addressPostalCode").value = data.address_postal_code || '';
+      document.getElementById("addressDetail").value = data.address_detail || '';
+      
+      // Vergi ve ödeme alanları
+      if (data.tax_rate) {
+        document.getElementById("taxRate").value = parseFloat(data.tax_rate).toFixed(2);
+      }
+      document.getElementById("companyID").value = data.tax_number || '';
+      document.getElementById("companyID2").value = data.tax_office || '';
+      document.getElementById("paymentTerms").value = data.payment_terms || '';
+      
+      // Para Birimi (Select2)
+      if (data.currency) {
+        $('#currency').val(data.currency).trigger('change');
+        setTimeout(() => {
+          $('#currency').val(data.currency).trigger('change.select2');
+        }, 500);
+      } else {
+        $('#currency').val("").trigger('change');
+      }
+      
+      // Gümrükler: customs_info JSON sütunundan veriyi alıp formda Select2'ye aktarın
+      if (data.customs_info) {
+        try {
+          const customsData = JSON.parse(data.customs_info); // Örn: ["2","5"]
+          if (Array.isArray(customsData)) {
+            setTimeout(() => {
+              $('#serviceCustoms').val(customsData).trigger('change.select2');
+            }, 500);
+          } else {
+            $('#serviceCustoms').val([]).trigger('change');
+          }
+        } catch (parseErr) {
+          $('#serviceCustoms').val([]).trigger('change');
+        }
+      } else {
+        $('#serviceCustoms').val([]).trigger('change');
+      }
+    } catch (err) {
+      console.error('Edit form yüklenirken hata:', err);
+      alert('Şirket bilgileri yüklenemedi.');
+    }
   }
-
-  // Select2 başlatma
+  
+  
+  // -------------------------------
+  // Select2 Başlatma Fonksiyonu
   function initializeSelect2() {
     $('.select2-control').select2({
       placeholder: "Seçiniz...",
@@ -145,7 +167,6 @@ document.addEventListener("DOMContentLoaded", async function() {
       width: '100%'
     });
     
-    // Gümrükler için çoklu seçim - dropdown menüsü için maksimum yükseklik
     $('#serviceCustoms').select2({
       placeholder: "Gümrük Ara...",
       allowClear: true,
@@ -153,9 +174,8 @@ document.addEventListener("DOMContentLoaded", async function() {
       multiple: true,
       dropdownCssClass: 'select2-dropdown-below',
       closeOnSelect: false,
-      dropdownParent: $('body') // Dropdown'u body'ye bağlayarak z-index sorunlarını önleyelim
+      dropdownParent: $('body')
     }).on('select2:open', function() {
-      // Select2 açıldığında, dropdown menüsüne maksimum yükseklik sınırı ekleyelim
       setTimeout(() => {
         $('.select2-dropdown').css('max-height', '250px');
         $('.select2-results__options').css('max-height', '200px');
@@ -163,65 +183,48 @@ document.addEventListener("DOMContentLoaded", async function() {
     });
   }
 
-  // "Yeni Gümrük Oluştur" butonu
+  // -------------------------------
+  // Ek Buton İşlemleri (Gümrük Oluştur / Yenile)
   createCustomsBtn?.addEventListener("click", function() {
     window.open("/pages/new-customs.html", "_blank");
   });
 
-  // "Yenile" butonu
   refreshCustomsBtn?.addEventListener("click", async function() {
     await loadCustoms();
     alert("Gümrük listesi yenilendi");
   });
 
-  // Kaydet butonu
+  // -------------------------------
+  // Şirket Kaydetme / Güncelleme İşlemi
   saveBtn.addEventListener("click", async function() {
-    // Form alanlarını topla
-    const firstName = document.getElementById("firstName").value;
-    const lastName = document.getElementById("lastName").value;
-    const companyName = document.getElementById("companyName").value;
-    const displayName = document.getElementById("displayName").value;
-    const emailAddress = document.getElementById("emailAddress").value;
-    const phoneNumber = document.getElementById("phoneNumber").value;
+    const firstName = document.getElementById("firstName").value.trim();
+    const lastName = document.getElementById("lastName").value.trim();
+    const companyName = document.getElementById("companyName").value.trim();
+    const displayName = document.getElementById("displayName").value.trim();
+    const emailAddress = document.getElementById("emailAddress").value.trim();
+    const phoneNumber = document.getElementById("phoneNumber").value.trim();
     const addressCityId = $('#addressCity').val();
-    const addressDistrict = document.getElementById("addressDistrict").value;
-    const addressPostalCode = document.getElementById("addressPostalCode").value;
-    const addressDetail = document.getElementById("addressDetail").value;
-    const taxRate = document.getElementById("taxRate").value;
-    const companyID = document.getElementById("companyID").value;
-    const companyID2 = document.getElementById("companyID2").value;
+    const addressDistrict = document.getElementById("addressDistrict").value.trim();
+    const addressPostalCode = document.getElementById("addressPostalCode").value.trim();
+    const addressDetail = document.getElementById("addressDetail").value.trim();
+    const taxRate = document.getElementById("taxRate").value.trim();
+    const companyID = document.getElementById("companyID").value.trim();
+    const companyID2 = document.getElementById("companyID2").value.trim();
     const currency = $('#currency').val();
-    const paymentTerms = document.getElementById("paymentTerms").value;
-    const documents = document.getElementById("documents").files;
-    const selectedCustoms = $('#serviceCustoms').val(); // Seçilen gümrükler
-
-    // Zorunlu alan kontrolleri
-    if (!companyName) {
-      alert("Lütfen 'Şirket Adı' girin!");
-      return;
-    }
-    if (!displayName) {
-      alert("Lütfen 'Görünen İsim' girin!");
-      return;
-    }
-    if (!phoneNumber) {
-      alert("Lütfen 'Telefon' girin!");
-      return;
-    }
-    if (!currency) {
-      alert("Lütfen 'Para Birimi' seçin!");
-      return;
-    }
-    if (!addressCityId) {
-      alert("Lütfen 'İl' seçin!");
-      return;
-    }
-    if (!addressDetail) {
-      alert("Lütfen 'Açık Adres' girin!");
-      return;
-    }
-
-    // newCompany objesi
+    const paymentTerms = document.getElementById("paymentTerms").value.trim();
+    const documents = document.getElementById("documents")?.files || [];
+    const selectedCustoms = $('#serviceCustoms').val() || [];
+  
+    if (!companyName) return alert("Lütfen 'Şirket Adı' girin!");
+    if (!displayName) return alert("Lütfen 'Görünen İsim' girin!");
+    if (!phoneNumber) return alert("Lütfen 'Telefon' girin!");
+    if (!currency) return alert("Lütfen 'Para Birimi' seçin!");
+    if (!addressCityId) return alert("Lütfen 'İl' seçin!");
+    if (!addressDetail) return alert("Lütfen 'Açık Adres' girin!");
+  
+    // KDV oranını sayısal değere dönüştürelim (örneğin, 20.00 gibi)
+    const taxRateNumeric = parseFloat(taxRate) || 0;
+  
     const newCompany = {
       firstName,
       lastName,
@@ -230,7 +233,7 @@ document.addEventListener("DOMContentLoaded", async function() {
       emailAddress,
       phoneNumber,
       currency,
-      taxRate,
+      taxRate: taxRateNumeric,  // Sayısal değer gönderiliyor
       taxNumber: companyID,
       taxOffice: companyID2,
       paymentTerms,
@@ -241,42 +244,62 @@ document.addEventListener("DOMContentLoaded", async function() {
         postalCode: addressPostalCode,
         detail: addressDetail
       },
-      customs: selectedCustoms // Seçilen gümrükler
+      customs: selectedCustoms  // Eğer customs verisi güncelleme sırasında gönderilecekse
     };
-
-    console.log("Yeni Antrepo Şirketi Kaydı:", newCompany);
-
-    // Artık POST /api/companies isteği atıyoruz
+  
+    console.log("Kaydedilecek Şirket:", newCompany);
+  
+    let method = 'POST';
+    let url = `${baseUrl}/api/companies`;
+    if (companyId) {
+      method = 'PUT';
+      url = `${baseUrl}/api/companies/${companyId}`;
+    }
+  
     try {
-      const resp = await fetch('/api/companies', {
-        method: 'POST',
+      const resp = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newCompany)
       });
       if (resp.ok) {
         const result = await resp.json();
-        alert("Şirket başarıyla kaydedildi! ID: " + result.insertedId);
-        // Listeye dönmek isterseniz:
+        if (companyId) {
+          alert("Şirket başarıyla güncellendi!");
+        } else {
+          alert("Şirket başarıyla kaydedildi! ID: " + result.insertedId);
+        }
         window.location.href = '/pages/company-list.html';
       } else {
         alert("Şirket kaydedilemedi. " + resp.statusText);
       }
     } catch (err) {
-      console.error('Kayıt hatası:', err);
-      alert('Kayıt sırasında hata oluştu.');
+      console.error('Kayıt/Güncelleme hatası:', err);
+      alert('İşlem sırasında hata oluştu.');
     }
   });
+  
 
-  // İptal butonu
+  // -------------------------------
+  // İptal Butonu
   cancelBtn.addEventListener("click", function() {
     window.history.back();
   });
 
-  // Sayfa yüklenince verileri çek ve Select2'yi başlat
+  // -------------------------------
+  // Sayfa Yüklenince: Select2 Başlat, Verileri Yükle
   $(document).ready(function() {
     initializeSelect2();
     loadCities();
     loadCurrencies();
     loadCustoms();
   });
+
+  // Edit modundaysa, formu doldur
+  if (companyId) {
+    document.title = 'Antrepo Şirketini Düzenle';
+    const header = document.querySelector('.new-company-form h1');
+    if (header) header.textContent = 'Antrepo Şirketini Düzenle';
+    loadCompanyData(companyId);
+  }
 });
