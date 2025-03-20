@@ -43,27 +43,44 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
       
+      // ÖNEMLİ: Tabloyu oluşturmadan önce içeriği dolduralım
       await populateTable(data);
       
+      // ÖNEMLİ: DataTable'ı kur veya yeniden yükle
       if (dataTable) {
+        // Mevcut datatable varsa yok edilmesini istediğinizi belirttiniz
         dataTable.destroy();
+        
+        // thead sayısını kontrol et - varsa fazlalıkları sil
+        const theadElements = document.querySelectorAll('#maliyetTable thead');
+        if (theadElements.length > 1) {
+          for (let i = 1; i < theadElements.length; i++) {
+            theadElements[i].parentNode.removeChild(theadElements[i]);
+          }
+        }
       }
       
+      // Bootstrap 5 entegrasyonu ve scrollX: false ile DataTable'ı kur
       dataTable = $('#maliyetTable').DataTable({
         language: {
-          url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/tr.json',
+          url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json',
           paginate: {
             first: '«',
             previous: '‹',
             next: '›',
             last: '»'
-          }
+          },
+          lengthMenu: 'Sayfa başına _MENU_ kayıt göster',
+          info: 'Toplam _TOTAL_ kayıttan _START_ - _END_ arası gösteriliyor'
         },
         pageLength: 25,
         order: [[3, 'desc']], // Antrepo Giriş Tarihine göre sırala
         responsive: true,
-        scrollX: true,
-        dom: '<"table-top"<"table-header-left"l><"table-header-right"f>>rt<"table-bottom"ip>',
+        // scrollX: true, // KALDIRILAN özellik - çift thead sorununa neden oluyor
+        // Şirketler sayfası gibi Bootstrap 5 için DOM yapısı
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         ordering: true,
         columnDefs: [
@@ -83,32 +100,26 @@ document.addEventListener("DOMContentLoaded", async () => {
           $('.dataTables_filter input').attr('placeholder', 'Ara...');
           $('.dataTables_filter input').addClass('modern-search');
           $('.dataTables_length select').addClass('modern-select');
-        },
-        drawCallback: function() {
-          // Sıralama stillerini düzgün görüntüle
-          $('th').removeClass('sorting_asc sorting_desc').addClass('sorting');
-          $('th.sorting_1').addClass('sorting_asc');
         }
       });
       
-      // Sorunu çözmek için CSS stillerini ekle
+      // Stil düzeltmeleri için CSS ekle
       const cssStyles = `
-        .sorting:before, .sorting:after, 
-        .sorting_asc:before, .sorting_asc:after, 
-        .sorting_desc:before, .sorting_desc:after {
-          opacity: 1 !important;
-        }
-        .sorting_asc:after, .sorting_desc:before {
-          opacity: 0.2 !important;
-        }
         table.dataTable thead th.sorting_asc,
         table.dataTable thead th.sorting_desc {
           background-color: #eef5ff !important;
         }
       `;
       
-      // CSS stillerini sayfaya ekle
+      // Önceki stil elementini kontrol et ve kaldır
+      const existingStyle = document.getElementById('datatable-custom-style');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+      
+      // Yeni stil elementi ekle
       const styleElement = document.createElement('style');
+      styleElement.id = 'datatable-custom-style';
       styleElement.textContent = cssStyles;
       document.head.appendChild(styleElement);
 

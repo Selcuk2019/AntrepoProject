@@ -3608,4 +3608,104 @@ router.get('/antrepolar/:antrepoId/stats', async (req, res) => {
   }
 });
 
+// Dashboard istatistikleri için endpoint
+/*router.get('/dashboard-stats', async (req, res) => {
+  try {
+    // 1. Tüm Antrepolar Toplam Stok
+    const [stockRows] = await db.query(`
+      SELECT 
+        SUM(CASE WHEN islem_tipi = 'Giriş' THEN miktar ELSE -miktar END) AS totalStock
+      FROM antrepo_hareketleri
+    `);
+    const totalStock = stockRows[0]?.totalStock || 0;
+
+    // 2. Tüm Antrepolar Toplam Kap Adeti
+    const [kapRows] = await db.query(`
+      SELECT 
+        SUM(CASE WHEN islem_tipi = 'Giriş' THEN kap_adeti ELSE -kap_adeti END) AS totalKap
+      FROM antrepo_hareketleri
+    `);
+    const totalKap = kapRows[0]?.totalKap || 0;
+
+    // 3. Giriş Formları Gün Maliyeti
+    const [dailyCostRows] = await db.query(`
+      SELECT SUM(fatura_meblagi / NULLIF(depolama_suresi, 0)) AS dailyCost
+      FROM antrepo_giris
+      WHERE depolama_suresi > 0
+    `);
+    const dailyCost = dailyCostRows[0]?.dailyCost || 0;
+
+    // 4. Giriş Formları Toplam Maliyeti
+    const [totalCostRows] = await db.query(`
+      SELECT SUM(fatura_meblagi) AS totalCost
+      FROM antrepo_giris
+    `);
+    const totalCost = totalCostRows[0]?.totalCost || 0;
+
+    // 5. Aktif Giriş Formu Adeti
+    const [activeFormRows] = await db.query(`
+      SELECT COUNT(*) AS activeFormCount
+      FROM (
+        SELECT ag.id, 
+          SUM(CASE WHEN h.islem_tipi = 'Giriş' THEN h.miktar ELSE -h.miktar END) AS netStock
+        FROM antrepo_giris ag
+        LEFT JOIN antrepo_hareketleri h ON ag.id = h.antrepo_giris_id
+        GROUP BY ag.id
+        HAVING netStock > 0
+      ) AS activeForms
+    `);
+    const activeFormCount = activeFormRows[0]?.activeFormCount || 0;
+
+    // 6. Antrepodaki Ürün Kalemi Sayısı
+    const [varietyRows] = await db.query(`
+      SELECT COUNT(DISTINCT urun_id) AS productVarietyCount
+      FROM antrepo_giris
+      WHERE urun_id IS NOT NULL
+    `);
+    const productVarietyCount = varietyRows[0]?.productVarietyCount || 0;
+
+    // Grafik verileri için aylık veriler
+    const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran"];
+    
+    // Aylık envanter taşıma maliyeti
+    const [inventoryCostRows] = await db.query(`
+      SELECT 
+        MONTH(tarih) as month,
+        SUM(fatura_meblagi) as monthlyTotal
+      FROM antrepo_giris
+      WHERE tarih >= DATE_SUB(CURRENT_DATE(), INTERVAL 6 MONTH)
+      GROUP BY MONTH(tarih)
+      ORDER BY MONTH(tarih)
+    `);
+    
+    // Yanıtı oluştur
+    res.json({
+      totalStock,
+      totalKap,
+      dailyCost,
+      totalCost,
+      activeFormCount,
+      productVarietyCount,
+      charts: {
+        inventoryCost: {
+          labels: months,
+          values: [75000, 82000, 95000, 88000, 102000, 110000] // Gerçek projede DB verilerinden oluşturulacak
+        },
+        turnoverRatio: {
+          labels: months,
+          values: [2.1, 2.3, 2.5, 2.2, 2.6, 2.8] // Gerçek projede hesaplanacak
+        },
+        salesRatio: {
+          labels: months,
+          values: [0.65, 0.70, 0.72, 0.68, 0.74, 0.78] // Gerçek projede hesaplanacak
+        }
+      }
+    });
+  } catch (error) {
+    console.error("GET /dashboard-stats hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});*/
+
+
 module.exports = router;
