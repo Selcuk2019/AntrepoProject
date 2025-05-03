@@ -410,110 +410,33 @@ body {
 
 /* ===================== DASHBOARD CARDS ===================== */
 .dashboard-cards {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
-  margin-bottom: 30px;
+  margin-top: 20px;
 }
-
-.dashboard-cards .card {
-  flex: 1 0 calc(33.333% - 20px);
-  min-width: 300px;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+.card {
+  background-color: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  border-radius: 8px;
   padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  transition: transform 0.2s, box-shadow 0.2s;
-  height: 160px; /* Sabit yükseklik */
-  overflow: hidden;
-  position: relative;
-  border-left: 5px solid #3F51B5;
+  text-align: center;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
 }
-
-.dashboard-cards .card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+.card-body {
+  padding: 20px;
 }
-
-.dashboard-cards .card h2 {
-  color: #555;
-  font-size: 18px;
-  font-weight: 600;
-  margin-top: 0;
-  margin-bottom: 15px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #f0f0f0;
-  height: 50px; /* Başlık için sabit yükseklik */
-  display: flex;
-  align-items: center;
+.card h2 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: var(--text-color);
 }
-
-.dashboard-cards .card .card-value {
-  font-size: 28px;
-  font-weight: 700;
-  color: #3F51B5;
-  margin-top: auto;
-  text-align: right;
-  letter-spacing: -0.5px;
-}
-
-/* Kartlara renk çeşitliliği ekleyelim */
-.dashboard-cards .card:nth-child(1) {
-  border-left-color: #3F51B5; /* Mavi */
-}
-.dashboard-cards .card:nth-child(1) .card-value {
-  color: #3F51B5;
-}
-
-.dashboard-cards .card:nth-child(2) {
-  border-left-color: #4CAF50; /* Yeşil */
-}
-.dashboard-cards .card:nth-child(2) .card-value {
-  color: #4CAF50;
-}
-
-.dashboard-cards .card:nth-child(3) {
-  border-left-color: #FF9800; /* Turuncu */
-}
-.dashboard-cards .card:nth-child(3) .card-value {
-  color: #FF9800;
-}
-
-.dashboard-cards .card:nth-child(4) {
-  border-left-color: #E91E63; /* Pembe */
-}
-.dashboard-cards .card:nth-child(4) .card-value {
-  color: #E91E63;
-}
-
-.dashboard-cards .card:nth-child(5) {
-  border-left-color: #673AB7; /* Mor */
-}
-.dashboard-cards .card:nth-child(5) .card-value {
-  color: #673AB7;
-}
-
-.dashboard-cards .card:nth-child(6) {
-  border-left-color: #00BCD4; /* Açık Mavi */
-}
-.dashboard-cards .card:nth-child(6) .card-value {
-  color: #00BCD4;
-}
-
-/* Responsive düzenlemeler */
-@media (max-width: 1200px) {
-  .dashboard-cards .card {
-    flex: 1 0 calc(50% - 20px);
-  }
-}
-
-@media (max-width: 768px) {
-  .dashboard-cards .card {
-    flex: 1 0 100%;
-  }
+.card-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--primary-color);
 }
 
 /* ===================== CHART PLACEHOLDER & CHART ROW ===================== */

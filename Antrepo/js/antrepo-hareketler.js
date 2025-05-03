@@ -1,11 +1,3 @@
-/************************************************************
- * File: antrepo-hareketler.js
- * İŞLEV:
- *  - Belirli bir antrepo_giris kaydına ait giriş/çıkış hareketlerini listelemek
- *  - Yeni Giriş hareketi eklemek (modalNewEntry)
- *  - Yeni Çıkış hareketi eklemek (modalNewExit)
- *  - Hareketi silmek
- ************************************************************/
 import { baseUrl } from './config.js';
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -64,6 +56,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const tdTip = document.createElement("td");
       tdTip.textContent = item.islem_tipi;
 
+      // Ürün Adı
+      const tdUrunAdi = document.createElement("td");
+      tdUrunAdi.textContent = item.urun_adi || "";
+
+      // Ürün Kodu
+      const tdUrunKodu = document.createElement("td");
+      tdUrunKodu.textContent = item.urun_kodu || "";
+
       // Miktar
       const tdMiktar = document.createElement("td");
       tdMiktar.textContent = item.miktar;
@@ -111,6 +111,8 @@ document.addEventListener("DOMContentLoaded", () => {
       tr.append(
         tdTarih,
         tdTip,
+        tdUrunAdi,
+        tdUrunKodu,
         tdMiktar,
         tdKapAdeti,
         tdBrutAgirlik,
@@ -152,82 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   
-
-  /************************************************************
-   * 5) Yeni Giriş Modal Formu Submit İşlemi
-   ************************************************************/
-  /*if (newEntryForm) {
-    newEntryForm.addEventListener("submit", async (e) => {
-      console.log("Giriş formu submit edildi");
-      e.preventDefault(); // Form submit'i engelle
-      e.stopPropagation(); // Event bubbling'i engelle
-
-      // Modal formundan değerleri alalım
-      const entryTarih = document.getElementById("modalAntrepoGirisTarihi")?.value;
-      const entryMiktar = document.getElementById("modalMiktar")?.value;
-      const entryKapAdeti = document.getElementById("modalKapAdeti")?.value;
-      const entryBrutAgirlik = document.getElementById("modalBrutAgirlik")?.value;
-      const entryNetAgirlik = document.getElementById("modalNetAgirlik")?.value;
-      const entryAciklama = document.getElementById("modalAciklama")?.value;
-
-      console.log("Form değerleri:", {
-        entryTarih,
-        entryMiktar,
-        entryKapAdeti,
-        entryBrutAgirlik,
-        entryNetAgirlik,
-        entryAciklama
-      });
-
-      // Zorunlu alan kontrolü
-      if (!entryTarih || !entryMiktar) {
-        alert("Lütfen tarih ve miktar alanlarını doldurun!");
-        return;
-      }
-
-      // Gönderilecek JSON body
-      const bodyData = {
-        islem_tarihi: entryTarih,
-        islem_tipi: "Giriş",
-        miktar: entryMiktar,
-        kap_adeti: entryKapAdeti || 0,
-        brut_agirlik: entryBrutAgirlik || 0,
-        net_agirlik: entryNetAgirlik || 0,
-        birim_id: 1,
-        aciklama: entryAciklama || "Yeni Giriş"
-      };
-
-      console.log("Gönderilecek veri:", bodyData);
-
-      try {
-        const resp = await fetch(`${baseUrl}/api/antrepo-giris/${girisId}/hareketler`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bodyData)
-        });
-        if (!resp.ok) throw new Error(`Hata: ${resp.status}`);
-        const result = await resp.json();
-        console.log("Sunucu yanıtı:", result);
-
-        if (result.success) {
-          alert("Giriş kaydı eklendi!");
-          if (newEntryModal) {
-            newEntryModal.style.display = "none";
-          }
-          if (newEntryForm) {
-            newEntryForm.reset();
-          }
-          fetchHareketler();
-        } else {
-          alert("İşlem başarısız: " + JSON.stringify(result));
-        }
-      } catch (error) {
-        console.error("Giriş ekleme hatası:", error);
-        alert("Giriş ekleme hatası: " + error.message);
-      }
-    });
-  }*/
-
   /************************************************************
    * 6) Yeni Çıkış Ekle – Modal Açma
    ************************************************************/
@@ -258,107 +184,5 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /************************************************************
-   * 8) Yeni Çıkış Modal Formu Submit İşlemi
-   ************************************************************/
-  /* if (newExitForm) {
-    newExitForm.addEventListener("submit", async (e) => {
-      console.log("Çıkış formu submit edildi");
-      e.preventDefault(); // Form submit'i engelle
-      e.stopPropagation(); // Event bubbling'i engelle
-
-      const exitTarih = document.getElementById("modalExitTarih")?.value;
-      const exitMiktar = document.getElementById("modalExitMiktar")?.value;
-      const exitKapAdeti = document.getElementById("modalExitKapAdeti")?.value;
-      const exitBrutAgirlik = document.getElementById("modalExitBrutAgirlik")?.value;
-      const exitNetAgirlik = document.getElementById("modalExitNetAgirlik")?.value;
-
-      console.log("Form değerleri:", {
-        exitTarih,
-        exitMiktar,
-        exitKapAdeti,
-        exitBrutAgirlik,
-        exitNetAgirlik
-      });
-
-      // Zorunlu alan kontrolü
-      if (!exitTarih || !exitMiktar) {
-        alert("Lütfen tarih ve miktar alanlarını doldurun!");
-        return;
-      }
-
-      // Ek alanlar
-      const satProformaNo = document.getElementById("modalSatProformaNo")?.value;
-      const satFaturaNo = document.getElementById("modalSatFaturaNo")?.value;
-      const musteri = document.getElementById("modalMusteri")?.value;
-      const teslimYeri = document.getElementById("modalTeslimYeri")?.value;
-      const nakliyeFirma = document.getElementById("modalNakliyeFirma")?.value;
-      const aracPlaka = document.getElementById("modalAracPlaka")?.value;
-      const teslimSekli = document.getElementById("modalTeslimSekli")?.value;
-
-      const exitMesai = document.getElementById("modalExitMesai")?.value;
-      const exitIsWeekend = document.getElementById("modalExitIsWeekend")?.value;
-
-      // Açıklama birleştirme
-      const ekBilgi =
-        `Satış Proforma No: ${satProformaNo || '-'}\n` +
-        `Satış Fatura No: ${satFaturaNo || '-'}\n` +
-        `Müşteri: ${musteri || '-'}\n` +
-        `Teslim Yeri: ${teslimYeri || '-'}\n` +
-        `Nakliye Firması: ${nakliyeFirma || '-'}\n` +
-        `Araç Plaka: ${aracPlaka || '-'}\n` +
-        `Teslim Şekli: ${teslimSekli || '-'}`;
-
-      const mesaiBilgi = exitMesai
-        ? `\nMesai Süresi: ${exitMesai} dk, Hafta Sonu: ${exitIsWeekend === "true" ? "Evet" : "Hayır"}`
-        : "";
-
-      const finalAciklama = ekBilgi + mesaiBilgi;
-
-      const bodyData = {
-        islem_tarihi: exitTarih,
-        islem_tipi: "Çıkış",
-        miktar: exitMiktar,
-        kap_adeti: exitKapAdeti || 0,
-        brut_agirlik: exitBrutAgirlik || 0,
-        net_agirlik: exitNetAgirlik || 0,
-        birim_id: 1,
-        aciklama: finalAciklama
-      };
-
-      console.log("Gönderilecek veri:", bodyData);
-
-      try {
-        const resp = await fetch(`${baseUrl}/api/antrepo-giris/${girisId}/hareketler`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bodyData)
-        });
-        if (!resp.ok) throw new Error(`Hata: ${resp.status}`);
-        const result = await resp.json();
-        console.log("Sunucu yanıtı:", result);
-
-        if (result.success) {
-          alert("Çıkış kaydı eklendi!");
-          if (newExitModal) {
-            newExitModal.style.display = "none";
-          }
-          if (newExitForm) {
-            newExitForm.reset();
-          }
-          fetchHareketler();
-        } else {
-          alert("İşlem başarısız: " + JSON.stringify(result));
-        }
-      } catch (error) {
-        console.error("Çıkış ekleme hatası:", error);
-        alert("Çıkış ekleme hatası: " + error.message);
-      }
-    });
-  }
-
-
-
-  // Sayfa yüklenince tabloyu dolduralım
-  fetchHareketler(); */
+  
 });

@@ -15,15 +15,8 @@ document.addEventListener("DOMContentLoaded", async function() {
         }
       },
       { data: 'code' },
-      { 
-        data: 'paket_hacmi',
-        render: data => `${data || 0} kg`
-      },
-      // Değişiklik burada:
-      { 
-        data: 'paketleme_tipi',     // <--- backend'de dönen alan adını yazın
-        defaultContent: ''          // eğer veri null gelirse boş gösterir
-      },
+      { data: 'paket_hacmi', render: data => `${data || 0} kg` },
+      { data: 'paketleme_tipi_name' },
       { 
         data: null,
         render: function(data, type, row) {
@@ -45,9 +38,6 @@ document.addEventListener("DOMContentLoaded", async function() {
       url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json"
     }
   });
-
-
-
 
   // Yeni Ürün Ekle butonu
   document.getElementById("newProductBtn").addEventListener("click", () => {

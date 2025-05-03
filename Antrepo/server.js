@@ -4,7 +4,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const apiRoutes = require('./routes/api');
-const basicAuth = require('express-basic-auth');
+// const basicAuth = require('express-basic-auth'); // Basic Auth kaldırıldı
 
 const app = express();
 
@@ -33,11 +33,11 @@ app.use(cors({
 }));
 
 // 2) Sonra Basic Auth
-app.use(basicAuth({
-  users: users,
-  challenge: true,            // Tarayıcıya Basic Auth penceresi açtırır
-  realm: 'My Protected Zone'  // (Opsiyonel) Basic Auth penceresinin başlığı
-}));
+// app.use(basicAuth({
+//   users: users,
+//   challenge: true,            // Tarayıcıya Basic Auth penceresi açtırır
+//   realm: 'My Protected Zone'  // (Opsiyonel) Basic Auth penceresinin başlığı
+// }));
 
 // 3) Diğer Middleware
 app.use(express.json());

@@ -1,304 +1,224 @@
 import { baseUrl } from './config.js';
 
-document.addEventListener("DOMContentLoaded", async () => {
-  const tableBody = document.getElementById("maliyetTableBody");
-  let dataTable = null;
-
-  // URL parametrelerini kontrol et
-  const urlParams = new URLSearchParams(window.location.search);
-  const filterValue = urlParams.get("filter");
-
-  async function fetchMaliyetAnalizi() {
-    try {
-      // Tüm veriyi çek
-      const resp = await fetch(`${baseUrl}/api/maliyet-analizi`);
-      if (!resp.ok) throw new Error(`Hata: ${resp.status}`);
-      let data = await resp.json();
-      
-      // Eğer filtre parametresi varsa, frontend'de filtrele
-      if (filterValue) {
-        // Sayı ise antrepoId, değilse productCode olarak filtrele
-        if (!isNaN(parseInt(filterValue))) {
-          data = data.filter(item => String(item.antrepoId) === String(filterValue));
-        } else {
-          data = data.filter(item => item.productCode === filterValue);
+// DOM yüklendikten sonra çalışacak kodlar
+document.addEventListener('DOMContentLoaded', function() {
+    // Global değişkenler
+    let maliyetTable;
+    let viewMode = 'beyanname'; // 'beyanname' veya 'product'
+    
+    // DOM elementleri
+    const maliyetTableBody = document.getElementById('maliyetTableBody');
+    const viewModeSelect = document.getElementById('viewModeSelect');
+    
+    // Tablo başlangıç yapılandırması
+    const baseColumns = [
+        { data: 'beyanname_no', title: 'Beyanname No', render: formatBeyanname },
+        { data: 'antrepo_giris_tarihi', title: 'Antrepo Giriş Tarihi', render: formatDate },
+        { data: 'antrepo_kodu', title: 'Antrepo Kodu' },
+        { data: 'antrepoName', title: 'Antrepo Adı' }
+    ];
+    
+    // Ürün bazlı görünüm için ek kolonlar
+    const productColumns = [
+        { data: 'productName', title: 'Ürün Adı' },
+        { data: 'productCode', title: 'Ürün Kodu' }
+    ];
+    
+    // Ortak sütunlar (her iki görünümde de yer alacak)
+    const commonColumns = [
+        { data: 'currentStock', title: 'Mevcut Stok', render: formatNumber },
+        { data: 'currentCost', title: 'Güncel Maliyet (TL)', render: formatCurrency },
+        { data: 'totalCost', title: 'Toplam Maliyet (TL)', render: formatCurrency },
+        { data: 'unitCostImpact', title: 'Birim Maliyet Etkisi (TL/kg)', render: formatCurrency },
+        { 
+            data: null, 
+            title: 'İşlemler', 
+            className: 'dt-center',
+            render: function(data, type, row) {
+                return `<a href="hesaplama-motoru.html?id=${row.id}&viewMode=${viewMode}" class="btn-detail">Detay</a>`;
+            }
         }
-        
-        // Filtre bilgisini sayfada göster
-        const filterInfo = document.createElement('div');
-        filterInfo.className = 'filter-info alert alert-info';
-        
-        if (!isNaN(parseInt(filterValue))) {
-          const antrepoName = data.length > 0 ? data[0].antrepoName : 'Belirtilen antrepo';
-          filterInfo.textContent = `${antrepoName} antreposuna ait kayıtlar görüntüleniyor`;
-        } else {
-          const productName = data.length > 0 ? data[0].productName : 'Belirtilen ürün';
-          filterInfo.textContent = `${productName} (${filterValue}) ürününe ait kayıtlar görüntüleniyor`;
-        }
-        
-        // Filtre bilgisini başlığın altına ekle
-        const pageHeader = document.querySelector('.page-header');
-        if (pageHeader && !document.querySelector('.filter-info')) {
-          pageHeader.appendChild(filterInfo);
-        }
-      }
-      
-      // ÖNEMLİ: Tabloyu oluşturmadan önce içeriği dolduralım
-      await populateTable(data);
-      
-      // ÖNEMLİ: DataTable'ı kur veya yeniden yükle
-      if (dataTable) {
-        // Mevcut datatable varsa yok edilmesini istediğinizi belirttiniz
-        dataTable.destroy();
-        
-        // thead sayısını kontrol et - varsa fazlalıkları sil
-        const theadElements = document.querySelectorAll('#maliyetTable thead');
-        if (theadElements.length > 1) {
-          for (let i = 1; i < theadElements.length; i++) {
-            theadElements[i].parentNode.removeChild(theadElements[i]);
-          }
-        }
-      }
-      
-      // Bootstrap 5 entegrasyonu ve scrollX: false ile DataTable'ı kur
-      dataTable = $('#maliyetTable').DataTable({
-        language: {
-          url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json',
-          paginate: {
-            first: '«',
-            previous: '‹',
-            next: '›',
-            last: '»'
-          },
-          lengthMenu: 'Sayfa başına _MENU_ kayıt göster',
-          info: 'Toplam _TOTAL_ kayıttan _START_ - _END_ arası gösteriliyor'
-        },
-        pageLength: 25,
-        order: [[3, 'desc']], // Antrepo Giriş Tarihine göre sırala
-        responsive: true,
-        // scrollX: true, // KALDIRILAN özellik - çift thead sorununa neden oluyor
-        // Şirketler sayfası gibi Bootstrap 5 için DOM yapısı
-        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-             '<"row"<"col-sm-12"tr>>' +
-             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-        lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
-        ordering: true,
-        columnDefs: [
-          {
-            targets: '_all',
-            sortable: true,
-            className: 'sorting' // Sıralama için stil sınıfı ekle
-          },
-          {
-            targets: -1, // Son sütun (Detay)
-            sortable: false,
-            className: 'no-sort'
-          }
-        ],
-        initComplete: function() {
-          // Arama kutusu ve sayfa başına gösterim seçicilerini özelleştir
-          $('.dataTables_filter input').attr('placeholder', 'Ara...');
-          $('.dataTables_filter input').addClass('modern-search');
-          $('.dataTables_length select').addClass('modern-select');
-        }
-      });
-      
-      // Stil düzeltmeleri için CSS ekle
-      const cssStyles = `
-        table.dataTable thead th.sorting_asc,
-        table.dataTable thead th.sorting_desc {
-          background-color: #eef5ff !important;
-        }
-      `;
-      
-      // Önceki stil elementini kontrol et ve kaldır
-      const existingStyle = document.getElementById('datatable-custom-style');
-      if (existingStyle) {
-        existingStyle.remove();
-      }
-      
-      // Yeni stil elementi ekle
-      const styleElement = document.createElement('style');
-      styleElement.id = 'datatable-custom-style';
-      styleElement.textContent = cssStyles;
-      document.head.appendChild(styleElement);
-
-    } catch (error) {
-      console.error("Maliyet analizi verisi alınırken hata:", error);
-      tableBody.innerHTML = `<tr><td colspan="15">Veri alınamadı: ${error.message}</td></tr>`;
+    ];
+    
+    // Görünüm değiştiğinde tabloyu yeniden oluştur
+    if (viewModeSelect) {
+        viewModeSelect.addEventListener('change', function() {
+            viewMode = this.value;
+            if (maliyetTable) {
+                maliyetTable.destroy();
+            }
+            initTable();
+            loadMaliyetData();
+        });
     }
-  }
-
-  // Her bir antrepo girişinin hesaplama motoru verisini çeker.
-  async function fetchHesaplamaMotoru(girisId) {
-    try {
-      const resp = await fetch(`${baseUrl}/api/hesaplama-motoru/${girisId}`);
-      if (!resp.ok) throw new Error(`Hesaplama Motoru Hatası: ${resp.status}`);
-      const calcData = await resp.json();
-
-      // dailyBreakdown dizisindeki son satır verilerinden hesaplamaları alıyoruz
-      const breakdown = calcData.dailyBreakdown || [];
-      if (breakdown.length === 0) {
-        return {
-          mevcutMaliyet: 0,
-          toplamMaliyet: 0,
-          birimMaliyet: 0,
-          paraBirimi: calcData.antrepoGiris?.para_birimi_iso || "USD"
-        };
-      }
-      const lastRow = breakdown[breakdown.length - 1];
-      const mevcutMaliyet = lastRow.dayTotal;
-      const toplamMaliyet = lastRow.cumulative;
-      const totalInitialStock = calcData.antrepoGiris?.miktar || 0;
-      const birimMaliyet = totalInitialStock > 0 ? toplamMaliyet / totalInitialStock : 0;
-
-      return {
-        mevcutMaliyet,
-        toplamMaliyet,
-        birimMaliyet,
-        paraBirimi: calcData.antrepoGiris?.para_birimi_iso || "USD"
-      };
-    } catch (err) {
-      console.error("Hesaplama motoru çağrısı hatası:", err);
-      return {
-        mevcutMaliyet: 0,
-        toplamMaliyet: 0,
-        birimMaliyet: 0,
-        paraBirimi: "USD"
-      };
+    
+    // Tabloyu oluştur
+    function initTable() {
+        let columns;
+        
+        if (viewMode === 'product') {
+            columns = [...baseColumns, ...productColumns, ...commonColumns];
+        } else { // beyanname
+            columns = [...baseColumns, ...commonColumns];
+        }
+        
+        maliyetTable = $('#maliyetTable').DataTable({
+            columns: columns,
+            responsive: true,
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/tr.json'
+            },
+            order: [[1, 'desc']]
+        });
     }
-  }
-
-  // Tarih formatlama yardımcı fonksiyonu (gg.aa.yyyy formatında)
-  function formatDate(dateStr) {
-    if (!dateStr) return "-";
-    const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return "-";
-    const day = d.getDate().toString().padStart(2, '0');
-    const month = (d.getMonth() + 1).toString().padStart(2, '0');
-    const year = d.getFullYear();
-    return `${day}.${month}.${year}`;
-  }
-
-  // Tabloyu doldurur: her bir giriş için tüm sütunları oluşturur
-  async function populateTable(data) {
-    tableBody.innerHTML = "";
-
-    for (const item of data) {
-      const tr = document.createElement("tr");
-
-      // 1) Antrepo
-      const tdAntrepoName = document.createElement("td");
-      tdAntrepoName.textContent = item.antrepoName || "-";
-
-      // 2) Ürün Adı – Link şeklinde (örn: stok kartı sayfasına yönlendirme)
-      const tdProductName = document.createElement("td");
-      tdProductName.innerHTML = `<a href="stock-card.html?id=${item.productId}" class="table-link">${item.productName || "-"}</a>`;
-
-      // 3) Ürün Kodu – Link şeklinde
-      const tdProductCode = document.createElement("td");
-      tdProductCode.innerHTML = `<a href="stock-card.html?id=${item.productId}" class="table-link">${item.productCode || "-"}</a>`;
-
-      // 4) Antrepo Giriş Tarihi
-      const tdEntryDate = document.createElement("td");
-      tdEntryDate.textContent = formatDate(item.entryDate);
-
-      // 5) Antrepo Giriş Form No – Link (form detayına yönlendirme)
-      const tdFormNo = document.createElement("td");
-      const formNoLink = document.createElement("a");
-      formNoLink.href = `antrepo-giris-formu.html?id=${encodeURIComponent(item.entryId)}&mode=view`;
-      formNoLink.textContent = item.formNo || "-";
-      formNoLink.classList.add("table-link");
-      tdFormNo.appendChild(formNoLink);
-
-      // 6) Antrepo Giriş Adedi
-      const tdEntryCount = document.createElement("td");
-      tdEntryCount.textContent = item.entryCount != null ? item.entryCount : "-";
-
-      // 7) Antrepo Giriş Kap Adedi
-      const tdEntryKap = document.createElement("td");
-      tdEntryKap.textContent = item.entryKapCount != null ? item.entryKapCount : "-";
-
-      // 8) Son Antrepo Çıkış Tarihi
-      const tdLastExitDate = document.createElement("td");
-      tdLastExitDate.textContent = formatDate(item.lastExitDate);
-
-      // 9) Son Çıkış Adedi
-      const tdLastExitAmount = document.createElement("td");
-      tdLastExitAmount.textContent = item.lastExitAmount != null ? item.lastExitAmount : "-";
-
-      // 10) Mevcut Stok (Ton)
-      const tdCurrentStock = document.createElement("td");
-      tdCurrentStock.textContent = item.currentStock != null
-        ? parseFloat(item.currentStock).toFixed(2)
-        : "-";
-
-      // 11) Mevcut Kap Adedi
-      const tdCurrentKap = document.createElement("td");
-      tdCurrentKap.textContent = item.currentKapCount != null
-        ? item.currentKapCount
-        : "-";
-
-      // 12) Mevcut Maliyet (Hesaplama motorundan gelecek)
-      const tdCurrentCost = document.createElement("td");
-      tdCurrentCost.textContent = "...";
-
-      // 13) Toplam Maliyet – para birimiyle birlikte (veritabanı verisi; hesaplama motoru ile güncellenebilir)
-      const tdTotalCost = document.createElement("td");
-      tdTotalCost.textContent = item.totalCost != null && item.paraBirimi
-        ? parseFloat(item.totalCost).toFixed(2) + ' ' + item.paraBirimi
-        : "-";
-
-      // 14) Birim Maliyete Etkisi – hesaplama motorundan gelecek
-      const tdUnitImpact = document.createElement("td");
-      tdUnitImpact.textContent = "...";
-
-      // 15) Detay Linki – hesaplama motoru detay sayfasına yönlendirme
-      const tdDetail = document.createElement("td");
-      const detailLink = document.createElement("a");
-      detailLink.textContent = "Detay";
-      detailLink.href = `hesaplama-motoru.html?entryId=${encodeURIComponent(item.entryId)}`;
-      detailLink.classList.add("btn-detail");
-      tdDetail.appendChild(detailLink);
-
-      // Satırdaki tüm hücreleri ekle
-      tr.append(
-        tdAntrepoName,
-        tdProductName,
-        tdProductCode,
-        tdEntryDate,
-        tdFormNo,
-        tdEntryCount,
-        tdEntryKap,
-        tdLastExitDate,
-        tdLastExitAmount,
-        tdCurrentStock,
-        tdCurrentKap,
-        tdCurrentCost,
-        tdTotalCost,
-        tdUnitImpact,
-        tdDetail
-      );
-      tableBody.appendChild(tr);
-
-      // Hesaplama motorundan veriyi çek ve ilgili hücreleri güncelle (12. sütun: Mevcut Maliyet, 13. sütun: Toplam Maliyet, 14. sütun: Birim Maliyet)
-      const calc = await fetchHesaplamaMotoru(item.entryId);
-      // Satırdaki td'ler 0 tabanlı indeksle: 11, 12 ve 13. elemanlar
-      if (tr.children.length >= 15) {
-        tr.children[11].textContent = calc.mevcutMaliyet != null && calc.paraBirimi
-          ? parseFloat(calc.mevcutMaliyet).toFixed(2) + ' ' + calc.paraBirimi
-          : "-";
-        tr.children[12].textContent = calc.toplamMaliyet != null && calc.paraBirimi
-          ? parseFloat(calc.toplamMaliyet).toFixed(2) + ' ' + calc.paraBirimi
-          : "-";
-        tr.children[13].textContent = calc.birimMaliyet != null && calc.paraBirimi
-          ? `${parseFloat(calc.birimMaliyet).toFixed(2)} ${calc.paraBirimi}`
-          : `0.00 ${calc.paraBirimi}`;
-      }
+    
+    // Verileri yükle
+    async function loadMaliyetData() {
+        try {
+            const response = await fetch(`${baseUrl}/api/maliyet-analizi?viewMode=${viewMode}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            maliyetTable.clear();
+            
+            if (viewMode === 'product') {
+                // Ürün bazlı veriler
+                const processedData = [];
+                
+                for (const entry of data) {
+                    // Her beyanname için hesaplama motoru API'den detaylı bilgi al
+                    try {
+                        const detailResponse = await fetch(`${baseUrl}/api/hesaplama-motoru/${entry.id}?viewMode=product`);
+                        if (!detailResponse.ok) continue;
+                        
+                        const detailData = await detailResponse.json();
+                        
+                        if (detailData.products && detailData.products.length > 0) {
+                            // Her ürün için bir satır oluştur
+                            for (const product of detailData.products) {
+                                processedData.push({
+                                    id: entry.id,
+                                    beyanname_no: entry.beyanname_no || '-',
+                                    antrepo_giris_tarihi: entry.antrepo_giris_tarihi,
+                                    antrepo_kodu: entry.antrepo_kodu || '-',
+                                    antrepoName: entry.antrepoName || '-',
+                                    productName: product.urunAdi || '-',
+                                    productCode: product.urunKodu || '-',
+                                    currentStock: product.currentStock,
+                                    currentCost: product.dailyBreakdown && product.dailyBreakdown.length > 0 
+                                        ? product.dailyBreakdown[product.dailyBreakdown.length - 1].dayTotal || 0 
+                                        : 0,
+                                    totalCost: product.totalCost || 0,
+                                    unitCostImpact: product.currentStock > 0 
+                                        ? product.totalCost / product.currentStock
+                                        : 0
+                                });
+                            }
+                        }
+                    } catch (detailError) {
+                        console.error(`Detay bilgisi alınamadı (ID: ${entry.id}):`, detailError);
+                    }
+                }
+                
+                maliyetTable.rows.add(processedData).draw();
+                
+            } else {
+                // Beyanname bazlı veriler (default)
+                const processedData = [];
+                
+                for (const entry of data) {
+                    // Her beyanname için hesaplama motoru API'den detaylı bilgi al
+                    try {
+                        const costData = await fetchCostCalculationForEntry(entry.id);
+                        
+                        processedData.push({
+                            id: entry.id,
+                            beyanname_no: entry.beyanname_no || '-',
+                            antrepo_giris_tarihi: entry.antrepo_giris_tarihi,
+                            antrepo_kodu: entry.antrepo_kodu || '-',
+                            antrepoName: entry.antrepoName || '-',
+                            currentStock: costData.currentStock || 0,
+                            currentCost: costData.currentCost || 0,
+                            totalCost: costData.totalCost || 0,
+                            unitCostImpact: costData.unitCostImpact || 0
+                        });
+                    } catch (detailError) {
+                        console.error(`Maliyet hesaplaması alınamadı (ID: ${entry.id}):`, detailError);
+                    }
+                }
+                
+                maliyetTable.rows.add(processedData).draw();
+            }
+            
+        } catch (error) {
+            console.error('Maliyet verileri yüklenirken hata:', error);
+            document.getElementById('errorMessage').textContent = `Veri yüklenirken hata oluştu: ${error.message}`;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
     }
-  }
-
-  await fetchMaliyetAnalizi();
+    
+    // Yardımcı fonksiyonlar
+    function formatDate(data) {
+        if (!data) return '-';
+        const date = new Date(data);
+        return isNaN(date) ? data : date.toLocaleDateString('tr-TR');
+    }
+    
+    function formatBeyanname(data) {
+        return data || '-';
+    }
+    
+    function formatNumber(data) {
+        return new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 2 }).format(data || 0);
+    }
+    
+    function formatCurrency(data) {
+        return new Intl.NumberFormat('tr-TR', { 
+            style: 'currency', 
+            currency: 'TRY',
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2 
+        }).format(data || 0);
+    }
+    
+    // Belirtilen giriş ID'si için hesaplama motorundan maliyet verilerini alır
+    async function fetchCostCalculationForEntry(girisId) {
+        try {
+            const response = await fetch(`${baseUrl}/api/hesaplama-motoru/${girisId}`);
+            
+            if (!response.ok) {
+                throw new Error(`API yanıt hatası: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            return {
+                currentStock: parseFloat(data.currentStock) || 0,
+                currentCost: data.dailyBreakdown && data.dailyBreakdown.length > 0 
+                    ? parseFloat(data.dailyBreakdown[data.dailyBreakdown.length - 1].dayTotal) || 0 
+                    : 0,
+                totalCost: parseFloat(data.totalCost) || 0,
+                unitCostImpact: data.currentStock > 0 
+                    ? parseFloat(data.totalCost) / parseFloat(data.currentStock) 
+                    : 0
+            };
+        } catch (error) {
+            console.error(`Maliyet hesaplama hatası (ID: ${girisId}):`, error);
+            return {
+                currentStock: 0,
+                currentCost: 0,
+                totalCost: 0,
+                unitCostImpact: 0
+            };
+        }
+    }
+    
+    // Sayfa yüklendiğinde tabloyu başlat
+    initTable();
+    loadMaliyetData();
 });
 
 // Excel'e aktarma fonksiyonu (XLSX kütüphanesi gerektirir)
@@ -307,3 +227,93 @@ window.exportToExcel = function() {
   const wb = XLSX.utils.table_to_book(table, { sheet: "Maliyet Analizi" });
   XLSX.writeFile(wb, `Maliyet_Analizi_${new Date().toISOString().split('T')[0]}.xlsx`);
 };
+
+// Maliyet analizi verilerini render etme fonksiyonu - çoklu ürün desteği eklendi
+function renderMaliyetAnaliziData(data) {
+  const tableBody = document.getElementById('maliyetAnaliziTableBody');
+  if (!tableBody) return;
+  
+  tableBody.innerHTML = '';
+  
+  if (!data || data.length === 0) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = 10;
+    td.textContent = 'Gösterilecek veri bulunmamaktadır';
+    td.className = 'text-center';
+    tr.appendChild(td);
+    tableBody.appendChild(tr);
+    return;
+  }
+  
+  data.forEach(item => {
+    const tr = document.createElement('tr');
+    
+    // Beyanname No
+    const tdBeyanname = document.createElement('td');
+    tdBeyanname.textContent = item.beyanname_no || '-';
+    tr.appendChild(tdBeyanname);
+    
+    // Antrepo
+    const tdAntrepo = document.createElement('td');
+    tdAntrepo.textContent = item.antrepoName || '-';
+    tr.appendChild(tdAntrepo);
+    
+    // Giriş Tarihi
+    const tdGirisTarihi = document.createElement('td');
+    if (item.antrepo_giris_tarihi) {
+      tdGirisTarihi.textContent = new Date(item.antrepo_giris_tarihi).toLocaleDateString();
+    } else {
+      tdGirisTarihi.textContent = '-';
+    }
+    tr.appendChild(tdGirisTarihi);
+    
+    // Ürün Çeşidi Sayısı
+    const tdUrunCesidi = document.createElement('td');
+    tdUrunCesidi.textContent = item.urun_cesidi_sayisi || 0;
+    tr.appendChild(tdUrunCesidi);
+    
+    // Toplam Miktar
+    const tdToplamMiktar = document.createElement('td');
+    tdToplamMiktar.textContent = item.toplam_miktar || 0;
+    tr.appendChild(tdToplamMiktar);
+    
+    // Toplam Kap Adedi
+    const tdKapAdedi = document.createElement('td');
+    tdKapAdedi.textContent = item.toplam_kap_adeti || 0;
+    tr.appendChild(tdKapAdedi);
+    
+    // Mevcut Stok
+    const tdMevcutStok = document.createElement('td');
+    tdMevcutStok.textContent = item.currentStock ? item.currentStock.toFixed(2) : '0.00';
+    tr.appendChild(tdMevcutStok);
+    
+    // Mevcut Maliyet
+    const tdMevcutMaliyet = document.createElement('td');
+    tdMevcutMaliyet.textContent = item.currentCost ? `${item.currentCost.toFixed(2)} ${item.currency || 'USD'}` : `0.00 ${item.currency || 'USD'}`;
+    tr.appendChild(tdMevcutMaliyet);
+    
+    // Toplam Maliyet
+    const tdToplamMaliyet = document.createElement('td');
+    tdToplamMaliyet.textContent = item.totalCost ? `${item.totalCost.toFixed(2)} ${item.currency || 'USD'}` : `0.00 ${item.currency || 'USD'}`;
+    tr.appendChild(tdToplamMaliyet);
+    
+    // Birim Maliyete Etkisi
+    const tdBirimEtki = document.createElement('td');
+    tdBirimEtki.textContent = item.unitCostImpact ? `${item.unitCostImpact.toFixed(2)} ${item.currency || 'USD'}` : `0.00 ${item.currency || 'USD'}`;
+    tr.appendChild(tdBirimEtki);
+    
+    // İşlemler (Detay butonu)
+    const tdIslemler = document.createElement('td');
+    const detayBtn = document.createElement('button');
+    detayBtn.textContent = 'Detay';
+    detayBtn.className = 'btn btn-primary btn-sm';
+    detayBtn.onclick = () => {
+      window.open(`hesaplama-motoru.html?entryId=${item.id}`, '_blank');
+    };
+    tdIslemler.appendChild(detayBtn);
+    tr.appendChild(tdIslemler);
+    
+    tableBody.appendChild(tr);
+  });
+}

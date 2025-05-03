@@ -1,0 +1,60 @@
+/* Ürün düzenleme modalı stilleri */
+.edit-row {
+  margin-right: 5px;
+}
+
+#editProductModal .modal-content {
+  width: 800px;
+  max-width: 90%;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-right: -15px;
+  margin-left: -15px;
+  margin-bottom: 15px;
+}
+
+.form-group {
+  padding-right: 15px;
+  padding-left: 15px;
+  margin-bottom: 15px;
+  flex: 0 0 50%;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ddd;
+}
+
+.modal-header h3 {
+  margin: 0;
+}
+
+.modal-body {
+  padding: 15px 0;
+}
+
+.modal-footer {
+  padding-top: 10px;
+  border-top: 1px solid #ddd;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.close {
+  cursor: pointer;
+  font-size: 24px;
+}
