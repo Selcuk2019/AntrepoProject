@@ -532,11 +532,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tdUrun = document.createElement("td");
       if (item.applies_to_all) {
         tdUrun.textContent = "Tüm Ürünler";
-        tdUrun.classList.add("all-products-cell");
-      } else if (item.urun_bilgisi) {
-        tdUrun.textContent = item.urun_bilgisi; 
+        tdUrun.classList.add("all-products-cell"); // İsteğe bağlı: Farklı stil için
+      } else if (item.urun_tanimi) { // Backend'den gelen urun_tanimi alanı
+        let urunBilgisiMetni = item.urun_tanimi;
+        if (item.urun_kodu) { // Eğer ürün kodu da varsa ekle
+          urunBilgisiMetni += ` (${item.urun_kodu})`;
+        }
+        tdUrun.textContent = urunBilgisiMetni;
+      } else if (item.urun_id) { // urun_tanimi yoksa ama urun_id varsa (fallback)
+        tdUrun.textContent = `Ürün ID: ${item.urun_id}`;
       } else {
-        tdUrun.textContent = "-";
+        tdUrun.textContent = "-"; // Hiçbir bilgi yoksa
       }
       tr.appendChild(tdUrun);
       
@@ -1367,78 +1373,146 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
   
-  // Modal içindeki ürün select2'leri için popülasyon fonksiyonu
-  function populateModalProductSelect(selectId, codeFieldId) {
-    const selectElement = document.getElementById(selectId);
-    const codeField = document.getElementById(codeFieldId);
-    
-    if (!selectElement) return;
-    
-    // Mevcut seçenekleri temizle
-    selectElement.innerHTML = '<option value="">Ürün seçiniz...</option>';
-    
-    // productRows'dan gelen verilerle doldur
-    productRows.forEach((row, index) => {
-      const option = document.createElement('option');
-      option.value = index; // Dizideki index'i value olarak kullan
-      option.textContent = row.urunTanimi;
-      option.dataset.urunId = row.urunId; // Add urunId to dataset for easy access
-      option.dataset.urunKodu = row.urunKodu;
-      option.dataset.paketlemeTipi = row.paketlemeTipi;
-      option.dataset.paketBoyutu = row.paketBoyutu;
-      option.dataset.miktar = row.miktar;
-      option.dataset.kapAdeti = row.kapAdeti;
-      option.dataset.brutAgirlik = row.brutAgirlik;
-      option.dataset.netAgirlik = row.netAgirlik;
-      selectElement.appendChild(option);
+// Kalan stok bilgisini çıkış modalında gösteren fonksiyon
+async function loadRemainingStockForExitModal(urunId, urunVaryantId = null) {
+  const miktarInput = document.getElementById('modalExitMiktar');
+  const kapAdetiInput = document.getElementById('modalExitKapAdeti');
+  const brutAgirlikInput = document.getElementById('modalExitBrutAgirlik');
+  const netAgirlikInput = document.getElementById('modalExitNetAgirlik');
+
+  // Helper to reset fields
+  const resetFields = () => {
+    if (miktarInput) miktarInput.value = '0.00';
+    if (kapAdetiInput) kapAdetiInput.value = '0';
+    if (brutAgirlikInput) brutAgirlikInput.value = '0.00';
+    if (netAgirlikInput) netAgirlikInput.value = '0.00';
+  };
+
+  if (!activeGirisId || !urunId) {
+    console.warn("loadRemainingStockForExitModal: activeGirisId veya urunId eksik.");
+    resetFields();
+    return;
+  }
+
+  try {
+    let apiUrl = `${baseUrl}/api/antrepo-giris/${activeGirisId}/kalan-stok/${urunId}`;
+    if (urunVaryantId) {
+      apiUrl += `?urunVaryantId=${urunVaryantId}`;
+    }
+    console.log(`[loadRemainingStockForExitModal] API isteği: ${apiUrl}`);
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      throw new Error(`Kalan stok alınamadı: ${response.status} ${response.statusText}`);
+    }
+    const data = await response.json();
+    console.log("[loadRemainingStockForExitModal] API'den gelen kalan stok verisi:", data);
+
+    if (miktarInput) miktarInput.value = data.kalan_miktar || '0.00';
+    if (kapAdetiInput) kapAdetiInput.value = data.kalan_kap_adeti || '0';
+    if (brutAgirlikInput) brutAgirlikInput.value = data.kalan_brut_agirlik || '0.00';
+    if (netAgirlikInput) netAgirlikInput.value = data.kalan_net_agirlik || '0.00';
+
+  } catch (error) {
+    console.error("Kalan stok yüklenirken hata:", error);
+    resetFields();
+    // Optionally, display an error message to the user in the modal
+  }
+}
+
+
+// Modal içindeki ürün select2'leri için popülasyon fonksiyonu
+function populateModalProductSelect(selectId, codeFieldId) {
+  const selectElement = document.getElementById(selectId);
+  const codeField = document.getElementById(codeFieldId);
+  
+  if (!selectElement) return;
+  
+  // Mevcut seçenekleri temizle
+  selectElement.innerHTML = '<option value="">Ürün seçiniz...</option>';
+  
+  // productRows'dan gelen verilerle doldur
+  productRows.forEach((row, index) => {
+    const option = document.createElement('option');
+    option.value = index; // Dizideki index'i value olarak kullan
+    option.textContent = row.urunTanimi;
+    option.dataset.urunId = row.urunId; // Add urunId to dataset for easy access
+    option.dataset.urunKodu = row.urunKodu;
+    option.dataset.paketlemeTipi = row.paketlemeTipi;
+    option.dataset.paketBoyutu = row.paketBoyutu;
+    option.dataset.miktar = row.miktar;
+    option.dataset.kapAdeti = row.kapAdeti;
+    option.dataset.brutAgirlik = row.brutAgirlik;
+    option.dataset.netAgirlik = row.netAgirlik;
+    selectElement.appendChild(option);
+  });
+  
+  // Select2 olarak initialize et
+  try {
+    $(selectElement).select2({
+      placeholder: 'Ürün seçiniz...',
+      allowClear: true,
+      width: '100%'
     });
     
-    // Select2 olarak initialize et
-    try {
-      $(selectElement).select2({
-        placeholder: 'Ürün seçiniz...',
-        allowClear: true,
-        width: '100%'
-      });
+    // Ürün seçildiğinde kod alanını doldur ve diğer bilgileri pre-populate et
+    $(selectElement).on('change', async function() { // async yaptık
+      const selectedOption = selectElement.options[selectElement.selectedIndex];
       
-      // Ürün seçildiğinde kod alanını doldur ve diğer bilgileri pre-populate et
-      $(selectElement).on('change', function() {
-        const selectedOption = selectElement.options[selectElement.selectedIndex];
-        
-        if (selectElement.value && selectedOption) {
-          // Ürün kodu alanını doldur
-          if (codeField) codeField.value = selectedOption.dataset.urunKodu || '';
-          
-          // Diğer form alanlarını da pre-populate et
-          if (selectId === 'modalEntryUrunSelect') {
-            if (document.getElementById('modalMiktar')) 
-              document.getElementById('modalMiktar').value = selectedOption.dataset.miktar || '';
-            if (document.getElementById('modalKapAdeti')) 
-              document.getElementById('modalKapAdeti').value = selectedOption.dataset.kapAdeti || '';
-            if (document.getElementById('modalBrutAgirlik')) 
-              document.getElementById('modalBrutAgirlik').value = selectedOption.dataset.brutAgirlik || '';
-            if (document.getElementById('modalNetAgirlik')) 
-              document.getElementById('modalNetAgirlik').value = selectedOption.dataset.netAgirlik || '';
-          } else if (selectId === 'modalExitUrunSelect') {
-            if (document.getElementById('modalExitMiktar')) 
-              document.getElementById('modalExitMiktar').value = selectedOption.dataset.miktar || '';
-            if (document.getElementById('modalExitKapAdeti')) 
-              document.getElementById('modalExitKapAdeti').value = selectedOption.dataset.kapAdeti || '';
-            if (document.getElementById('modalExitBrutAgirlik')) 
-              document.getElementById('modalExitBrutAgirlik').value = selectedOption.dataset.brutAgirlik || '';
-            if (document.getElementById('modalExitNetAgirlik')) 
-              document.getElementById('modalExitNetAgirlik').value = selectedOption.dataset.netAgirlik || '';
+      if (selectElement.value && selectedOption) {
+        // Ürün kodu alanını doldur
+        if (codeField) codeField.value = selectedOption.dataset.urunKodu || '';
+
+        // Eğer çıkış modalı için ürün seçiliyorsa, kalan stokları yükle
+        if (selectId === 'modalExitUrunSelect') {
+          const urunId = selectedOption.dataset.urunId;
+          const paketlemeTipi = selectedOption.dataset.paketlemeTipi;
+          const paketBoyutu = selectedOption.dataset.paketBoyutu;
+          let urunVaryantId = null;
+          if (urunId && paketlemeTipi && paketBoyutu) {
+            console.log(`[populateModalProductSelect - Çıkış] findVariantId çağrılıyor: urunId=${urunId}, tip=${paketlemeTipi}, boyut=${paketBoyutu}`);
+            urunVaryantId = await findVariantId(urunId, paketlemeTipi, paketBoyutu);
+            console.log(`[populateModalProductSelect - Çıkış] findVariantId sonucu: ${urunVaryantId}`);
           }
-        } else {
-          // Seçim temizlendiğinde form alanlarını da temizle
-          if (codeField) codeField.value = '';
+          await loadRemainingStockForExitModal(urunId, urunVaryantId);
         }
-      });
-      
-    } catch (e) {
-      console.error('Select2 initialization error:', e);
-    }
+        
+        // Diğer form alanlarını da pre-populate et
+        if (selectId === 'modalEntryUrunSelect') {
+          if (document.getElementById('modalMiktar')) 
+            document.getElementById('modalMiktar').value = selectedOption.dataset.miktar || '';
+          if (document.getElementById('modalKapAdeti')) 
+            document.getElementById('modalKapAdeti').value = selectedOption.dataset.kapAdeti || '';
+          if (document.getElementById('modalBrutAgirlik')) 
+            document.getElementById('modalBrutAgirlik').value = selectedOption.dataset.brutAgirlik || '';
+          if (document.getElementById('modalNetAgirlik')) 
+            document.getElementById('modalNetAgirlik').value = selectedOption.dataset.netAgirlik || '';
+        } else if (selectId === 'modalExitUrunSelect') {
+          // Bu alanlar artık loadRemainingStockForExitModal tarafından dolduruluyor.
+          // if (document.getElementById('modalExitMiktar')) 
+          //   document.getElementById('modalExitMiktar').value = selectedOption.dataset.miktar || '';
+          // if (document.getElementById('modalExitKapAdeti')) 
+          //   document.getElementById('modalExitKapAdeti').value = selectedOption.dataset.kapAdeti || '';
+          // if (document.getElementById('modalExitBrutAgirlik')) 
+          //   document.getElementById('modalExitBrutAgirlik').value = selectedOption.dataset.brutAgirlik || '';
+          // if (document.getElementById('modalExitNetAgirlik')) 
+          //   document.getElementById('modalExitNetAgirlik').value = selectedOption.dataset.netAgirlik || '';
+        }
+      } else {
+        // Seçim temizlendiğinde form alanlarını da temizle
+        if (codeField) codeField.value = '';
+        if (selectId === 'modalExitUrunSelect') {
+          document.getElementById('modalExitMiktar').value = '';
+          document.getElementById('modalExitKapAdeti').value = '';
+          document.getElementById('modalExitBrutAgirlik').value = '';
+          document.getElementById('modalExitNetAgirlik').value = '';
+        }
+      }
+    });
+    
+  } catch (e) {
+    console.error('Select2 initialization error:', e);
   }
+}
   
   if (newEntryForm) {
     newEntryForm.addEventListener("submit", async (e) => {
@@ -1478,16 +1552,17 @@ document.addEventListener("DOMContentLoaded", async () => {
           console.log("Selected product:", selectedProduct);
         }
         
-        // Check for duplicate submission
-        // Add a short time window (e.g., 5 seconds) to prevent accidental duplicates
-        const duplicateCheckSql = `
-          SELECT id FROM antrepo_hareketleri
-          WHERE antrepo_giris_id = ?
-            AND islem_tipi = 'Giriş'
-            AND miktar = ?
-            AND islem_tarihi = ?
-            AND created_at > DATE_SUB(NOW(), INTERVAL 5 SECOND)
-        `;
+        // Varyant ID'sini bul
+        let variantId = null;
+        if (selectedProduct && selectedProduct.urunId && 
+            selectedProduct.paketlemeTipi && selectedProduct.paketBoyutu) {
+          // findVariantId fonksiyonunu kullanmadan önce kontrol et
+          variantId = await findVariantId(
+            selectedProduct.urunId,
+            selectedProduct.paketlemeTipi,
+            selectedProduct.paketBoyutu
+          );
+        }
         
         // Create payload with necessary fields
         const hareketPayload = {
@@ -1499,13 +1574,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           kap_adeti: parseInt(document.getElementById("modalKapAdeti")?.value) || 0,
           aciklama: document.getElementById("modalAciklama")?.value || "Yeni Giriş",
           description: selectedProduct ? selectedProduct.paketlemeTipi : null,
-          urun_varyant_id: selectedProduct ? findVariantId(selectedProduct.urunId, 
-                                                          selectedProduct.paketlemeTipi, 
-                                                          selectedProduct.paketBoyutu) : null,
+          urun_varyant_id: variantId,
+          // urun_bilgisi göndermeyi kaldırıyoruz!
           urun_id: selectedProductId
         };
-        // Paket hacmini ekle
-        hareketPayload.paket_hacmi = selectedProduct ? selectedProduct.paketBoyutu : null;
+        
         console.log("Sending entry payload:", hareketPayload);
         
         const resp = await fetch(`${baseUrl}/api/antrepo-giris/${activeGirisId}/hareketler`, {
@@ -1588,11 +1661,20 @@ document.addEventListener("DOMContentLoaded", async () => {
           aciklama: formatExitDescription(),
           description: selectedProduct ? selectedProduct.paketlemeTipi : null,
           urun_varyant_id: selectedProduct ? findVariantId(selectedProduct.urunId, 
-                                                         selectedProduct.paketlemeTipi, 
-                                                         selectedProduct.paketBoyutu) : null,
+         selectedProduct.paketBoyutu) : null,
           urun_id: selectedProductId
         };        
-        exitPayload.paket_hacmi = selectedProduct ? selectedProduct.paketBoyutu : null;
+        exitPayload.paket_hacmi = selectedProduct ? (parseFloat(selectedProduct.paketBoyutu) || null) : null;
+
+// --- HATA AYIKLAMA LOGLARI BAŞLANGIÇ ---
+console.log("[ÇIKIŞ İŞLEMİ] Seçilen Ürün (selectedProduct):", selectedProduct);
+let variantIdForExit = null;
+if (selectedProduct && selectedProduct.urunId && selectedProduct.paketlemeTipi && selectedProduct.paketBoyutu) {
+  console.log(`[ÇIKIŞ İŞLEMİ] findVariantId çağrılıyor: urunId=${selectedProduct.urunId}, paketlemeTipi=${selectedProduct.paketlemeTipi}, paketBoyutu=${selectedProduct.paketBoyutu}`);
+  variantIdForExit = await findVariantId(selectedProduct.urunId, selectedProduct.paketlemeTipi, selectedProduct.paketBoyutu);
+  console.log("[ÇIKIŞ İŞLEMİ] findVariantId sonucu:", variantIdForExit);
+}
+exitPayload.urun_varyant_id = variantIdForExit;
         
         console.log("Sending exit payload:", exitPayload);
         
@@ -2122,64 +2204,71 @@ async function loadEditVariantDataForProduct(urunId, selectedValue) {
   } else {
     console.log("Yeni kayıt modu - boş form gösteriliyor");
   }
-});
 
-btnEkHizmetSave.addEventListener("click", async () => {
-  const tarihVal = inputEkHizmetTarih.value.trim();
-  if (!tarihVal) {
-    alert("Tarih zorunludur!");
-    return;
-  }
-  
-  const appliesAllCheckbox = document.getElementById("modalEkHizmetAppliesAll");
-  const urunSelect = document.getElementById("modalEkHizmetUrunSelect");
-  
-  // Check if a product is selected when "applies to all" is not checked
-  if (!appliesAllCheckbox.checked && !urunSelect.value) {
-    alert("Lütfen bir ürün seçin veya 'Tüm ürünleri etkileyen hizmet' seçeneğini işaretleyin!");
-    return;
-  }
-  
-  const ekHizmetObj = {
-    // Existing fields
-    hizmet_id: modalHizmetSelect.value,
-    hizmet_adi: modalHizmetSelect.options[modalHizmetSelect.selectedIndex].textContent,
-    hizmet_kodu: modalHizmetKodu.value,
-    ucret_modeli: modalUcretModeli.value,
-    birim: modalHizmetBirim.value,
-    para_birimi_id: modalHizmetParaBirimi.value,
-    temel_ucret: parseFloat(modalTemelUcret.value) || 0,
-    carpan: parseFloat(modalCarpan.value) || 0,
-    adet: parseFloat(modalHizmetAdet.value) || 0,
-    toplam: parseFloat(modalHizmetToplam.value) || 0,
-    aciklama: modalHizmetAciklama.value.trim(),
-    ek_hizmet_tarihi: tarihVal,
-    
-    // New fields for product association
-    urun_id: appliesAllCheckbox.checked ? null : urunSelect.value,
-    applies_to_all: appliesAllCheckbox.checked
-  };
-  
-  try {
-    const resp = await fetch(`${baseUrl}/api/antrepo-giris/${activeGirisId}/ek-hizmetler`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(ekHizmetObj)
+  if (btnEkHizmetSave) {
+    btnEkHizmetSave.addEventListener("click", async () => {
+      const tarihVal = inputEkHizmetTarih.value.trim();
+      if (!tarihVal) {
+        alert("Tarih zorunludur!");
+        return;
+      }
+      
+      const appliesAllCheckbox = document.getElementById("modalEkHizmetAppliesAll");
+      const urunSelect = document.getElementById("modalEkHizmetUrunSelect");
+      
+      // Check if a product is selected when "applies to all" is not checked
+      if (!appliesAllCheckbox.checked && !urunSelect.value) {
+        alert("Lütfen bir ürün seçin veya 'Tüm ürünleri etkileyen hizmet' seçeneğini işaretleyin!");
+        return;
+      }
+      
+      const ekHizmetObj = {
+        // Existing fields
+        hizmet_id: modalHizmetSelect.value,
+        // hizmet_adi: modalHizmetSelect.options[modalHizmetSelect.selectedIndex].textContent, // BU SATIRIN SİLİNDİĞİNDEN VEYA YORUMDA OLDUĞUNDAN EMİN OLUN
+        hizmet_kodu: modalHizmetKodu.value,
+        ucret_modeli: modalUcretModeli.value,
+        birim: modalHizmetBirim.value,
+        para_birimi_id: modalHizmetParaBirimi.value,
+        temel_ucret: parseFloat(modalTemelUcret.value) || 0,
+        carpan: parseFloat(modalCarpan.value) || 0,
+        adet: parseFloat(modalHizmetAdet.value) || 0,
+        toplam: parseFloat(modalHizmetToplam.value) || 0,
+        aciklama: modalHizmetAciklama.value.trim(),
+        ek_hizmet_tarihi: tarihVal,
+        
+        // New fields for product association
+        urun_id: appliesAllCheckbox.checked ? null : urunSelect.value,
+        applies_to_all: appliesAllCheckbox.checked
+      };
+      
+      // PAYLOAD'I KONSOLA YAZDIRALIM
+      console.log("Gönderilecek Ek Hizmet Payload'ı:", JSON.stringify(ekHizmetObj, null, 2));
+      
+      try {
+        const resp = await fetch(`${baseUrl}/api/antrepo-giris/${activeGirisId}/ek-hizmetler`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(ekHizmetObj)
+        });
+        const result = await resp.json();
+        if (result.success) {
+          alert("Ek hizmet kaydedildi!");
+          const updatedList = await fetchEkHizmetler(activeGirisId);
+          renderEkHizmetler(updatedList);
+          ekHizmetModal.style.display = "none";
+          clearEkHizmetModalFields();
+          fetchHareketler();
+        } else {
+          // Hata mesajını daha detaylı loglayalım
+          console.error("Ek hizmet ekleme hatası sunucudan:", result);
+          alert("Ek hizmet eklenemedi: " + (result.message || JSON.stringify(result)));
+        }
+      } catch (error) {
+        console.error("Ek hizmet kaydetme sırasında fetch hatası:", error);
+        alert("Ek hizmet kaydedilirken hata: " + error.message);
+      }
     });
-    const result = await resp.json();
-    if (result.success) {
-      alert("Ek hizmet kaydedildi!");
-      const updatedList = await fetchEkHizmetler(activeGirisId);
-      renderEkHizmetler(updatedList);
-      ekHizmetModal.style.display = "none";
-      clearEkHizmetModalFields();
-      fetchHareketler();
-    } else {
-      alert("Ek hizmet eklenemedi: " + JSON.stringify(result));
-    }
-  } catch (error) {
-    console.error("Ek hizmet kaydetme hatası:", error);
-    alert("Ek hizmet kaydedilirken hata: " + error.message);
   }
 });
 
@@ -2473,8 +2562,8 @@ function populateEkHizmetProductSelect() {
   if (!selectElement) return;
   selectElement.innerHTML = '<option value="">Ürün seçiniz...</option>';
   productRows.forEach((row, index) => {
-    const option = document.createElement('option');
-    option.value = index;
+        const option = document.createElement('option');
+        option.value = row.urunId; // Dizinin index'i yerine ürünün gerçek ID'sini kullan
     option.textContent = row.urunTanimi;
     option.dataset.urunId = row.urunId;
     option.dataset.urunKodu = row.urunKodu;

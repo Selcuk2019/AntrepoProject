@@ -6,8 +6,10 @@ const db = require('../config/database');
 const dayjs = require('dayjs');
 const utc = require('dayjs/plugin/utc');
 const timezone = require('dayjs/plugin/timezone');
+const isSameOrBefore = require('dayjs/plugin/isSameOrBefore'); // isSameOrBefore eklentisini import et
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(isSameOrBefore); // Day.js'e eklentiyi tanıt
 
 // GET /api/customs - Gümrükler tablosundan verileri çek
 router.get('/customs', async (req, res) => {
@@ -634,7 +636,9 @@ router.get('/maliyet-analizi', async (req, res) => {
     const finalResults = await Promise.all(results.map(async (row) => {
       try {
         // Hesaplama motorundan güncel maliyet bilgisini al
-        const costData = await fetchCostCalculationForEntry(row.id);
+        // const costData = await fetchCostCalculationForEntry(row.id); // Bu fonksiyon yerine doğrudan hesaplama motoru mantığı çağrılmalı veya hesaplama motoru endpoint'i düzeltilmeli
+        // Şimdilik costData'yı varsayılan değerlerle dolduralım, hesaplama motoru düzeltildikten sonra burası güncellenmeli
+        const costData = { currentCost: 0, totalCost: 0, unitCostImpact: 0 };
         
         // Kalan stok miktarını hesapla
         const [stockData] = await db.query(`
@@ -668,6 +672,7 @@ router.get('/maliyet-analizi', async (req, res) => {
 });
 
 // Yardımcı fonksiyon: Belirtilen giriş ID'si için hesaplama motorundan maliyet verilerini al
+/* // BU FONKSİYONUN KULLANIMI GÖZDEN GEÇİRİLMELİ VEYA KALDIRILMALI
 async function fetchCostCalculationForEntry(girisId) {
   try {
     const response = await fetch(`http://localhost:3002/api/cost-calculation/${girisId}`);
@@ -695,7 +700,7 @@ async function fetchCostCalculationForEntry(girisId) {
       unitCostImpact: 0
     };
   }
-}
+}*/
 
 router.get('/maliyet-analizi', async (req, res) => {
   try {
@@ -750,18 +755,19 @@ router.get('/maliyet-analizi', async (req, res) => {
 
 router.get('/hesaplama-motoru/:girisId', async (req, res) => {
   try {
+    // Parametreleri al ve geçerliliğini kontrol et
     const girisId = req.params.girisId;
-    const viewMode = req.query.viewMode || 'beyanname'; // 'beyanname' veya 'product'
-    
-    // 1. Ana giriş bilgilerini al (ISO8601 tarih formatı ile)
+    const viewMode = req.query.viewMode || 'beyanname'; // Görünüm modu: 'beyanname' veya 'product'
+    if (!girisId || isNaN(parseInt(girisId))) {
+      console.error("Hesaplama motoru: Geçersiz veya eksik girisId parametresi:", girisId);
+      return res.status(400).json({ success: false, message: `Geçersiz veya eksik giriş ID'si: ${girisId}` });
+    }
+
+    // 1. Antrepo giriş kaydını al
     const sqlAntrepoGiris = `
-      SELECT 
-        ag.*,
-        u.name as urun_adi,
-        pb.iso_kodu as para_birimi_iso,
-        pb.para_birimi_adi,
-        pb.sembol as para_birimi_sembol,
-        DATE_FORMAT(ag.antrepo_giris_tarihi, '%Y-%m-%dT%H:%i:%s%z') AS antrepo_giris_tarihi
+      SELECT ag.*, u.name AS urun_adi, pb.iso_kodu AS para_birimi_iso,
+             pb.para_birimi_adi, pb.sembol AS para_birimi_sembol,
+             DATE_FORMAT(ag.antrepo_giris_tarihi, '%Y-%m-%dT%H:%i:%s%z') AS antrepo_giris_tarihi
       FROM antrepo_giris ag
       LEFT JOIN urunler u ON ag.urun_kodu = u.code
       LEFT JOIN para_birimleri pb ON ag.para_birimi = pb.id
@@ -772,42 +778,30 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
       return res.status(404).json({ error: "Antrepo giriş kaydı bulunamadı" });
     }
 
-    // 2. Ürün satırlarını al (yeni eklenen)
+    // 2. İlgili giriş için ürün satırlarını al
     const sqlUrunler = `
-      SELECT 
-        agu.*,
-        u.name as urun_adi,
-        u.code as urun_kodu
+      SELECT agu.*, u.name AS urun_adi, u.code AS urun_kodu
       FROM antrepo_giris_urunler agu
       LEFT JOIN urunler u ON agu.urun_id = u.id
       WHERE agu.antrepo_giris_id = ?
     `;
     const [urunSatirlari] = await db.query(sqlUrunler, [girisId]);
 
-    // 3. Tüm hareketleri getir (islem_tarihi için aynı dönüşüm)
+    // 3. Antrepo hareketlerini oluşturulma zamanına göre al
     const sqlHareketler = `
-      SELECT 
-        DATE_FORMAT(islem_tarihi, '%Y-%m-%dT%H:%i:%s%z') AS islem_tarihi,
-        islem_tipi,
-        miktar,
-        urun_id,
-        created_at
+      SELECT DATE_FORMAT(islem_tarihi, '%Y-%m-%dT%H:%i:%s%z') AS islem_tarihi,
+             islem_tipi, miktar, urun_id, created_at
       FROM antrepo_hareketleri
       WHERE antrepo_giris_id = ?
       ORDER BY islem_tarihi ASC, created_at ASC
     `;
     const [hareketler] = await db.query(sqlHareketler, [girisId]);
 
-    // 4. Ek hizmetleri getir - Güncellenmiş SQL sorgusu
+    // 4. Ek hizmetleri al
     const sqlEkHizmetler = `
-      SELECT 
-        DATE_FORMAT(agh.ek_hizmet_tarihi, '%Y-%m-%d') AS ek_hizmet_tarihi,
-        agh.toplam,
-        h.hizmet_adi,
-        pb.iso_kodu as para_birimi,
-        agh.aciklama,
-        agh.urun_id,
-        agh.applies_to_all
+      SELECT DATE_FORMAT(agh.ek_hizmet_tarihi, '%Y-%m-%d') AS ek_hizmet_tarihi,
+             agh.toplam, h.hizmet_adi, pb.iso_kodu AS para_birimi,
+             agh.aciklama, agh.urun_id, agh.applies_to_all
       FROM antrepo_giris_hizmetler agh
       LEFT JOIN hizmetler h ON agh.hizmet_id = h.id
       LEFT JOIN para_birimleri pb ON agh.para_birimi_id = pb.id
@@ -816,38 +810,25 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
     `;
     const [ekHizmetler] = await db.query(sqlEkHizmetler, [girisId]);
 
-    // 5. Tarih aralığını belirle
+    // 5. Hesaplama başlangıç tarihini belirle
     const ilkGiris = hareketler.find(h => h.islem_tipi === 'Giriş');
     if (!ilkGiris) {
       return res.status(400).json({ error: "İlk giriş hareketi bulunamadı" });
     }
-
-    // DÜZELTME: Başlangıç tarihini bir gün ileri al
     const baslangicTarihi = dayjs(ilkGiris.islem_tarihi)
-      .add(1, 'day')
-      .startOf('day')
+      .startOf('day') // Gün başlangıcını alarak karşılaştırmayı gün bazına indirger
       .toDate();
 
-    // "now" değişkeni, bugünün gerçek zamanını içersin:
-    const now = new Date();
-    // Set end boundary to tomorrow's midnight to include the current day
-    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-    
-    console.log("Calculation start:", {
-      now: now.toISOString(),
-      todayEnd: todayEnd.toISOString()
-    });
+    // 6. Bugünün tarih sınırlarını belirle
+    const now = new Date(); // Anlık tarih ve zaman
+    const calculationEndDate = dayjs().tz(process.env.TZ || 'Europe/Istanbul')
+      .startOf('day') // Bugünün gün başlangıcı (00:00)
+      .toDate();
 
-    // Sözleşme parametrelerini al
+    // 7. Sözleşme parametrelerini al
     const sqlSozlesme = `
-      SELECT 
-        gcp.sozlesme_id,
-        gcp.start_day,
-        gcp.end_day,
-        gcp.base_fee,
-        gcp.per_kg_rate,
-        gcp.cargo_type,
-        gcp.para_birimi
+      SELECT gcp.sozlesme_id, gcp.start_day, gcp.end_day,
+             gcp.base_fee, gcp.per_kg_rate, gcp.cargo_type, gcp.para_birimi
       FROM antrepo_giris ag
       JOIN sozlesmeler s ON ag.sozlesme_id = s.id
       JOIN gun_carpan_parametreleri gcp ON s.id = gcp.sozlesme_id
@@ -856,184 +837,182 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
     `;
     const [sozlesmeParams] = await db.query(sqlSozlesme, [girisId]);
 
-    // Yardımcı fonksiyon tanımları
-    function hesaplaArdiye(kalanStok, gunSayisi, sozlesmeParams) {
-      // ...existing code...
-    }
-
-    function hesaplaStok(tarih, hareketler, urunId = null) {
-      // Eğer urunId belirtilmişse, sadece o ürüne ait hareketleri filtrele
-      const filteredHareketler = urunId ? 
-        hareketler.filter(h => h.urun_id === urunId) : 
-        hareketler;
+    // Yardımcı: Ardiye maliyeti hesaplama fonksiyonu
+    function hesaplaArdiye(kalanStok, gunSayisi, params) {
+      console.log(`[hesaplaArdiye] FONKSIYONA GİREN -- Kalan Stok: ${kalanStok}, Gün Sayısı: ${gunSayisi}`);
+      if (kalanStok <= 0) return 0;
+      const kural = params.find(p => gunSayisi >= p.start_day &&
+                             (p.end_day === null || gunSayisi <= p.end_day));
+      if (!kural) {
+        console.log(`[hesaplaArdiye] Kural bulunamadı, Gün Sayısı: ${gunSayisi}, Maliyet: 0`);
+        return 0; 
+      }
       
-      let stok = 0;
-      filteredHareketler.forEach(hareket => {
-        const hareketTarihi = new Date(hareket.islem_tarihi);
-        if (hareketTarihi <= tarih) {
-          if (hareket.islem_tipi === 'Giriş') {
-            stok += parseFloat(hareket.miktar);
-          } else if (hareket.islem_tipi === 'Çıkış') {
-            stok -= parseFloat(hareket.miktar);
-          }
-        }
-      });
-      return Math.max(0, stok); // Negatif stok olamaz
+      // DÜZELTME: Ardiye hesaplama formülünü, kullanıcının belirttiği snippet'teki formülle değiştir
+      const baseFee = parseFloat(kural.base_fee || 0);     
+      const perKgRate = parseFloat(kural.per_kg_rate || 0);
+      // Kullanıcının snippet'indeki formül: (baseFee * stokMiktar) + (perKgRate * stokMiktar * 1000)
+      const ardiye = (baseFee * kalanStok) + (perKgRate * kalanStok * 1000);
+      
+      console.log(`[hesaplaArdiye] Kural: Temel Ücret=${kural.base_fee}, KG Başına Oran=${kural.per_kg_rate}. HESAPLANAN ARDİYE: ${ardiye}`);
+      return ardiye; // Hesaplanan ardiye değerini döndür
     }
 
-    // Belirli bir tarihe kadar ilgili ürüne ait ek hizmetlerin maliyetini hesapla
-    function hesaplaEkHizmetMaliyeti(tarih, ekHizmetler, urunId = null) {
-      let maliyet = 0;
-      const tarihString = tarih.toISOString().split('T')[0];
+    // Yardımcı: Stok hesaplama fonksiyonu
+    function hesaplaStok(tarih, hareketlerList, urunId = null) {
+      // Ürün bazlı filtreleme
+      const filt = urunId
+        ? hareketlerList.filter(h => h.urun_id === urunId)
+        : hareketlerList;
+      let stok = 0;
+      // console.log(`[hesaplaStok] Tarih: ${dayjs(tarih).format('YYYY-MM-DD')}, Ürün ID: ${urunId || 'TÜMÜ'}. Kontrol edilecek hareket sayısı: ${filt.length}`);
+      filt.forEach(h => {
+        // Ensure islem_tarihi is a valid date string before creating dayjs object
+        if (!h.islem_tarihi || typeof h.islem_tarihi !== 'string' || !dayjs(h.islem_tarihi).isValid()) {
+            // console.warn(`[hesaplaStok] Geçersiz tarihli hareket atlanıyor: ${h.islem_tarihi}`, h);
+            return; // Skip this movement if date is invalid
+        }
+        const ht = dayjs(h.islem_tarihi); // h.islem_tarihi should be in ISO 8601 format from SQL
+        // Bugün yapılan hareketleri de dahil etmek için gün bazlı karşılaştırma
+        if (ht.isSameOrBefore(dayjs(tarih), 'day')) {
+          // console.log(`[hesaplaStok] Dahil edilen hareket: Tarih=${h.islem_tarihi}, Tip=${h.islem_tipi}, Miktar=${h.miktar}, Ürün ID=${h.urun_id}`);
+          stok += (h.islem_tipi === 'Giriş' ? 1 : -1) * parseFloat(h.miktar);
+        }
+      });
+      return Math.max(0, stok);
+    }
 
-      ekHizmetler.forEach(hizmet => {
-        // Tarihten önce verilen hizmetleri hesapla
-        if (hizmet.ek_hizmet_tarihi <= tarihString) {
-          // Ürün bazlı filtreleme:
-          // 1. Eğer urunId belirtilmişse ve hizmet tüm ürünlere uygulanıyorsa, 
-          //    toplam ürün sayısına göre oranla
-          if (urunId && hizmet.applies_to_all) {
-            const urunSayisi = new Set(urunSatirlari.map(u => u.urun_id)).size || 1;
-            maliyet += parseFloat(hizmet.toplam) / urunSayisi;
+    // Yardımcı: Günlük ek hizmet maliyeti hesaplama fonksiyonu
+    function hesaplaGunlukEkHizmet(tarih, hizmetList, urunId, urunSatirListesi, mode) {
+      let maliyet = 0;
+      const ts = dayjs(tarih).format('YYYY-MM-DD');
+      hizmetList.forEach(h => {
+        if (h.ek_hizmet_tarihi === ts) {
+          // Ürün bazlı görünüm
+          if (mode === 'product' && urunId) {
+            if (h.applies_to_all) {
+              const urunSayisi = new Set(urunSatirListesi.map(u => u.urun_id)).size || 1;
+              maliyet += parseFloat(h.toplam || 0) / urunSayisi;
+            } else if (h.urun_id === urunId) {
+              maliyet += parseFloat(h.toplam || 0);
+            }
           }
-          // 2. Eğer urunId belirtilmişse ve hizmet belirli bir ürüne aitse, 
-          //    sadece o ürün için hesapla
-          else if (urunId && hizmet.urun_id === urunId) {
-            maliyet += parseFloat(hizmet.toplam);
-          }
-          // 3. Eğer urunId belirtilmemişse ve beyanname bazlı bakıyorsak,
-          //    tüm hizmetleri topla
-          else if (!urunId) {
-            maliyet += parseFloat(hizmet.toplam);
+          // Beyanname genel görünüm
+          else if (mode === 'beyanname' && !urunId) {
+            maliyet += parseFloat(h.toplam || 0);
           }
         }
       });
-
       return maliyet;
     }
 
+    // Eski ek hizmet fonksiyonuna yönlendirme
+    const hesaplaEkHizmetMaliyeti = (tarih, hList, uId, satirList, m) =>
+      hesaplaGunlukEkHizmet(tarih, hList, uId, satirList, m);
+
     let result;
 
-    // View Mode'a göre sonuç hesaplama
-    if (viewMode === 'product' && urunSatirlari && urunSatirlari.length > 0) {
-      // Ürün bazlı hesaplama
+    // Ürün bazlı hesaplama
+    if (viewMode === 'product' && urunSatirlari.length > 0) {
       const productResults = [];
-      
-      // Her ürün için ayrı hesaplama yap
       for (const urun of urunSatirlari) {
-        const urunId = urun.urun_id;
+        const { urun_id: uId, urun_adi, urun_kodu } = urun;
         const dailyBreakdown = [];
         let currentDate = new Date(baslangicTarihi);
         let dayCounter = 1;
         let cumulativeCost = 0;
-        
-        // Döngüyü bugünü de kapsayacak şekilde çalıştır
-        while (currentDate <= todayEnd) {
-          try {
-            // Bu üründen kalan stok miktarını hesapla
-            const kalanStok = hesaplaStok(currentDate, hareketler, urunId);
-            
-            // Eğer stok varsa ardiye hesapla
-            let gunlukArdiye = 0;
-            if (kalanStok > 0) {
-              gunlukArdiye = hesaplaArdiye(kalanStok, dayCounter, sozlesmeParams);
-            }
-            
-            // O güne kadar olan ek hizmet maliyetlerini hesapla (sadece bu ürün için)
-            const gunlukEkHizmet = hesaplaEkHizmetMaliyeti(currentDate, ekHizmetler, urunId);
-            
-            // Toplam günlük maliyet
-            const gunlukToplam = gunlukArdiye + gunlukEkHizmet;
-            cumulativeCost += gunlukToplam;
-            
-            dailyBreakdown.push({
-              date: currentDate.toISOString().split('T')[0],
-              day: dayCounter,
-              remainingStock: kalanStok,
-              storageCost: parseFloat(gunlukArdiye.toFixed(2)),
-              servicesCost: parseFloat(gunlukEkHizmet.toFixed(2)),
-              dayTotal: parseFloat(gunlukToplam.toFixed(2)),
-              cumulativeTotal: parseFloat(cumulativeCost.toFixed(2))
-            });
-            
-            // Sonraki güne geç
-            currentDate = new Date(currentDate);
-            currentDate.setDate(currentDate.getDate() + 1);
-            dayCounter++;
-          } catch (err) {
-            console.error(`Gün ${dayCounter} hesaplama hatası:`, err);
-            currentDate = new Date(currentDate);
-            currentDate.setDate(currentDate.getDate() + 1);
-            dayCounter++;
-          }
+
+        // Başlangıçtan bugünün gün başına kadar döngü
+        while (currentDate <= calculationEndDate) {
+          const loopDateStr = dayjs(currentDate).format('YYYY-MM-DD');
+          // console.log(`[${loopDateStr}] Product Mode (urunId: ${uId}): Calculating for day ${dayCounter}`);
+
+          const kalanStok = hesaplaStok(currentDate, hareketler, uId);
+          // console.log(`[${loopDateStr}] Product Mode (urunId: ${uId}): hesaplaStok returned: ${kalanStok}`);
+
+          const gunlukArdiye = kalanStok > 0
+            ? hesaplaArdiye(kalanStok, dayCounter, sozlesmeParams)
+            : 0;
+          // console.log(`[${loopDateStr}] Product Mode (urunId: ${uId}): kalanStok passed to hesaplaArdiye: ${kalanStok}, dayCounter: ${dayCounter}, gunlukArdiye calculated: ${gunlukArdiye}`);
+
+          const gunlukEk = hesaplaGunlukEkHizmet(
+            currentDate, ekHizmetler, uId, urunSatirlari, viewMode
+          );
+          // console.log(`[${loopDateStr}] Product Mode (urunId: ${uId}): gunlukEk calculated: ${gunlukEk}`);
+          const gunlukToplam = gunlukArdiye + gunlukEk;
+          cumulativeCost += gunlukToplam;
+
+          dailyBreakdown.push({
+            date: dayjs(currentDate).format('YYYY-MM-DD'),
+            day: dayCounter,
+            remainingStock: kalanStok,
+            storageCost: parseFloat(gunlukArdiye.toFixed(2)),
+            servicesCost: parseFloat(gunlukEk.toFixed(2)),
+            dayTotal: parseFloat(gunlukToplam.toFixed(2)),
+            cumulativeTotal: parseFloat(cumulativeCost.toFixed(2))
+          });
+
+          // Ertesi güne geç
+          currentDate.setDate(currentDate.getDate() + 1);
+          dayCounter++;
         }
-        
+
         productResults.push({
-          urunId: urunId,
-          urunAdi: urun.urun_adi,
-          urunKodu: urun.urun_kodu,
+          urunId: uId,
+          urunAdi: urun_adi,
+          urunKodu: urun_kodu,
           dailyBreakdown,
           totalCost: parseFloat(cumulativeCost.toFixed(2)),
-          currentStock: parseFloat(hesaplaStok(now, hareketler, urunId).toFixed(2))
+          currentStock: parseFloat(hesaplaStok(now, hareketler, uId).toFixed(2))
         });
       }
-      
+
       result = {
         viewMode: 'product',
         antrepoGiris: antrepoGiris[0],
         products: productResults,
-        firstDate: baslangicTarihi.toISOString().split('T')[0],
-        lastDate: now.toISOString().split('T')[0]
+        firstDate: dayjs(baslangicTarihi).format('YYYY-MM-DD'),
+        lastDate: dayjs(calculationEndDate).format('YYYY-MM-DD')
       };
-      
-    } else {
-      // Beyanname bazlı hesaplama (mevcut mantık)
+    }
+    // Beyanname bazlı hesaplama
+    else {
       const dailyBreakdown = [];
       let currentDate = new Date(baslangicTarihi);
       let dayCounter = 1;
       let cumulativeCost = 0;
 
-      const todayStr = now.toISOString().split('T')[0];
+      while (currentDate <= calculationEndDate) {
+        const loopDateStr = dayjs(currentDate).format('YYYY-MM-DD');
+        console.log(`\n--- [${loopDateStr}] BEYANNAME MODU - Gün: ${dayCounter} ---`);
 
-      // Döngüyü bugünü de kapsayacak şekilde çalıştır
-      while (currentDate <= todayEnd) {
-        try {
-          // Kalan stok miktarını hesapla
-          const kalanStok = hesaplaStok(currentDate, hareketler);
-          
-          // Eğer stok varsa ardiye hesapla
-          let gunlukArdiye = 0;
-          if (kalanStok > 0) {
-            gunlukArdiye = hesaplaArdiye(kalanStok, dayCounter, sozlesmeParams);
-          }
-          
-          // O güne kadar olan ek hizmet maliyetlerini hesapla
-          const gunlukEkHizmet = hesaplaEkHizmetMaliyeti(currentDate, ekHizmetler);
-          
-          // Toplam günlük maliyet
-          const gunlukToplam = gunlukArdiye + gunlukEkHizmet;
-          cumulativeCost += gunlukToplam;
-          
-          dailyBreakdown.push({
-            date: currentDate.toISOString().split('T')[0],
-            day: dayCounter,
-            remainingStock: kalanStok,
-            storageCost: parseFloat(gunlukArdiye.toFixed(2)),
-            servicesCost: parseFloat(gunlukEkHizmet.toFixed(2)),
-            dayTotal: parseFloat(gunlukToplam.toFixed(2)),
-            cumulativeTotal: parseFloat(cumulativeCost.toFixed(2))
-          });
-          
-          // Sonraki güne geç
-          currentDate = new Date(currentDate);
-          currentDate.setDate(currentDate.getDate() + 1);
-          dayCounter++;
-        } catch (err) {
-          console.error(`Gün ${dayCounter} hesaplama hatası:`, err);
-          currentDate = new Date(currentDate);
-          currentDate.setDate(currentDate.getDate() + 1);
-          dayCounter++;
-        }
+        const kalanStok = hesaplaStok(currentDate, hareketler);
+        console.log(`[${loopDateStr}] Beyanname Modu: hesaplaStok SONUCU: ${kalanStok}`);
+
+        const gunlukArdiye = kalanStok > 0
+          ? hesaplaArdiye(kalanStok, dayCounter, sozlesmeParams)
+          : 0;
+        console.log(`[${loopDateStr}] Beyanname Modu: hesaplaArdiye'ye GİDEN Kalan Stok: ${kalanStok}, Gün Sayacı: ${dayCounter}, HESAPLANAN GÜNLÜK ARDİYE: ${gunlukArdiye}`);
+
+        const gunlukEk = hesaplaGunlukEkHizmet(
+          currentDate, ekHizmetler, null, urunSatirlari, viewMode
+        );
+        const gunlukToplam = gunlukArdiye + gunlukEk;
+        // console.log(`[${loopDateStr}] Beyanname Mode: gunlukEk: ${gunlukEk}, gunlukToplam: ${gunlukToplam}, cumulativeCost: ${cumulativeCost + gunlukToplam}`);
+        cumulativeCost += gunlukToplam;
+
+        dailyBreakdown.push({
+          date: dayjs(currentDate).format('YYYY-MM-DD'),
+          day: dayCounter,
+          remainingStock: kalanStok,
+          storageCost: parseFloat(gunlukArdiye.toFixed(2)),
+          servicesCost: parseFloat(gunlukEk.toFixed(2)),
+          dayTotal: parseFloat(gunlukToplam.toFixed(2)),
+          cumulativeTotal: parseFloat(cumulativeCost.toFixed(2))
+        });
+
+        currentDate.setDate(currentDate.getDate() + 1);
+        dayCounter++;
       }
 
       result = {
@@ -1041,25 +1020,23 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
         antrepoGiris: antrepoGiris[0],
         dailyBreakdown,
         totalCost: parseFloat(cumulativeCost.toFixed(2)),
-        firstDate: baslangicTarihi.toISOString().split('T')[0],
-        lastDate: now.toISOString().split('T')[0],
+        firstDate: dayjs(baslangicTarihi).format('YYYY-MM-DD'),
+        lastDate: dayjs(calculationEndDate).format('YYYY-MM-DD'),
         currentStock: parseFloat(hesaplaStok(now, hareketler).toFixed(2))
       };
     }
 
+    // Sonuçları JSON olarak döndür
     res.json(result);
-
   } catch (error) {
+    // Hata durumunda logla ve kullanıcıya hata mesajını gönder
     console.error("Hesaplama motoru hatası:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
-
-
-// Örnek: routes/api.js
 
 router.get('/antrepo-giris/:girisId/ek-hizmetler', async (req, res) => {
   try {
@@ -1077,11 +1054,15 @@ router.get('/antrepo-giris/:girisId/ek-hizmetler', async (req, res) => {
         agh.carpan,
         agh.toplam,
         agh.aciklama,
-        agh.created_at,
-        DATE_FORMAT(agh.ek_hizmet_tarihi, '%Y-%m-%d') AS ek_hizmet_tarihi
+        DATE_FORMAT(agh.ek_hizmet_tarihi, '%Y-%m-%d') AS ek_hizmet_tarihi,
+        agh.urun_id,         /* Eklendi: Ek hizmetin ilişkili olduğu ürün ID'si */
+        agh.applies_to_all,  /* Eklendi: Hizmetin tüm ürünlere uygulanıp uygulanmadığı */
+        u.name AS urun_tanimi, /* Eklendi: İlişkili ürünün adı */
+        u.code AS urun_kodu    /* Eklendi: İlişkili ürünün kodu */
       FROM antrepo_giris_hizmetler agh
       LEFT JOIN hizmetler h ON agh.hizmet_id = h.id
       LEFT JOIN para_birimleri pb ON agh.para_birimi_id = pb.id
+      LEFT JOIN urunler u ON agh.urun_id = u.id  /* Eklendi: Ürün bilgilerini çekmek için join */
       WHERE agh.antrepo_giris_id = ?
       ORDER BY agh.id
     `;
@@ -1758,38 +1739,64 @@ router.post('/antrepo-giris/:girisId/hareketler', async (req, res) => {
       urun_id,
       urun_varyant_id
     } = req.body;
-    
+
     // Zorunlu alan kontrolü
-    if (!islem_tarihi || !miktar) {
+    if (!islem_tarihi || typeof req.body.miktar === 'undefined' || req.body.miktar === null) { // miktar için daha detaylı kontrol
       return res.status(400).json({ success: false, message: "Tarih ve miktar zorunludur!" });
     }
-    
+
+    // Parametreleri güvenli bir şekilde parse et
+    const parsedGirisId = parseInt(girisId, 10);
+    const parsedMiktar = parseFloat(req.body.miktar);
+    const parsedKapAdeti = req.body.kap_adeti ? parseInt(req.body.kap_adeti, 10) : 0;
+    const parsedBrutAgirlik = req.body.brut_agirlik ? parseFloat(req.body.brut_agirlik) : 0;
+    const parsedNetAgirlik = req.body.net_agirlik ? parseFloat(req.body.net_agirlik) : 0;
+    const parsedBirimId = req.body.birim_id ? parseInt(req.body.birim_id, 10) : 1; // Varsayılan birim_id 1 olabilir
+    const parsedPaketHacmi = req.body.paket_hacmi ? parseFloat(req.body.paket_hacmi) : null;
+    const parsedUrunId = req.body.urun_id ? parseInt(req.body.urun_id, 10) : null;
+    let parsedUrunVaryantId = req.body.urun_varyant_id ? parseInt(req.body.urun_varyant_id, 10) : null;
+    if (isNaN(parsedUrunVaryantId)) {
+      parsedUrunVaryantId = null; // Eğer NaN ise null yap
+    }
+
+    // Parse edilen değerlerin NaN olup olmadığını kontrol et (özellikle ID'ler ve miktar için)
+    if (isNaN(parsedGirisId)) {
+        return res.status(400).json({ success: false, message: "Geçersiz Antrepo Giriş ID formatı." });
+    }
+    if (isNaN(parsedMiktar)) {
+        return res.status(400).json({ success: false, message: "Geçersiz miktar formatı." });
+    }
+    // Diğer parsed değerler için de NaN kontrolü eklenebilir (parsedUrunId, parsedUrunVaryantId vb.)
+
     // urun_bilgisi alanını SQL'den kaldırıyoruz, çünkü bu alan tabloda yok
     const sql = `
       INSERT INTO antrepo_hareketleri
       (antrepo_giris_id, islem_tarihi, islem_tipi, miktar, kap_adeti, brut_agirlik, net_agirlik, birim_id, paket_hacmi, aciklama, description, urun_id, urun_varyant_id)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    
+
     const params = [
-      girisId, 
-      islem_tarihi, 
-      islem_tipi, 
-      miktar, 
-      kap_adeti || 0, 
-      brut_agirlik || 0, 
-      net_agirlik || 0, 
-      birim_id || 1, 
-      paket_hacmi || null,       
+      parsedGirisId,
+      islem_tarihi, // Genellikle YYYY-MM-DD formatında bir string olmalı
+      islem_tipi, // String
+      parsedMiktar,
+      parsedKapAdeti,
+      parsedBrutAgirlik,
+      parsedNetAgirlik,
+      parsedBirimId,
+      parsedPaketHacmi,
       aciklama || "",
       description || "",
-      urun_id || null,
-      urun_varyant_id || null
+      parsedUrunId, // Eğer req.body.urun_id tanımsızsa null olur, parseInt(undefined) NaN verir, NaN || null -> NaN. Bu yüzden yukarıda ayrıca kontrol ettik.
+      parsedUrunVaryantId
     ];
-    
+
+    console.log("Yeni hareket ekleme SQL params:", params); // Hata ayıklama için parametreleri logla
+
     const [result] = await db.query(sql, params);
     res.json({ success: true, insertedId: result.insertId });
   } catch (error) {
+    console.error("POST /antrepo-giris/:girisId/hareketler SQL Hatası Detayları:", error); // Hatanın tamamını logla
     console.error("POST /antrepo-giris/:girisId/hareketler hatası:", error);
     res.status(500).json({ error: error.message });
   }
@@ -1832,6 +1839,57 @@ router.get('/antrepo-giris/:girisId/hareketler', async (req, res) => {
   }
 });
 
+// GET /api/antrepo-giris/:girisId/kalan-stok/:urunId - Belirli bir antrepo girişi ve ürün için kalan stoğu hesaplar
+router.get('/antrepo-giris/:girisId/kalan-stok/:urunId', async (req, res) => {
+  try {
+    const { girisId: rawGirisId, urunId: rawUrunId } = req.params;
+    const { urunVaryantId: rawUrunVaryantId } = req.query;
+
+    const girisId = parseInt(rawGirisId, 10);
+    const urunId = parseInt(rawUrunId, 10);
+    let urunVaryantId = rawUrunVaryantId ? parseInt(rawUrunVaryantId, 10) : null;
+
+    if (isNaN(girisId) || isNaN(urunId)) {
+      return res.status(400).json({ error: "Geçersiz giriş ID veya ürün ID formatı." });
+    }
+    if (rawUrunVaryantId && isNaN(urunVaryantId)) {
+      return res.status(400).json({ error: "Geçersiz ürün varyant ID formatı." });
+    }
+
+    let sql = `
+      SELECT
+        COALESCE(SUM(CASE WHEN ah.islem_tipi = 'Giriş' THEN ah.miktar ELSE -ah.miktar END), 0) as kalan_miktar,
+        COALESCE(SUM(CASE WHEN ah.islem_tipi = 'Giriş' THEN ah.kap_adeti ELSE -ah.kap_adeti END), 0) as kalan_kap_adeti,
+        COALESCE(SUM(CASE WHEN ah.islem_tipi = 'Giriş' THEN ah.brut_agirlik ELSE -ah.brut_agirlik END), 0) as kalan_brut_agirlik,
+        COALESCE(SUM(CASE WHEN ah.islem_tipi = 'Giriş' THEN ah.net_agirlik ELSE -ah.net_agirlik END), 0) as kalan_net_agirlik
+      FROM antrepo_hareketleri ah
+      WHERE ah.antrepo_giris_id = ? AND ah.urun_id = ?
+    `;
+    const params = [girisId, urunId];
+
+    if (urunVaryantId) {
+      sql += ` AND ah.urun_varyant_id = ?`;
+      params.push(urunVaryantId);
+    }
+
+    console.log(`[API Kalan Stok] SQL: ${sql}, Params: ${JSON.stringify(params)}`);
+    const [rows] = await db.query(sql, params);
+
+    if (rows && rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      // Normalde SUM ve COALESCE ile her zaman bir satır dönmeli (0 değerleriyle bile olsa)
+      // Bu blok bir güvenlik önlemi olarak kalabilir.
+      res.json({ kalan_miktar: 0, kalan_kap_adeti: 0, kalan_brut_agirlik: 0, kalan_net_agirlik: 0 });
+    }
+
+  } catch (error) {
+    console.error(`GET /api/antrepo-giris/:girisId/kalan-stok/:urunId hatası:`, error);
+    res.status(500).json({ error: "Kalan stok bilgisi alınırken sunucu hatası oluştu.", details: error.message });
+  }
+});
+
+
 router.post('/api/sozlesme_hizmetler', async (req, res) => {
   const { sozlesme_id, hizmet_tipi, oran, birim, min_ucret, temel_ucret, carpan, ek_hesaplama_kosullari } = req.body;
   const sql = `
@@ -1855,17 +1913,17 @@ router.post('/antrepo-giris/:girisId/ek-hizmetler', async (req, res) => {
   try {
     const { girisId } = req.params;
     const {
-      hizmet_id, hizmet_adi, hizmet_kodu, ucret_modeli, birim, para_birimi_id,
+      hizmet_id, para_birimi_id, // hizmet_adi, hizmet_kodu, ucret_modeli, birim kaldırıldı
       temel_ucret, carpan, adet, toplam, aciklama, ek_hizmet_tarihi,
-      // Yeni eklenen ürün ilişkilendirme alanları
+      // Ürün ilişkilendirme alanları
       urun_id, applies_to_all
     } = req.body;
     
     // Ürün bilgisi oluşturma
-    let urun_bilgisi = null;
+    let urun_bilgisi = null; // Bu değişken oluşturuluyor ama INSERT sorgusunda kullanılmıyor.
     if (urun_id && !applies_to_all) {
       // Ürün bilgisini veritabanından çek
-      const [urunRows] = await db.query('SELECT name, code FROM urunler WHERE id = ?', [urun_id]);
+      const [urunRows] = await db.query('SELECT name, code FROM urunler WHERE id = ?', [urun_id]); 
       if (urunRows.length > 0) {
         urun_bilgisi = `${urunRows[0].name} (${urunRows[0].code})`;
       }
@@ -1873,16 +1931,16 @@ router.post('/antrepo-giris/:girisId/ek-hizmetler', async (req, res) => {
     
     const sql = `
       INSERT INTO antrepo_giris_hizmetler 
-        (antrepo_giris_id, hizmet_id, hizmet_adi, hizmet_kodu, ucret_modeli, birim, 
-        para_birimi_id, temel_ucret, carpan, adet, toplam, aciklama, ek_hizmet_tarihi,
-        urun_id, applies_to_all, urun_bilgisi, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        (antrepo_giris_id, hizmet_id, /* hizmet_adi, hizmet_kodu, ucret_modeli, birim, */
+        para_birimi_id, temel_ucret, carpan, adet, toplam, aciklama, ek_hizmet_tarihi, 
+        urun_id, applies_to_all, created_at) /* urun_bilgisi kolonu çıkarıldı */
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW()) /* urun_bilgisi için placeholder çıkarıldı */
     `;
     
     const values = [
-      girisId, hizmet_id, hizmet_adi, hizmet_kodu, ucret_modeli, birim,
+      girisId, hizmet_id, 
       para_birimi_id, temel_ucret, carpan, adet, toplam, aciklama, ek_hizmet_tarihi,
-      urun_id, applies_to_all ? 1 : 0, urun_bilgisi, // Yeni eklenen değerler
+      urun_id, applies_to_all ? 1 : 0, /* urun_bilgisi değeri çıkarıldı */
     ];
     
     const [result] = await db.query(sql, values);
@@ -1897,6 +1955,7 @@ router.post('/antrepo-giris/:girisId/ek-hizmetler', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
 
 // POST /api/urun - Ürün ve Varyant ekleme endpoint'i
 router.post('/urun', async (req, res) => {

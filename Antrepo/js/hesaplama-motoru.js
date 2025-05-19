@@ -19,10 +19,10 @@ function formatDate(dateStr) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const girisId = urlParams.get("entryId");
+  const girisId = urlParams.get("id"); // "entryId" yerine "id" kullan
 
   if (!girisId) {
-    alert("Geçersiz 'entryId' parametresi.");
+    alert("Geçersiz 'id' parametresi. Antrepo giriş ID'si URL'de bulunamadı."); // Hata mesajını da güncelleyebiliriz
     return;
   }
 
@@ -87,11 +87,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       : "-";
     urunAdiSpan.textContent = antrepoGiris?.urun_adi || "-";
     urunKoduSpan.textContent = antrepoGiris?.urun_kodu || "-";
-    initialStockSpan.textContent = result.currentStock.toFixed(2);
+    initialStockSpan.textContent = (Number(result.currentStock) || 0).toFixed(2);
 
     // Format currency values properly
     function formatCurrency(amount, currency) {
-      return `${amount.toFixed(2)} ${currency}`;
+      // Ensure amount is a number, default to 0 if not.
+      const numericAmount = Number(amount);
+      if (isNaN(numericAmount)) {
+        return `0.00 ${currency}`;
+      }
+      return `${numericAmount.toFixed(2)} ${currency}`;
     }
 
     dailyTableBody.innerHTML = "";
@@ -100,13 +105,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!row) return;
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${row.dayIndex}</td>
+        <td>${row.day}</td>
         <td>${formatDateToTurkish(dayjs(row.date).format('YYYY-MM-DD'))}</td>
-        <td>${formatCurrency(row.dayArdiye, paraBirimi)}</td>
-        <td>${formatCurrency(row.dayEkHizmet, paraBirimi)}</td>
+        <td>${formatCurrency(row.storageCost, paraBirimi)}</td>
+        <td>${formatCurrency(row.servicesCost, paraBirimi)}</td>
         <td>${formatCurrency(row.dayTotal, paraBirimi)}</td>
-        <td>${formatCurrency(row.cumulative, paraBirimi)}</td>
-        <td>${row.stockAfter.toFixed(2)}</td>
+        <td>${formatCurrency(row.cumulativeTotal, paraBirimi)}</td>
+        <td>${(Number(row.remainingStock) || 0).toFixed(2)}</td>
       `;
       dailyTableBody.appendChild(tr);
     });
