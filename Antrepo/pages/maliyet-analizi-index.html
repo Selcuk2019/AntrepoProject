@@ -5,52 +5,94 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maliyet Analizi</title>
     <link rel="stylesheet" href="../css/style.css">
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
-    <!-- DataTables Responsive CSS - Ekleyin -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.9/css/responsive.dataTables.min.css">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <!-- Ek stil - Tablo için yatay kaydırma ve responsive davranış -->
+    <!-- DataTables ve Responsive eklentisi -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
     <style>
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+    .search-bar-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 18px;
+        flex-wrap: wrap;
+    }
+    .search-box {
+        padding: 8px 14px;
+        border: 1px solid #bdbdbd;
+        border-radius: 20px;
+        font-size: 1em;
+        outline: none;
+        transition: border 0.2s;
+        min-width: 220px;
+        background: #f7fafd;
+    }
+    .search-box:focus {
+        border-color: #1976d2;
+        background: #fff;
+    }
+    .search-icon {
+        color: #1976d2;
+        font-size: 1.2em;
+        margin-left: -28px;
+        pointer-events: none;
+    }
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    @media screen and (max-width: 992px) {
+        .modern-table th, .modern-table td {
+            white-space: nowrap;
         }
-        
-        /* Küçük ekranlar için ek stil */
-        @media screen and (max-width: 992px) {
-            .modern-table th, .modern-table td {
-                white-space: nowrap;
-            }
-        }
-
-        /* Sıralama oklarını düzeltme */
-        table.dataTable thead .sorting:after,
-        table.dataTable thead .sorting_asc:after,
-        table.dataTable thead .sorting_desc:after {
-            opacity: 1;
-        }
-        
-        table.dataTable thead .sorting:before,
-        table.dataTable thead .sorting_asc:before,
-        table.dataTable thead .sorting_desc:before {
-            opacity: 1;
-        }
-        
-        /* Aktif sütunu vurgula */
-        table.dataTable thead th.sorting_asc,
-        table.dataTable thead th.sorting_desc {
-            background-color: #eef5ff !important;
-        }
+    }
+    .modern-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .modern-table th, .modern-table td {
+        border: 1px solid #e0e0e0;
+        padding: 8px 10px;
+        text-align: left;
+    }
+    .modern-table th {
+        background: #f5f7fa;
+        cursor: pointer;
+        user-select: none;
+    }
+    .modern-table th.sorted-asc::after {
+        content: " ▲";
+        font-size: 0.8em;
+    }
+    .modern-table th.sorted-desc::after {
+        content: " ▼";
+        font-size: 0.8em;
+    }
+    /* DataTables responsive artı ikonu için */
+    table.dataTable.dtr-inline.collapsed>tbody>tr>td:first-child:before, 
+    table.dataTable.dtr-inline.collapsed>tbody>tr>th:first-child:before {
+        top: 50%;
+        left: 4px !important;
+        height: 16px !important;
+        width: 16px !important;
+        margin-top: -8px !important;
+        line-height: 16px !important;
+        font-size: 14px !important;
+        background-color: #1976d2;
+        color: #fff;
+        border-radius: 50%;
+        box-shadow: 0 2px 8px #1976d220;
+    }
+    /* İlk sütuna padding ekle ki ikon metni kapatmasın */
+    #maliyetTable td:first-child, #maliyetTable th:first-child {
+        padding-left: 28px !important;
+    }
     </style>
 </head>
 <body>
     <header class="topbar"></header>
     <div class="main-container">
         <nav class="sidebar"></nav>
-        
         <div class="content">
             <div class="modern-page-header">
                 <div class="header-title">
@@ -58,17 +100,17 @@
                     <p class="subtitle">Antrepo giriş ve maliyetlerinin detaylı analizi</p>
                 </div>
             </div>
-
             <div class="modern-card">
                 <div class="modern-card-body">
-                    <!-- Tabloyu responsive container içine alın -->
+                    <div class="search-bar-container">
+                        <input type="text" id="searchInput" class="search-box" placeholder="Tabloda ara..." style="display:none;">
+                        <span class="search-icon" style="display:none;"><i class="fas fa-search"></i></span>
+                    </div>
                     <div class="table-responsive">
-                        <table id="maliyetTable" class="modern-table display responsive nowrap" width="100%">
+                        <table id="maliyetTable" class="modern-table display responsive nowrap" style="width:100%">
                             <thead>
                                 <tr>
-                                    <th>Antrepo</th>          <!-- Yeni sütun -->
-                                    <th>Ürün Adı</th>
-                                    <th>Ürün Kodu</th>
+                                    <th>Antrepo</th>
                                     <th>Antrepo Giriş Tarihi</th>
                                     <th>Form No</th>
                                     <th>Giriş Adedi</th>
@@ -88,22 +130,18 @@
                     </div>
                 </div>
             </div>
-            <!-- Eski linki kaldırıp yerine yeni button-container ekliyoruz -->
             <div class="button-container">
                 <a href="product-list.html" class="modern-nav-button">
                     <i class="fas fa-box"></i>
                     Ürünler Sayfasına Git
                 </a>
             </div>
-        </div> <!-- /content -->
-    </div> <!-- /main-container -->
-    
-    <!-- template.js'i mutlaka ekliyoruz (navigasyon vb.) -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
-    <!-- DataTables Responsive JS - Ekleyin -->
-    <script src="https://cdn.datatables.net/responsive/2.2.9/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+        </div>
+    </div>
+    <!-- DataTables ve jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
     <script src="../js/template.js"></script>
     <script type="module" src="../js/maliyet-analizi-index.js"></script>
 </body>
