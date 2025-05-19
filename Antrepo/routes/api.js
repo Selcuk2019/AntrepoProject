@@ -582,173 +582,123 @@ router.get('/antrepo-giris/:id', async (req, res) => {
   }
 });
 
-router.get('/maliyet-analizi', async (req, res) => {
-  try {
-    // Filtre parametreleri
-    const { antrepoId, baslangicTarih, bitisTarih } = req.query;
-    
-    // Filtre koşulları oluştur
-    let filterCondition = '';
-    let filterParams = [];
-    
-    if (antrepoId) {
-      filterCondition += ' AND ag.antrepo_id = ?';
-      filterParams.push(antrepoId);
-    }
-    
-    if (baslangicTarih) {
-      filterCondition += ' AND ag.antrepo_giris_tarihi >= ?';
-      filterParams.push(baslangicTarih);
-    }
-    
-    if (bitisTarih) {
-      filterCondition += ' AND ag.antrepo_giris_tarihi <= ?';
-      filterParams.push(bitisTarih);
-    }
-    
-    // Beyanname bazlı özet bilgileri çek - çoklu ürün desteği eklendi
-    const sqlGiris = `
-      SELECT 
-        ag.id,
-        ag.beyanname_no,
-        a.antrepoAdi AS antrepoName,
-        ag.para_birimi,
-        pb.iso_kodu as para_birimi_kodu,
-        pb.sembol as para_birimi_sembol,
-        ag.antrepo_giris_tarihi,
-        ag.fatura_aciklama,
-        COUNT(DISTINCT agu.urun_id) as urun_cesidi_sayisi,
-        SUM(agu.miktar) as toplam_miktar,
-        SUM(agu.kap_adeti) as toplam_kap_adeti
-      FROM antrepo_giris ag
-      LEFT JOIN antrepo_giris_urunler agu ON ag.id = agu.antrepo_giris_id
-      LEFT JOIN antrepolar a ON ag.antrepo_id = a.id
-      LEFT JOIN para_birimleri pb ON ag.para_birimi = pb.id
-      WHERE 1=1 ${filterCondition}
-      GROUP BY ag.id, ag.beyanname_no, ag.antrepo_giris_tarihi
-      ORDER BY ag.antrepo_giris_tarihi DESC
-      LIMIT 1000
-    `;
-    
-    const [results] = await db.query(sqlGiris, filterParams);
-    
-    // Her beyanname için ilave maliyet ve stok hesaplamaları yap
-    const finalResults = await Promise.all(results.map(async (row) => {
-      try {
-        // Hesaplama motorundan güncel maliyet bilgisini al
-        // const costData = await fetchCostCalculationForEntry(row.id); // Bu fonksiyon yerine doğrudan hesaplama motoru mantığı çağrılmalı veya hesaplama motoru endpoint'i düzeltilmeli
-        // Şimdilik costData'yı varsayılan değerlerle dolduralım, hesaplama motoru düzeltildikten sonra burası güncellenmeli
-        const costData = { currentCost: 0, totalCost: 0, unitCostImpact: 0 };
-        
-        // Kalan stok miktarını hesapla
-        const [stockData] = await db.query(`
-          SELECT 
-            SUM(CASE WHEN islem_tipi = 'Giriş' THEN miktar ELSE -miktar END) as kalan_stok
-          FROM antrepo_hareketleri
-          WHERE antrepo_giris_id = ?
-        `, [row.id]);
-        
-        // Sonuç objesini zenginleştir
-        return {
-          ...row,
-          currentStock: stockData[0]?.kalan_stok || 0,
-          currentCost: costData.currentCost,
-          totalCost: costData.totalCost,
-          unitCostImpact: costData.unitCostImpact,
-          currency: row.para_birimi_kodu || 'USD',
-          currencySymbol: row.para_birimi_sembol
-        };
-      } catch (error) {
-        console.error(`Maliyet hesaplama hatası (ID: ${row.id}):`, error);
-        return row;
-      }
-    }));
-    
-    res.json(finalResults);
-  } catch (error) {
-    console.error("GET /api/maliyet-analizi hatası:", error);
-    res.status(500).json({ error: error.message, stack: error.stack });
-  }
-});
+// ...existing code...
 
-// Yardımcı fonksiyon: Belirtilen giriş ID'si için hesaplama motorundan maliyet verilerini al
-/* // BU FONKSİYONUN KULLANIMI GÖZDEN GEÇİRİLMELİ VEYA KALDIRILMALI
+// Yardımcı fonksiyon: Hesaplama motorundan maliyet ve kalan stok verilerini alır
 async function fetchCostCalculationForEntry(girisId) {
   try {
-    const response = await fetch(`http://localhost:3002/api/cost-calculation/${girisId}`);
-    
-    if (!response.ok) {
-      throw new Error(`Hesaplama motoru yanıt hatası: ${response.status}`);
-    }
-    
+    const response = await fetch(`http://localhost:3002/api/hesaplama-motoru/${girisId}`);
+    if (!response.ok) throw new Error(`Hesaplama motoru yanıt hatası: ${response.status}`);
     const data = await response.json();
-    
+    const breakdown = data.dailyBreakdown || [];
+    const lastRow = breakdown.length > 0 ? breakdown[breakdown.length - 1] : null;
     return {
-      currentCost: data.dailyBreakdown && data.dailyBreakdown.length > 0 
-        ? parseFloat(data.dailyBreakdown[data.dailyBreakdown.length - 1].dailyTotal) || 0 
-        : 0,
-      totalCost: parseFloat(data.totalCost) || 0,
-      unitCostImpact: data.currentStock > 0 
-        ? parseFloat(data.totalCost) / parseFloat(data.currentStock) 
-        : 0
+      currentCost: lastRow ? parseFloat(lastRow.dayTotal) || 0 : 0, // Mevcut Maliyet
+      totalCost: lastRow ? parseFloat(lastRow.cumulativeTotal) || 0 : 0, // Toplam Maliyet
+      remainingStock: lastRow ? parseFloat(lastRow.remainingStock) || 0 : 0, // Mevcut Stok
+      paraBirimi: data.antrepoGiris?.para_birimi_iso || "USD"
     };
   } catch (error) {
-    console.error(`Maliyet hesaplama hatası (ID: ${girisId}):`, error);
-    return {
-      currentCost: 0,
-      totalCost: 0,
-      unitCostImpact: 0
-    };
+    return { currentCost: 0, totalCost: 0, remainingStock: 0, paraBirimi: "USD" };
   }
-}*/
+}
 
+// ...existing code...
+
+// Türkçe tarih formatı için yardımcı fonksiyon
+function formatDateTR(date) {
+  if (!date) return "-";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "-";
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}.${month}.${year}`;
+}
+
+// ...existing code...
+
+// Maliyet Analizi Endpoint'i
 router.get('/maliyet-analizi', async (req, res) => {
   try {
-    // Eğer bir filtre parametresi varsa (ürün kodu veya antrepo ID)
-    const { filter } = req.query; 
-    let filterCondition = '';
-    let filterParams = [];
-
-    if (filter) {
-      if (!isNaN(parseInt(filter))) {
-        // Sayısal değer: antrepo ID olarak kabul et
-        filterCondition = 'AND ag.antrepo_id = ?';
-        filterParams.push(parseInt(filter));
-      } else {
-        // Metin değer: ürün kodu olarak kabul et
-        filterCondition = 'AND u.code = ?';
-        filterParams.push(filter);
-      }
-    }
-    
-    // Antrepo giriş verilerini, ürün ve antrepo bilgilerini çekiyoruz
-    const sqlGiris = `
+    // 1. Tüm antrepo girişlerini ve antrepo adını çek
+    const sql = `
       SELECT 
-        ag.id,
+        ag.id AS entryId,
+        ag.beyanname_no AS formNo,
         ag.antrepo_id,
-        ag.antrepo_giris_tarihi,
-        ag.beyanname_no,
-        ag.kap_adeti,
-        u.name AS productName,
-        u.code AS productCode,
-        u.id AS productId,
-        a.antrepoAdi AS antrepoName,
-        ag.urun_kodu,
-        ag.para_birimi
+        a.antrepoAdi AS antrepoName
       FROM antrepo_giris ag
-      LEFT JOIN urunler u ON ag.urun_kodu = u.code
       LEFT JOIN antrepolar a ON ag.antrepo_id = a.id
-      WHERE 1=1 ${filterCondition}
-      ORDER BY ag.id
+      ORDER BY ag.id DESC
       LIMIT 1000
     `;
-    
-    const [rowsGiris] = await db.query(sqlGiris, filterParams);
-    console.log("Maliyet analizi ilk birkaç sonuç:", rowsGiris.slice(0, 2));
-    res.json(rowsGiris);
+    const [rows] = await db.query(sql);
+
+    const resultArray = [];
+    for (const giris of rows) {
+      // 2. Giriş hareketlerini çek
+      const hareketSql = `
+        SELECT islem_tarihi, islem_tipi, miktar, kap_adeti
+        FROM antrepo_hareketleri
+        WHERE antrepo_giris_id = ?
+        ORDER BY islem_tarihi ASC
+      `;
+      const [hareketler] = await db.query(hareketSql, [giris.entryId]);
+
+      // Giriş hareketleri
+      const girisHareketleri = hareketler.filter(h => h.islem_tipi === 'Giriş');
+      const entryDate = girisHareketleri.length > 0 ? girisHareketleri[0].islem_tarihi : null;
+      const entryCount = girisHareketleri.reduce((sum, h) => sum + parseFloat(h.miktar || 0), 0);
+      const entryKapCount = girisHareketleri.reduce((sum, h) => sum + parseFloat(h.kap_adeti || 0), 0);
+
+      // Çıkış hareketleri
+      const cikisHareketleri = hareketler.filter(h => h.islem_tipi === 'Çıkış');
+      let lastExitDateRaw = null;
+      let lastExitAmount = "-";
+      if (cikisHareketleri.length > 0) {
+        const lastCikis = cikisHareketleri[cikisHareketleri.length - 1];
+        lastExitDateRaw = lastCikis.islem_tarihi;
+        lastExitAmount = lastCikis.miktar != null ? parseFloat(lastCikis.miktar) : "-";
+      }
+
+      // Mevcut Kap Adedi: Giriş ve çıkışların toplamı
+      const currentKapCount =
+        hareketler.reduce((sum, h) =>
+          h.islem_tipi === 'Giriş'
+            ? sum + parseFloat(h.kap_adeti || 0)
+            : sum - parseFloat(h.kap_adeti || 0), 0);
+
+      // Hesaplama motorundan maliyet ve kalan stok verilerini çek
+      const costData = await fetchCostCalculationForEntry(giris.entryId);
+
+      // Birim maliyete etkisi: toplam maliyet / giriş adedi
+      const unitCostImpact = (entryCount > 0)
+        ? parseFloat((costData.totalCost / entryCount).toFixed(2))
+        : 0;
+
+      resultArray.push({
+        antrepoName: giris.antrepoName || "-",
+        entryDate: formatDateTR(entryDate),
+        formNo: giris.formNo || "-",
+        entryCount: parseFloat(entryCount.toFixed(2)),
+        entryKapCount: parseFloat(entryKapCount.toFixed(2)),
+        lastExitDate: formatDateTR(lastExitDateRaw),
+        lastExitAmount,
+        currentStock: parseFloat(costData.remainingStock.toFixed(2)), // Hesaplama motorundan
+        currentKapCount: parseFloat(currentKapCount.toFixed(2)),
+        currentCost: parseFloat(costData.currentCost.toFixed(2)),
+        totalCost: parseFloat(costData.totalCost.toFixed(2)),
+        unitCostImpact,
+        paraBirimi: costData.paraBirimi,
+        entryId: giris.entryId
+      });
+    }
+
+    res.json(resultArray);
   } catch (error) {
-    console.error("GET /api/maliyet-analizi error:", error);
-    res.status(500).json({ error: error.message });
+    console.error("GET /api/maliyet-analizi hatası:", error, error.stack);
+    res.status(500).json({ error: error.message, stack: error.stack });
   }
 });
 

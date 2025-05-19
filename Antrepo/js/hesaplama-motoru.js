@@ -19,10 +19,10 @@ function formatDate(dateStr) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const girisId = urlParams.get("id"); // "entryId" yerine "id" kullan
+  const girisId = urlParams.get("entryId"); // Parametre adını "entryId" olarak güncelledik
 
   if (!girisId) {
-    alert("Geçersiz 'id' parametresi. Antrepo giriş ID'si URL'de bulunamadı."); // Hata mesajını da güncelleyebiliriz
+    alert("Geçersiz 'entryId' parametresi. Antrepo giriş ID'si URL'de bulunamadı."); // Hata mesajını da güncelledik
     return;
   }
 
