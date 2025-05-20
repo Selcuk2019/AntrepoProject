@@ -8,9 +8,6 @@ dayjs.extend(timezone);
 // Bu dosya, hesaplama motoru sayfasında (hesaplama-motoru.html) kullanılan JS kodudur.
 // /api/hesaplama-motoru/:girisId endpoint'ine istek atarak gelen verileri tabloya doldurur.
 
-// Remove or comment out the import if not needed
-// import { baseUrl } from './config.js';
-
 // Add helper to format date from yyyy-mm-dd to dd.mm.yyyy
 function formatDate(dateStr) {
   const [year, month, day] = dateStr.split('-');
@@ -22,7 +19,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const girisId = urlParams.get("entryId"); // Parametre adını "entryId" olarak güncelledik
 
   if (!girisId) {
-    alert("Geçersiz 'entryId' parametresi. Antrepo giriş ID'si URL'de bulunamadı."); // Hata mesajını da güncelledik
+    alert("Geçersiz 'entryId' parametresi. Antrepo giriş ID'si URL'de bulunamadı.");
     return;
   }
 
@@ -34,14 +31,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   const dailyTableBody = document.getElementById("dailyTableBody");
   const totalMaliyetSpan = document.getElementById("totalMaliyet");
   const backBtn = document.getElementById("backBtn");
+  const urunBazliBtn = document.getElementById("urunBazliBtn"); // Yeni buton elementini al
 
   backBtn.addEventListener("click", () => {
     history.back();
   });
 
+  // Ürün Bazlı Gösterim butonu yönlendirmesi
+  if (urunBazliBtn) {
+    urunBazliBtn.addEventListener("click", () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const girisId = urlParams.get("entryId");
+      if (!girisId) {
+        alert("Antrepo giriş ID'si bulunamadı!");
+        return;
+      }
+      window.location.href = `hesaplama-motoru-urun.html?entryId=${girisId}`;
+    });
+  }
+
   async function fetchCalculation() {
     try {
-      // Use window.location.origin to build the API URL dynamically.
       const apiUrl = `${window.location.origin}/api/hesaplama-motoru/${girisId}`;
       const resp = await fetch(apiUrl);
       if (resp.status === 404) {
@@ -52,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             Henüz antrepo giriş formu üzerinden kayıt yapılmamıştır.
           </td>
         </tr>`;
-        return; // Exit quietly without error
+        return;
       }
       if (!resp.ok) {
         throw new Error(`Sunucu hatası: ${resp.status}`);
@@ -80,7 +90,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const { antrepoGiris, dailyBreakdown = [], totalCost = 0 } = result;
     const paraBirimi = antrepoGiris?.para_birimi_iso || 'USD';
 
-    // Remove tz conversion so that the date remains as stored (local)
     beyannameNoSpan.textContent = antrepoGiris?.beyanname_no || "-";
     girisTarihiSpan.textContent = antrepoGiris?.antrepo_giris_tarihi
       ? dayjs(antrepoGiris.antrepo_giris_tarihi).format('YYYY-MM-DD')
@@ -89,9 +98,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     urunKoduSpan.textContent = antrepoGiris?.urun_kodu || "-";
     initialStockSpan.textContent = (Number(result.currentStock) || 0).toFixed(2);
 
-    // Format currency values properly
     function formatCurrency(amount, currency) {
-      // Ensure amount is a number, default to 0 if not.
       const numericAmount = Number(amount);
       if (isNaN(numericAmount)) {
         return `0.00 ${currency}`;
@@ -100,7 +107,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     dailyTableBody.innerHTML = "";
-    
+
     dailyBreakdown.forEach((row) => {
       if (!row) return;
       const tr = document.createElement("tr");
@@ -123,7 +130,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       responsive: true,
       autoWidth: false,
       searching: true,
-      // DOM yapılandırmasını ve sayfalama stilini güncelliyoruz
       dom: '<"table-top"<"table-header-left"l><"table-header-right"f>>rt<"table-bottom"ip>',
       lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
       pageLength: 25,
@@ -146,7 +152,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     await fetchCalculation();
   } catch (error) {
     console.error("Hesaplama yüklenirken hata:", error);
-    // Kullanıcıya hata göster
     dailyTableBody.innerHTML = `
       <tr>
         <td colspan="7" class="error-message">
@@ -155,31 +160,4 @@ document.addEventListener("DOMContentLoaded", async () => {
       </tr>
     `;
   }
-
-  // DataTable initialization was causing "$ is not defined"
-  // Comment out or remove the following block if jQuery is not loaded:
-  // const dailyTable = $('.datatable').DataTable({
-  //   // ...existing columns config...
-    
-  //   responsive: true,
-  //   autoWidth: false,
-  //   searching: true,
-  //   dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-  //        '<"row"<"col-sm-12"tr>>' +
-  //        '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-  //   lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tümü"]],
-  //   pageLength: 10,
-  //   lengthChange: true,
-  //   language: {
-  //       url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/tr.json',
-  //       lengthMenu: 'Sayfa başına _MENU_ kayıt göster',
-  //       info: 'Toplam _TOTAL_ kayıttan _START_ - _END_ arası gösteriliyor',
-  //       paginate: {
-  //           first: '<i class="fas fa-angle-double-left"></i>',
-  //           previous: '<i class="fas fa-angle-left"></i>',
-  //           next: '<i class="fas fa-angle-right"></i>',
-  //           last: '<i class="fas fa-angle-double-right"></i>'
-  //       }
-  //   }
-  // });
 });

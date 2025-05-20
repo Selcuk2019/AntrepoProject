@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8">
-  <title>Hesaplama Motoru</title>
+  <title>Ürün Bazlı Hesaplama Motoru</title>
   <link rel="stylesheet" href="../css/style.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css">
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -11,13 +11,6 @@
   <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
   <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
-  <style>
-    .urun-bazli-btn-container {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 10px;
-    }
-  </style>
 </head>
 <body>
   <header class="topbar">
@@ -31,7 +24,7 @@
     
     <div class="content">
       <div class="page-header">
-        <h1>Hesaplama Motoru</h1>
+        <h1>Ürün Bazlı Hesaplama Motoru</h1>
       </div>
 
       <!-- Üst Form Container -->
@@ -75,30 +68,24 @@
         </div>
       </div>
 
-      <!-- Ürün Bazlı Gösterim Butonu (Tablonun üstünde ve sağda) -->
-      <div class="urun-bazli-btn-container">
-        <button id="urunBazliBtn" class="modern-nav-button">
-          <i class="fas fa-cubes"></i>
-          Ürün Bazlı Gösterim
-        </button>
-      </div>
-
       <!-- DataTable Container -->
       <div class="table-container">
         <h2>Günlük Hesaplama Detayları</h2>
-        <table id="calculationTable" class="display modern-table" style="width:100%">
+        <table id="urunCalculationTable" class="display modern-table" style="width:100%">
           <thead>
             <tr>
               <th>Gün</th>
               <th>Tarih</th>
+              <th>Ürün Adı</th>
+              <th>Ürün Kodu</th>
               <th>Ardiye</th>
               <th>Ek Hizmet</th>
               <th>Günlük Toplam</th>
               <th>Kümülatif Toplam</th>
-              <th>Kalan Stok (Ton)</th>
+              <th>Kalan Stok</th>
             </tr>
           </thead>
-          <tbody id="dailyTableBody">
+          <tbody>
             <!-- JS ile doldurulacak -->
           </tbody>
         </table>
@@ -114,6 +101,6 @@
   </div>
   
   <script src="../js/template.js"></script>
-  <script type="module" src="../js/hesaplama-motoru.js"></script>
+  <script type="module" src="../js/hesaplama-motoru-urun.js"></script>
 </body>
 </html>
