@@ -789,12 +789,12 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
 
     // Yardımcı: Ardiye maliyeti hesaplama fonksiyonu
     function hesaplaArdiye(kalanStok, gunSayisi, params) {
-      console.log(`[hesaplaArdiye] FONKSIYONA GİREN -- Kalan Stok: ${kalanStok}, Gün Sayısı: ${gunSayisi}`);
+      
       if (kalanStok <= 0) return 0;
       const kural = params.find(p => gunSayisi >= p.start_day &&
                              (p.end_day === null || gunSayisi <= p.end_day));
       if (!kural) {
-        console.log(`[hesaplaArdiye] Kural bulunamadı, Gün Sayısı: ${gunSayisi}, Maliyet: 0`);
+        
         return 0; 
       }
       
@@ -804,7 +804,7 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
       // Kullanıcının snippet'indeki formül: (baseFee * stokMiktar) + (perKgRate * stokMiktar * 1000)
       const ardiye = (baseFee * kalanStok) + (perKgRate * kalanStok * 1000);
       
-      console.log(`[hesaplaArdiye] Kural: Temel Ücret=${kural.base_fee}, KG Başına Oran=${kural.per_kg_rate}. HESAPLANAN ARDİYE: ${ardiye}`);
+      
       return ardiye; // Hesaplanan ardiye değerini döndür
     }
 
@@ -934,15 +934,13 @@ router.get('/hesaplama-motoru/:girisId', async (req, res) => {
 
       while (currentDate <= calculationEndDate) {
         const loopDateStr = dayjs(currentDate).format('YYYY-MM-DD');
-        console.log(`\n--- [${loopDateStr}] BEYANNAME MODU - Gün: ${dayCounter} ---`);
+        
 
         const kalanStok = hesaplaStok(currentDate, hareketler);
-        console.log(`[${loopDateStr}] Beyanname Modu: hesaplaStok SONUCU: ${kalanStok}`);
 
         const gunlukArdiye = kalanStok > 0
           ? hesaplaArdiye(kalanStok, dayCounter, sozlesmeParams)
           : 0;
-        console.log(`[${loopDateStr}] Beyanname Modu: hesaplaArdiye'ye GİDEN Kalan Stok: ${kalanStok}, Gün Sayacı: ${dayCounter}, HESAPLANAN GÜNLÜK ARDİYE: ${gunlukArdiye}`);
 
         const gunlukEk = hesaplaGunlukEkHizmet(
           currentDate, ekHizmetler, null, urunSatirlari, viewMode
@@ -3736,5 +3734,184 @@ router.delete('/antrepo-giris/:girisId/ek-hizmetler/:ekHizmetId', async (req, re
   }
 });
 
-// This should be the very last line of the file
+// ÜRÜN BAZLI HESAPLAMA MOTORU ENDPOINT
+router.get('/hesaplama-motoru-urun/:girisId', async (req, res) => {
+  try {
+    const girisId = req.params.girisId;
+    if (!girisId || isNaN(parseInt(girisId))) {
+      return res.status(400).json({ error: "Geçersiz veya eksik giriş ID'si" });
+    }
+
+    // 1. Antrepo giriş kaydını al
+    const [antrepoGirisRows] = await db.query(`
+      SELECT ag.*, pb.iso_kodu AS para_birimi_iso
+      FROM antrepo_giris ag
+      LEFT JOIN para_birimleri pb ON ag.para_birimi = pb.id
+      WHERE ag.id = ?
+    `, [girisId]);
+    if (!antrepoGirisRows.length) {
+      return res.status(404).json({ error: "Antrepo giriş kaydı bulunamadı" });
+    }
+    const antrepoGiris = antrepoGirisRows[0];
+
+    // 2. Ürün satırlarını al
+    const [urunSatirlari] = await db.query(`
+      SELECT agu.urun_id, u.name AS urun_adi, u.code AS urun_kodu, agu.miktar
+      FROM antrepo_giris_urunler agu
+      LEFT JOIN urunler u ON agu.urun_id = u.id
+      WHERE agu.antrepo_giris_id = ?
+    `, [girisId]);
+
+    // 3. Hareketleri al
+    const [hareketler] = await db.query(`
+      SELECT DATE_FORMAT(islem_tarihi, '%Y-%m-%d') AS islem_tarihi, islem_tipi, miktar, urun_id
+      FROM antrepo_hareketleri
+      WHERE antrepo_giris_id = ?
+      ORDER BY islem_tarihi ASC
+    `, [girisId]);
+
+    // 4. Ek hizmetleri al
+    const [ekHizmetler] = await db.query(`
+      SELECT DATE_FORMAT(agh.ek_hizmet_tarihi, '%Y-%m-%d') AS ek_hizmet_tarihi,
+             agh.toplam, agh.urun_id, agh.applies_to_all
+      FROM antrepo_giris_hizmetler agh
+      WHERE agh.antrepo_giris_id = ?
+      ORDER BY agh.ek_hizmet_tarihi ASC
+    `, [girisId]);
+
+    // 5. Sözleşme parametrelerini al
+    const [sozlesmeParams] = await db.query(`
+      SELECT gcp.start_day, gcp.end_day, gcp.base_fee, gcp.per_kg_rate
+      FROM antrepo_giris ag
+      JOIN sozlesmeler s ON ag.sozlesme_id = s.id
+      JOIN gun_carpan_parametreleri gcp ON s.id = gcp.sozlesme_id
+      WHERE ag.id = ?
+      ORDER BY gcp.start_day ASC
+    `, [girisId]);
+
+    // Her ürünün ilk giriş tarihini bul
+    const urunIlkGirisTarihleri = {};
+    urunSatirlari.forEach(u => {
+      const ilkGiris = hareketler.find(h => h.urun_id === u.urun_id && h.islem_tipi === 'Giriş');
+      urunIlkGirisTarihleri[u.urun_id] = ilkGiris ? ilkGiris.islem_tarihi : null;
+    });
+
+    // Yardımcı: Ardiye hesaplama fonksiyonu
+    function hesaplaArdiye(kalanStok, gunSayisi, params) {
+      if (kalanStok <= 0) return 0;
+      const kural = params.find(p => gunSayisi >= p.start_day &&
+        (p.end_day === null || gunSayisi <= p.end_day));
+      if (!kural) return 0;
+      const baseFee = parseFloat(kural.base_fee || 0);
+      const perKgRate = parseFloat(kural.per_kg_rate || 0);
+      return (baseFee * kalanStok) + (perKgRate * kalanStok * 1000);
+    }
+
+    function hesaplaStok(tarih, hareketlerList, urunId) {
+      let stok = 0;
+      hareketlerList.forEach(h => {
+        if (h.urun_id !== urunId) return;
+        if (h.islem_tarihi <= tarih) {
+          stok += (h.islem_tipi === 'Giriş' ? 1 : -1) * parseFloat(h.miktar);
+        }
+      });
+      return Math.max(0, stok);
+    }
+
+    function hesaplaGunlukEkHizmet(tarih, hizmetList, urunId, urunSatirListesi) {
+      let maliyet = 0;
+      hizmetList.forEach(h => {
+        if (h.ek_hizmet_tarihi === tarih) {
+          if (h.applies_to_all) {
+            const toplamGiris = urunSatirListesi.reduce((sum, u) => sum + parseFloat(u.miktar), 0);
+            const urunGiris = urunSatirListesi.find(u => u.urun_id === urunId)?.miktar || 0;
+            maliyet += toplamGiris > 0 ? (parseFloat(h.toplam) * urunGiris / toplamGiris) : 0;
+          } else if (h.urun_id === urunId) {
+            maliyet += parseFloat(h.toplam || 0);
+          }
+        }
+      });
+      return maliyet;
+    }
+
+    // Hesaplama başlangıç ve bitiş tarihleri
+    const hareketTarihleri = hareketler.map(h => h.islem_tarihi);
+    const baslangicTarihi = hareketTarihleri.length ? hareketTarihleri[0] : null;
+    const bitisTarihi = dayjs().format('YYYY-MM-DD');
+    if (!baslangicTarihi) {
+      return res.status(400).json({ error: "İlk giriş hareketi bulunamadı" });
+    }
+
+    // Kümülatif toplamları ürün bazında tut
+    const cumulativeTotals = {};
+    urunSatirlari.forEach(u => cumulativeTotals[u.urun_id] = 0);
+
+    // Her ürünün gün sayacı (ilk girişinden itibaren)
+    const urunGunSayaci = {};
+    urunSatirlari.forEach(u => urunGunSayaci[u.urun_id] = 0);
+
+    // Günlük döküm: [{ date, day, products: [...], dailyTotals: {...} }]
+    const dailyBreakdown = [];
+    let dayCounter = 1;
+    let currentDate = dayjs(baslangicTarihi);
+    const endDate = dayjs(bitisTarihi);
+
+    while (currentDate.isSameOrBefore(endDate, 'day')) {
+      const dateStr = currentDate.format('YYYY-MM-DD');
+      const products = [];
+
+      urunSatirlari.forEach(u => {
+        const ilkGirisTarihi = urunIlkGirisTarihleri[u.urun_id];
+        if (!ilkGirisTarihi || dateStr < ilkGirisTarihi) return; // Ürün henüz giriş yapmamışsa gösterme
+
+        urunGunSayaci[u.urun_id] += 1;
+        const kalanStok = hesaplaStok(dateStr, hareketler, u.urun_id);
+        const gunlukArdiye = kalanStok > 0
+          ? hesaplaArdiye(kalanStok, urunGunSayaci[u.urun_id], sozlesmeParams)
+          : 0;
+        const gunlukEk = hesaplaGunlukEkHizmet(dateStr, ekHizmetler, u.urun_id, urunSatirlari);
+        const gunlukToplam = gunlukArdiye + gunlukEk;
+        cumulativeTotals[u.urun_id] += gunlukToplam;
+        products.push({
+          urunId: u.urun_id,
+          urunAdi: u.urun_adi,
+          urunKodu: u.urun_kodu,
+          remainingStock: kalanStok,
+          storageCost: parseFloat(gunlukArdiye.toFixed(2)),
+          servicesCost: parseFloat(gunlukEk.toFixed(2)),
+          dayTotal: parseFloat(gunlukToplam.toFixed(2)),
+          cumulativeTotal: parseFloat(cumulativeTotals[u.urun_id].toFixed(2))
+        });
+      });
+
+      // Günlük toplamlar
+      const dailyTotals = {
+        storageCost: products.reduce((sum, p) => sum + p.storageCost, 0),
+        servicesCost: products.reduce((sum, p) => sum + p.servicesCost, 0),
+        dayTotal: products.reduce((sum, p) => sum + p.dayTotal, 0),
+        cumulativeTotal: products.reduce((sum, p) => sum + p.cumulativeTotal, 0),
+        remainingStock: products.reduce((sum, p) => sum + p.remainingStock, 0)
+      };
+
+      dailyBreakdown.push({
+        date: dateStr,
+        day: dayCounter,
+        products,
+        dailyTotals
+      });
+      currentDate = currentDate.add(1, 'day');
+      dayCounter++;
+    }
+
+    res.json({
+      antrepoGiris,
+      dailyBreakdown,
+      paraBirimi: antrepoGiris.para_birimi_iso || "USD"
+    });
+  } catch (error) {
+    console.error("Ürün bazlı hesaplama motoru hatası:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;
