@@ -59,14 +59,8 @@
             </div>
             <!-- İlgili Sözleşme (datalist + clear buton) -->
             <div class="form-group">
-              <label for="sozlesmeInput">İlgili Sözleşme</label>
-              <div class="datalist-container">
-                <input type="text" id="sozlesmeInput" list="sozlesmeList" placeholder="Sözleşme kodu veya adı girin...">
-                <datalist id="sozlesmeList">
-                  <!-- API'den doldurulacak -->
-                </datalist>
-                <button type="button" class="clear-datalist" id="clearSozlesmeBtn">×</button>
-              </div>
+              <label for="sozlesmeSelect">İlgili Sözleşme</label>
+              <select id="sozlesmeSelect" class="form-select styled-select"> <option value=""></option> </select>
               <button type="button" id="openSozlesmeBtn" class="btn-secondary mt-2">Sözleşmeyi Görüntüle</button>
             </div>
             <!-- Antrepo Şirketi -->
@@ -750,7 +744,16 @@
                 });
               }
             });
-            
+
+            // YENİ EKLENEN: İlgili Sözleşme ve benzeri select'leri başlatmak için
+        // Eğer tüm styled-select'ler için genel bir görünüm yeterliyse:
+            $('.styled-select').select2({
+              placeholder: "Lütfen seçim yapınız...", // Genel bir placeholder
+              allowClear: true, // Temizleme (X) butonu ekler
+              width: '100%'     // Genişliği ayarlar
+            });
+
+              
             function formatCurrency(currency) {
               if (!currency.id) return currency.text;
               var text = currency.text;

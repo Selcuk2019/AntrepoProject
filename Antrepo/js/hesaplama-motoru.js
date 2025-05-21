@@ -25,8 +25,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const beyannameNoSpan = document.getElementById("beyannameNo");
   const girisTarihiSpan = document.getElementById("girisTarihi");
-  const urunAdiSpan = document.getElementById("urunAdi");
-  const urunKoduSpan = document.getElementById("urunKodu");
+  const antrepoAdiSpan = document.getElementById("antrepoAdi");
+  const antrepoSirketiSpan = document.getElementById("antrepoSirketi");
   const initialStockSpan = document.getElementById("initialStock");
   const dailyTableBody = document.getElementById("dailyTableBody");
   const totalMaliyetSpan = document.getElementById("totalMaliyet");
@@ -87,16 +87,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    console.log("antrepoGiris:", result.antrepoGiris);
+
     const { antrepoGiris, dailyBreakdown = [], totalCost = 0 } = result;
     const paraBirimi = antrepoGiris?.para_birimi_iso || 'USD';
 
     beyannameNoSpan.textContent = antrepoGiris?.beyanname_no || "-";
-    girisTarihiSpan.textContent = antrepoGiris?.antrepo_giris_tarihi
-      ? dayjs(antrepoGiris.antrepo_giris_tarihi).format('YYYY-MM-DD')
+    girisTarihiSpan.textContent = antrepoGiris?.beyanname_form_tarihi
+      ? dayjs(antrepoGiris.beyanname_form_tarihi).format('DD.MM.YYYY')
       : "-";
-    urunAdiSpan.textContent = antrepoGiris?.urun_adi || "-";
-    urunKoduSpan.textContent = antrepoGiris?.urun_kodu || "-";
+    antrepoAdiSpan.textContent = antrepoGiris?.adres || antrepoGiris?.antrepo_kodu || "-";
+    antrepoSirketiSpan.textContent = antrepoGiris?.antrepo_sirket_adi || "-"; // Eğer API'de yoksa, başka bir alan adı kullan
     initialStockSpan.textContent = (Number(result.currentStock) || 0).toFixed(2);
+    
 
     function formatCurrency(amount, currency) {
       const numericAmount = Number(amount);
