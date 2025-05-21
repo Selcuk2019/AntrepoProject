@@ -21,13 +21,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     return `${day}.${month}.${year}`;
   }
 
+  const beyannameNoSpan = document.getElementById("beyannameNo");
+  const girisTarihiSpan = document.getElementById("girisTarihi");
+  const antrepoAdiSpan = document.getElementById("antrepoAdi");
+  const antrepoSirketiSpan = document.getElementById("antrepoSirketi");
+  const initialStockSpan = document.getElementById("initialStock");
+  const totalMaliyetSpan = document.getElementById("totalMaliyet");
+
   async function fetchAndRender() {
     try {
       const resp = await fetch(`/api/hesaplama-motoru-urun/${girisId}`);
       if (!resp.ok) throw new Error("Veri alınamadı");
       const data = await resp.json();
-      const paraBirimi = data.paraBirimi || "USD";
+      console.log('API response:', data); // DEBUG: API'den dönen tüm veriyi gör
+      // Dashboard alanlarını doldur
+      const antrepoGiris = data.antrepoGiris || {};
+      beyannameNoSpan.textContent = antrepoGiris.beyanname_no || "-";
+      girisTarihiSpan.textContent = antrepoGiris.beyanname_form_tarihi
+        ? formatDateToTurkish(antrepoGiris.beyanname_form_tarihi.substring(0,10))
+        : "-";
+      antrepoAdiSpan.textContent = antrepoGiris.adres || antrepoGiris.antrepo_kodu || "-";
+      antrepoSirketiSpan.textContent = antrepoGiris.antrepo_sirket_adi || "-";
+      // Kalan stok ve toplam maliyet hesaplama (beyanname bazlı ile aynı mantık)
       const dailyBreakdown = data.dailyBreakdown || [];
+      let kalanStok = 0;
+      let toplamMaliyet = 0;
+      if (dailyBreakdown.length > 0) {
+        const lastDay = dailyBreakdown[dailyBreakdown.length - 1];
+        kalanStok = Number(lastDay.dailyTotals?.remainingStock) || 0;
+        toplamMaliyet = Number(lastDay.dailyTotals?.cumulativeTotal) || 0;
+      }
+      initialStockSpan.textContent = kalanStok.toFixed(2);
+      const paraBirimi = antrepoGiris.para_birimi_iso || data.paraBirimi || "USD";
+      totalMaliyetSpan.textContent = `${toplamMaliyet.toFixed(2)} ${paraBirimi}`;
 
       let html = "";
       dailyBreakdown.forEach(dayRow => {
