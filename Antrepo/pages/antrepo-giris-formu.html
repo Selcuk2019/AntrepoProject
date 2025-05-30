@@ -65,14 +65,8 @@
             </div>
             <!-- Antrepo Şirketi -->
             <div class="form-group">
-              <label for="antrepoSirketi">Antrepo Şirketi <span class="required">*</span></label>
-              <div class="datalist-container">
-                <input type="text" id="antrepoSirketi" list="antrepoSirketiList" placeholder="Antrepo Şirketi seçin..." required>
-                <datalist id="antrepoSirketiList">
-                  <!-- Sirket verileri doldurulacak -->
-                </datalist>
-                <button type="button" class="clear-datalist" id="clearSirketBtn">×</button>
-              </div>
+              <label for="antrepoSirketiSelect">Antrepo Şirketi <span class="required">*</span></label>
+              <select id="antrepoSirketiSelect" class="form-select styled-select" required> <option value=""></option> </select>
             </div>
           </section>
           
@@ -80,20 +74,14 @@
           <section id="gumruk-antrepo">
             <h2>Gümrük & Antrepo</h2>
             <div class="form-group">
-              <label for="antrepoAd">Antrepo (Ad) <span class="required">*</span></label>
-              <div class="datalist-container">
-                <input type="text" id="antrepoAd" list="antrepoIdList" placeholder="Antrepo adını seçin..." required>
-                <datalist id="antrepoIdList"></datalist>
-                <button type="button" class="clear-datalist" id="clearAntrepoAdBtn">×</button>
-              </div>
+              <label for="antrepoAdSelect">Antrepo (Ad) <span class="required">*</span></label>
+              <select id="antrepoAdSelect" class="form-select styled-select" required>
+                <option value=""></option> </select>
             </div>
             <div class="form-group">
-              <label for="antrepoKodu">Antrepo Kodu <span class="required">*</span></label>
-              <div class="datalist-container">
-                <input type="text" id="antrepoKodu" list="antrepoKoduList" placeholder="Antrepo kodunu seçin..." required>
-                <datalist id="antrepoKoduList"></datalist>
-                <button type="button" class="clear-datalist" id="clearAntrepoKoduBtn">×</button>
-              </div>
+              <label for="antrepoKoduSelect">Antrepo Kodu <span class="required">*</span></label>
+              <select id="antrepoKoduSelect" class="form-select styled-select" required>
+                <option value=""></option> </select>
             </div>
             <div class="form-group">
               <label for="adres">Adres</label>
@@ -110,122 +98,110 @@
           </section>
           
           <!-- Fatura & Depolama Detayları Bölümü -->
-          <section id="fatura-depolama">
-            <h2>Fatura & Depolama Detayları</h2>
-            <div class="form-group">
-              <label for="gondericiSirket">Gönderici Şirket</label>
-              <input type="text" id="gondericiSirket" placeholder="Manuel giriniz">
-            </div>
-            <div class="form-group">
-              <label for="aliciSirket">Alıcı Şirket</label>
-              <input type="text" id="aliciSirket" placeholder="Manuel giriniz">
-            </div>
-            <div class="form-group">
-              <label for="proformaNo">Proforma Fatura No <span class="required">*</span></label>
-              <input type="text" id="proformaNo" required>
-            </div>
-            <div class="form-group">
-              <label for="proformaTarihi">Proforma Fatura Tarihi <span class="required">*</span></label>
-              <input type="date" id="proformaTarihi" required>
-            </div>
-            <div class="form-group">
-              <label for="ticariFaturaNo">Ticari Fatura No <span class="required">*</span></label>
-              <input type="text" id="ticariFaturaNo" required>
-            </div>
-            <div class="form-group">
-              <label for="ticariFaturaTarihi">Ticari Fatura Tarihi <span class="required">*</span></label>
-              <input type="date" id="ticariFaturaTarihi" required>
-            </div>
-            <div class="form-group">
-              <label for="depolamaSuresi">Tahmini Depolama Süresi (Gün)</label>
-              <input type="number" id="depolamaSuresi">
-            </div>
-            <div class="form-group">
-              <label for="faturaMeblagi">Fatura Meblağı (Tüm Kalemler Dahil) <span class="required">*</span></label>
-              <input type="number" step="0.01" id="faturaMeblagi" required>
-            </div>
-            <div class="form-group">
-              <label for="urunBirimFiyat">Ürün Birim Fiyat (Fatura Meblağı / Miktar) <span class="required">*</span></label>
-              <input type="number" step="0.01" id="urunBirimFiyat" required>
-            </div>
-            <div class="form-group">
-              <label for="paraBirimi">Para Birimi <span class="required">*</span></label>
-              <select id="paraBirimi" name="paraBirimi" class="form-select currency-select" required>
-                <option value=""></option>
-                <!-- Para birimleri dinamik olarak doldurulacak -->
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="faturaAciklama">Açıklama / Notlar</label>
-              <textarea id="faturaAciklama" rows="4"></textarea>
-              <textarea id="faturaAciklamaMirror" readonly style="display:none;" rows="4"></textarea>
-            </div>
+          <section id="ekstra-bilgiler-bolumu">
+            <h2 class="collapsible-header"> Ekstra Bilgiler (Fatura & Depolama)
+              <i class="fas fa-chevron-down ms-auto"></i> </h2>
+            <div class="collapsible-content" style="display: none;"> <div class="form-group">
+                <label for="gondericiSirket">Gönderici Şirket</label>
+                <input type="text" id="gondericiSirket" placeholder="Manuel giriniz">
+              </div>
+              <div class="form-group">
+                <label for="aliciSirket">Alıcı Şirket</label>
+                <input type="text" id="aliciSirket" placeholder="Manuel giriniz">
+              </div>
+              <div class="form-group">
+                <label for="proformaNo">Proforma Fatura No</label> <input type="text" id="proformaNo">
+              </div>
+              <div class="form-group">
+                <label for="proformaTarihi">Proforma Fatura Tarihi</label> <input type="date" id="proformaTarihi">
+              </div>
+              <div class="form-group">
+                <label for="ticariFaturaNo">Ticari Fatura No</label> <input type="text" id="ticariFaturaNo">
+              </div>
+              <div class="form-group">
+                <label for="ticariFaturaTarihi">Ticari Fatura Tarihi</label> <input type="date" id="ticariFaturaTarihi">
+              </div>
+              <div class="form-group">
+                <label for="depolamaSuresi">Tahmini Depolama Süresi (Gün)</label>
+                <input type="number" id="depolamaSuresi">
+              </div>
+              <div class="form-group">
+                <label for="faturaMeblagi">Fatura Meblağı (Tüm Kalemler Dahil)</label> <input type="number" step="0.01" id="faturaMeblagi">
+              </div>
+              <div class="form-group">
+                <label for="urunBirimFiyat">Ürün Birim Fiyat (Fatura Meblağı / Miktar)</label> <input type="number" step="0.01" id="urunBirimFiyat">
+              </div>
+              <div class="form-group">
+                <label for="paraBirimi">Para Birimi</label> <select id="paraBirimi" name="paraBirimi" class="form-select currency-select">
+                  <option value=""></option>
+                  </select>
+              </div>
+              <div class="form-group">
+                <label for="faturaAciklama">Açıklama / Notlar</label>
+                <textarea id="faturaAciklama" rows="4"></textarea>
+                </div>
+              </div>
           </section>
           
-          <!-- Ürün Bilgileri Formu (Çoklu Ürün Ekleme) Bölümü -->
+          <!-- Ürün Bilgileri Bölümü -->
+          
           <section id="urun-bilgileri-formu">
             <h2>Ürün Bilgileri</h2>
             <div class="row g-3">
-              <div class="col-md-4">
-                <label for="urunTanimi" class="form-label">Ürün Tanımı</label>
-                <input type="text" id="urunTanimi" class="form-control" placeholder="Ürün tanımını girin" list="urunTanimiList" autocomplete="off">
-                <datalist id="urunTanimiList">
-                  <!-- JS ile doldurulacak -->
-                </datalist>
+              <div class="col-md-6"> <label for="urunSecimiSelect" class="form-label">Ürün Seçimi <span class="required">*</span></label>
+                <select id="urunSecimiSelect" class="form-select styled-select" required>
+                  <option value=""></option> </select>
               </div>
-              <div class="col-md-4">
-                <label for="urunKodu" class="form-label">Ürün Kodu</label>
-                <input type="text" id="urunKodu" class="form-control" placeholder="Ürün kodunu girin" list="urunKoduList" autocomplete="off">
-                <datalist id="urunKoduList">
-                  <!-- JS ile doldurulacak -->
-                </datalist>
-              </div>
-              <div class="col-md-4">
-                <label for="gtipNo" class="form-label">Gtip No.</label>
-                <input type="text" id="gtipNo" class="form-control" placeholder="Gtip Numarası girin">
-              </div>
-              <div class="col-md-4">
+              <div class="col-md-3"> <!-- Paketleme Tipi col-md-6'dan sonra geldiği için col-md-3 olarak kalabilir -->
                 <label for="paketlemeTipi" class="form-label">Paketleme Tipi</label>
                 <div class="input-group">
                   <select id="paketlemeTipi" class="form-select">
                     <option value="">Seçiniz...</option>
-                    <!-- JS ile doldurulacak -->
                   </select>
                   <button id="refreshPaketlemeBtn" class="btn-outline-secondary" type="button"><i class="fas fa-sync-alt"></i></button>
                 </div>
               </div>
-              <div class="col-md-4">
+              <div class="col-md-3"> <!-- Paket Boyutu col-md-6'dan sonra geldiği için col-md-3 olarak kalabilir -->
                 <label for="paketBoyutu" class="form-label">Paket Boyutu (Kg)</label>
                 <div class="input-group">
                   <select id="paketBoyutu" class="form-select">
                     <option value="">Seçiniz...</option>
-                    <!-- JS ile doldurulacak -->
                   </select>
                   <button id="refreshBoyutBtn" class="btn-outline-secondary" type="button"><i class="fas fa-sync-alt"></i></button>
                   <button id="addVariantBtn" class="btn-variant" type="button"><i class="fas fa-plus"></i> Varyant Ekle</button>
                 </div>
               </div>
-              <div class="col-md-4">
-                <label for="birimFiyat" class="form-label">Birim Fiyat</label>
-                <input type="number" step="0.01" id="birimFiyat" class="form-control" placeholder="Birim fiyat">
+
+              <div class="col-md-3">
+                <label for="miktar" class="form-label">Miktar (Ton) <span class="required">*</span></label>
+                <input type="number" step="0.01" id="miktar" class="form-control" required>
               </div>
-              <div class="col-md-2">
-                <label for="miktar" class="form-label">Miktar (Ton)</label>
-                <input type="number" step="0.01" id="miktar" class="form-control">
-              </div>
-              <div class="col-md-2">
+              <div class="col-md-3">
                 <label for="kapAdeti" class="form-label">Kap Adeti</label>
                 <input type="number" id="kapAdeti" class="form-control">
               </div>
-              <div class="col-md-2">
+              <div class="col-md-3">
                 <label for="brutAgirlik" class="form-label">Brüt Ağırlık</label>
                 <input type="number" step="0.01" id="brutAgirlik" class="form-control">
               </div>
-              <div class="col-md-2">
+              <div class="col-md-3">
                 <label for="netAgirlik" class="form-label">Net Ağırlık</label>
                 <input type="number" step="0.01" id="netAgirlik" class="form-control">
               </div>
-              <div class="col-md-4">
+
+              <div class="col-md-3"> <label for="birimFiyat" class="form-label">Birim Fiyat <span class="required">*</span></label>
+                <input type="number" step="0.01" id="birimFiyat" class="form-control" placeholder="Birim fiyat" required>
+              </div>
+              <div class="col-md-3"> <label for="urunParaBirimiSelect" class="form-label">Ürün Para Birimi <span class="required">*</span></label>
+                <select id="urunParaBirimiSelect" class="form-select currency-select" required>
+                  <option value=""></option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label for="gtipNo" class="form-label">Gtip No.</label>
+                <input type="text" id="gtipNo" class="form-control" placeholder="Gtip Numarası girin">
+              </div>
+              <div class="col-md-3">
                 <label for="antrepoGirisTarihi" class="form-label">Antrepo Giriş Tarihi</label>
                 <input type="date" id="antrepoGirisTarihi" class="form-control">
               </div>
@@ -243,21 +219,19 @@
                 <tr>
                   <th>Ürün Tanımı</th>
                   <th>Ürün Kodu</th>
-                  <th>Gtip No.</th>
                   <th>Paketleme Tipi</th>
                   <th>Paket Boyutu</th>
-                  <th>Birim Fiyat</th>
                   <th>Miktar</th>
                   <th>Kap Adeti</th>
                   <th>Brüt Ağırlık</th>
                   <th>Net Ağırlık</th>
+                  <th>Birim Fiyat</th> <th>Gtip No.</th>
                   <th>Antrepo Giriş Tarihi</th>
                   <th>İşlemler</th>
                 </tr>
               </thead>
               <tbody id="productRowsTableBody">
-                <!-- JS ile dinamik olarak eklenecek -->
-              </tbody>
+                </tbody>
             </table>
           </section>
           
@@ -722,17 +696,37 @@
         <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
         <script>
           $(document).ready(function() {
-            // Para Birimi select kutusunu başlat
-            $('.currency-select').select2({
-              placeholder: "Para birimi seçiniz...",
-              allowClear: true,
-              width: '100%',
-              templateResult: formatCurrency,
-              templateSelection: formatCurrency,
-              escapeMarkup: function(markup) {
-                return markup;
-              }
-            });
+          // Para Birimi select kutusunu özel formatlama ile başlat
+          $('.currency-select').select2({
+            placeholder: "Para birimi seçiniz...",
+            allowClear: true,
+            width: '100%',
+            templateResult: formatCurrency,
+            templateSelection: formatCurrency,
+            escapeMarkup: function(markup) {
+              return markup;
+            }
+          });
+
+          // Diğer tüm "styled-select" sınıfına sahip select kutularını genel ayarlarla başlat
+          $('.styled-select').select2({ // "İlgili Sözleşme" ve "Antrepo Şirketi" gibi
+            placeholder: "Lütfen seçim yapınız...",
+            allowClear: true,
+            width: '100%'
+          });
+          
+          // formatCurrency fonksiyonu (bu zaten sizde vardı)
+          function formatCurrency(currency) {
+            if (!currency.id) return currency.text;
+            var text = currency.text;
+            var parts = text.split('(');
+            if (parts.length > 1) {
+              var code = parts[1].replace(')', '');
+              return $('<span><span class="currency-icon">' + code + '</span> ' + parts[0].trim() + '</span>');
+            }
+            return currency.text;
+          }
+  
             
             // Ensure proper initialization of Select2 for the product fields
             $('#paketlemeTipi, #paketBoyutu').each(function() {

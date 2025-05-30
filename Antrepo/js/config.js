@@ -16,8 +16,8 @@ export const baseUrl = getBaseUrl();
 
 // Basic Auth bilgileri (Render ortamı için gerekli)
 export const basicAuthCredentials = {
-  username: 'mehmet.ercan@megabiz.com.tr', // veya selcukunalscr@gmail.com
-  password: 'mse_megabiz_34'      // veya Ayahuasca2019
+  username: 'selcukunalscr@gmail.com', // veya selcukunalscr@gmail.com
+  password: 'Ayahuasca2019'      // veya Ayahuasca2019
 };
 
 // Tüm fetch API çağrıları için kullanılacak yardımcı fonksiyon
