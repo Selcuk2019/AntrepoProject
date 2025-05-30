@@ -312,3 +312,38 @@
   box-shadow: 0 4px 12px rgba(255, 107, 107, 0.2); /* Hafif gölge */
   border-left: 5px solid #ff4757; /* Vurgulu sol kenarlık */
 }
+
+.collapsible-header {
+  cursor: pointer;
+  padding: 0.8rem 1rem; /* Section başlıklarına uygun padding */
+  background-color: #f8f9fa; /* Açık bir arkaplan */
+  border: 1px solid #dee2e6;
+  border-radius: 0.375rem; /* Bootstrap card header gibi */
+  margin-bottom: 0; /* İçerikle başlık arasını sıfırla */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.collapsible-header:hover {
+  background-color: #e9ecef;
+}
+
+.collapsible-header i.fas { /* Font Awesome ikonu için */
+  transition: transform 0.3s ease;
+  font-size: 0.9em;
+}
+
+.collapsible-header.open i.fas {
+  transform: rotate(180deg); /* Başlık açıkken ikon dönsün */
+}
+
+.collapsible-content {
+  border: 1px solid #dee2e6;
+  border-top: none; /* Başlıkla birleşik görünmesi için */
+  padding: 1.5rem; /* Section içindeki padding */
+  border-bottom-left-radius: 0.375rem;
+  border-bottom-right-radius: 0.375rem;
+  /* display: none; // HTML'de style ile verdik, JavaScript ile değiştirilecek */
+}
